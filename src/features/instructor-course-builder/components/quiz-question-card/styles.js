@@ -1,0 +1,125 @@
+import { varAlpha } from 'minimal-shared/utils';
+
+import { brandVars } from 'src/theme';
+
+export const styles = {
+  card: (theme) => ({
+    bgcolor: 'background.paper',
+    borderRadius: 2,
+    border: '1px solid',
+    borderColor: 'divider',
+    boxShadow: `0 1px 2px ${varAlpha(theme.vars.palette.common.blackChannel, 0.2)}`,
+    overflow: 'hidden',
+  }),
+  cardHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 1,
+    px: 2,
+    py: 1.25,
+    borderBottom: '1px solid',
+    borderColor: 'divider',
+  },
+  imagePlaceholder: (theme) => ({
+    width: 40,
+    height: 40,
+    borderRadius: 1,
+    border: '2px dashed',
+    borderColor: brandVars.borderDefault,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    cursor: 'pointer',
+    bgcolor: brandVars.sunken,
+    '&:hover': {
+      borderColor: theme.vars.palette.primary.main,
+      bgcolor: varAlpha(theme.vars.palette.primary.mainChannel, 0.08),
+    },
+  }),
+  headerActions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 0.25,
+    ml: 'auto',
+  },
+  iconBtn: { color: 'text.secondary' },
+  deleteBtn: { color: 'error.main' },
+  editorWrap: {
+    px: 2,
+    pt: 2,
+    '& .editor__root': { maxWidth: '100%' },
+  },
+  metaRow: {
+    flexDirection: { xs: 'column', sm: 'row' },
+    alignItems: { xs: 'stretch', sm: 'center' },
+    flexWrap: 'wrap',
+    gap: 2,
+    px: 2,
+    py: 2,
+    borderTop: '1px solid',
+    borderColor: 'divider',
+  },
+  typeSelect: {
+    minWidth: { xs: 1, sm: 200 },
+    maxWidth: { sm: 280 },
+  },
+  chip: {
+    fontWeight: 600,
+  },
+  answersSection: {
+    px: 2,
+    pb: 2,
+    pt: 0,
+  },
+  answersHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    mb: 1.5,
+  },
+  answersLabel: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: 'text.primary',
+  },
+  answerRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 1,
+    py: 1,
+    px: 1,
+    borderRadius: 1,
+    border: '1px solid',
+    borderColor: 'divider',
+    mb: 1,
+    bgcolor: brandVars.elevated,
+  },
+  answerDrag: {
+    display: 'flex',
+    alignItems: 'center',
+    color: 'text.disabled',
+  },
+  answerField: {
+    flex: 1,
+    minWidth: 0,
+  },
+  correctBox: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 0.75,
+    flexShrink: 0,
+  },
+  correctLabel: {
+    fontSize: 13,
+    fontWeight: 500,
+    color: 'text.secondary',
+  },
+  addAnswerRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 1,
+    mt: 1,
+    flexDirection: { xs: 'column', sm: 'row' },
+  },
+};

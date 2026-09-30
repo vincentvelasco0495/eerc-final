@@ -1,0 +1,41 @@
+import { alpha } from '@mui/material/styles';
+
+export const styles = {
+  root: (theme) => ({
+    flex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    bgcolor: alpha(theme.palette.grey[500], 0.04),
+    py: { xs: 6, md: 8 },
+    px: 3,
+  }),
+  stack: { maxWidth: 440, textAlign: 'center' },
+  hero: (theme) => ({
+    width: 132,
+    height: 132,
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    bgcolor: alpha(theme.palette.primary.main, 0.12),
+    position: 'relative',
+  }),
+  heroIcon: { color: 'brand.accentText' },
+  badge: (theme) => ({
+    position: 'absolute',
+    bottom: 16,
+    right: 22,
+    width: 36,
+    height: 36,
+    borderRadius: '50%',
+    bgcolor: 'background.paper',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: theme.shadows[3],
+  }),
+  badgeIcon: { color: 'warning.main' },
+  heading: { fontWeight: 700, color: 'text.primary' },
+  body: { color: 'text.secondary', lineHeight: 1.65 },
+};

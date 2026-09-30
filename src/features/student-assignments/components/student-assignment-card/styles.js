@@ -1,0 +1,35 @@
+export const styles = {
+  card: {
+    borderRadius: 2,
+    border: '1px solid',
+    borderColor: 'divider',
+    boxShadow: 'none',
+  },
+  cardContent: { p: { xs: 2.25, md: 2.75 } },
+  title: { fontSize: '1.02rem' },
+  grid: {
+    display: 'grid',
+    gap: { xs: 1.75, md: 2.25 },
+    alignItems: 'center',
+    gridTemplateColumns: {
+      xs: '1fr',
+      md: 'minmax(180px, 1.5fr) minmax(140px, 1fr) minmax(160px, 1fr)',
+      xl: 'minmax(200px, 1.6fr) minmax(140px, 1fr) minmax(180px, 1fr)',
+    },
+  },
+  metaBlock: { minWidth: 0 },
+  metaCaption: { color: 'text.secondary' },
+  metaValue: { fontWeight: 600, color: 'text.primary' },
+  gradeRow: { justifySelf: { xl: 'end' } },
+  gradeAvatar: {
+    width: 28,
+    height: 28,
+    bgcolor: 'primary.main',
+    color: 'primary.contrastText',
+    fontSize: 12,
+    fontWeight: 700,
+    flexShrink: 0,
+  },
+  gradeScoreLine: { fontWeight: 600 },
+  gradeProgress: { color: 'text.secondary' },
+};

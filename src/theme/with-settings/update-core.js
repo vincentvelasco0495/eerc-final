@@ -1,0 +1,75 @@
+import { setFont, hexToRgbChannel, createPaletteChannel } from 'minimal-shared/utils';
+
+import { primaryColorPresets } from './color-presets';
+import { createShadowColor } from '../core/custom-shadows';
+
+// ----------------------------------------------------------------------
+
+/**
+ * Updates the core theme with the provided settings state.
+ * @param theme - The base theme options to update.
+ * @param settingsState - The settings state containing direction, fontFamily, contrast, and primaryColor.
+ * @returns Updated theme options with applied settings.
+ */
+
+export function applySettingsToTheme(theme, settingsState) {
+  const {
+    direction,
+    fontFamily,
+    contrast = 'default',
+    primaryColor = 'default',
+  } = settingsState ?? {};
+
+  const isDefaultContrast = contrast === 'default';
+  const isDefaultPrimaryColor = primaryColor === 'default';
+
+  const primaryColorPalette = createPaletteChannel(primaryColorPresets[primaryColor]);
+  // const secondaryColorPalette = createPaletteChannel(secondaryColorPresets[primaryColor]);
+
+  const updateColorScheme = (schemeName) => {
+    const currentScheme = theme.colorSchemes?.[schemeName];
+
+    const updatedPalette = {
+      ...currentScheme?.palette,
+      ...(!isDefaultPrimaryColor && {
+        primary: primaryColorPalette,
+        // secondary: secondaryColorPalette,
+      }),
+      // "Bold" contrast swaps the page background for the scheme's neutral surface.
+      ...(!isDefaultContrast && {
+        background: {
+          ...currentScheme?.palette?.background,
+          default: currentScheme?.palette?.background?.neutral,
+          defaultChannel: hexToRgbChannel(currentScheme?.palette?.background?.neutral),
+        },
+      }),
+    };
+
+    const updatedCustomShadows = {
+      ...currentScheme?.customShadows,
+      ...(!isDefaultPrimaryColor && {
+        primary: createShadowColor(primaryColorPalette.mainChannel),
+        // secondary: createShadowColor(secondaryColorPalette.mainChannel),
+      }),
+    };
+
+    return {
+      ...currentScheme,
+      palette: updatedPalette,
+      customShadows: updatedCustomShadows,
+    };
+  };
+
+  return {
+    ...theme,
+    direction,
+    colorSchemes: {
+      light: updateColorScheme('light'),
+      dark: updateColorScheme('dark'),
+    },
+    typography: {
+      ...theme.typography,
+      fontFamily: setFont(fontFamily),
+    },
+  };
+}

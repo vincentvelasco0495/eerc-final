@@ -1,0 +1,10 @@
+export { FaqSection } from './faq-section';
+export { HeroSection } from './hero-section';
+export { QuizzesSection } from './quizzes-section';
+export { AdvancedSection } from './advanced-section';
+export { DeliverySection } from './delivery-section';
+export { LearningSection } from './learning-section';
+export { ExperienceSection } from './experience-section';
+export { TestimonialsSection } from './testimonials-section';
+export { CourseManagementSection } from './course-management-section';
+export { PlatformOverviewSection } from './platform-overview-section';

@@ -1,0 +1,52 @@
+import { alpha } from '@mui/material/styles';
+
+export const styles = {
+  root: (theme) => ({
+    width: { xs: 1, md: 380 },
+    flexShrink: 0,
+    bgcolor: alpha(theme.palette.grey[500], 0.06),
+    borderBottom: { xs: '1px solid', md: 'none' },
+    borderColor: 'divider',
+    overflow: 'auto',
+    py: 2.5,
+    px: 2,
+  }),
+  heading: {
+    mb: 2,
+    px: 0.5,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 1,
+    width: 1,
+  },
+  headingLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 1,
+    minWidth: 0,
+  },
+  headingTitle: { fontWeight: 700 },
+  addModuleIconWrap: {
+    width: 20,
+    height: 20,
+    borderRadius: '50%',
+    bgcolor: 'primary.main',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addModuleIcon: { color: 'primary.contrastText' },
+  addModuleButton: {
+    flexShrink: 0,
+    minHeight: { xs: 40, sm: 36 },
+    px: 1,
+    py: 0.5,
+    fontWeight: 600,
+    fontSize: '0.875rem',
+    lineHeight: 1.25,
+    textTransform: 'none',
+    color: 'brand.accentText',
+    '& .MuiButton-startIcon': { mr: 0.625, ml: -0.125 },
+  },
+};

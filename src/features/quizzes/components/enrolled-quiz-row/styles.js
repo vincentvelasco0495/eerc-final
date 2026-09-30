@@ -1,0 +1,53 @@
+export const styles = {
+  row: (isLast) => ({
+    display: 'grid',
+    gap: { xs: 1.5, md: 2 },
+    alignItems: { md: 'center' },
+    py: { xs: 2, md: 2.25 },
+    px: { xs: 0, md: 0.25 },
+    borderBottom: isLast ? 'none' : '1px solid',
+    borderColor: 'divider',
+    gridTemplateColumns: {
+      xs: '1fr',
+      md: 'minmax(180px, 1.4fr) minmax(160px, 1fr) minmax(150px, 1fr) auto',
+      xl: 'minmax(220px, 1.6fr) minmax(180px, 1fr) minmax(170px, 1fr) auto',
+    },
+  }),
+  titleCol: { minWidth: 0 },
+  quizTitle: {
+    fontWeight: 700,
+    fontSize: '0.98rem',
+    lineHeight: 1.35,
+    color: 'text.primary',
+  },
+  statusChip: {
+    alignSelf: 'flex-start',
+    fontWeight: 600,
+    height: 24,
+  },
+  metricsCol: {
+    display: 'grid',
+    gap: { xs: 1.25, sm: 1.5 },
+    gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(2, minmax(88px, 1fr))' },
+  },
+  metaBlock: { minWidth: 0 },
+  metaCaption: { color: 'text.secondary', lineHeight: 1.2 },
+  metaValue: { fontWeight: 600, color: 'text.primary' },
+  scoreCol: { minWidth: 0 },
+  gradeAvatar: {
+    width: 32,
+    height: 32,
+    fontSize: 12,
+    fontWeight: 700,
+    flexShrink: 0,
+  },
+  scoreText: { minWidth: 0 },
+  gradeScoreLine: { fontWeight: 600, lineHeight: 1.3 },
+  gradeProgress: { color: 'text.secondary' },
+  actionCol: {
+    display: 'flex',
+    justifyContent: { xs: 'flex-start', md: 'flex-end' },
+    alignItems: 'center',
+  },
+  actionBtn: { minWidth: 92 },
+};

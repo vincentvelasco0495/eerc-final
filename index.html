@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="theme-color" content="#001632" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark light" />
+    <title>EERC LMS</title>
+    <link rel="icon" type="image/png" href="/logo/eerc-badge.png" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        background-color: #001632;
+      }
+      html[data-color-scheme='light'],
+      html[data-color-scheme='light'] body {
+        background-color: #f5f7fa;
+      }
+    </style>
+    <!--
+      Resolve the saved color scheme before first paint so the page never flashes
+      the wrong background. Mirrors the mode MUI restores from localStorage
+      (themeConfig.modeStorageKey / defaultMode).
+    -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('theme-mode') || 'dark';
+          var mode =
+            stored === 'system'
+              ? window.matchMedia('(prefers-color-scheme: light)').matches
+                ? 'light'
+                : 'dark'
+              : stored;
+          if (mode === 'light') {
+            document.documentElement.setAttribute('data-color-scheme', 'light');
+            document
+              .querySelector('meta[name="theme-color"]')
+              .setAttribute('content', '#F5F7FA');
+          }
+        } catch (error) {
+          /* localStorage unavailable (private mode) — fall back to the dark default. */
+        }
+      })();
+    </script>
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
