@@ -22,11 +22,8 @@ import { useLmsBranchApplicantsPaginated } from 'src/hooks/use-lms';
 import { CONFIG } from 'src/global-config';
 import { fetchBranchApplicantsExcelExport } from 'src/redux/api/lmsApi';
 import { downloadBlob } from 'src/features/enrollment/utils/enrollment-excel';
+import { normalizeBranchEnrollPage, normalizeBranchEnrollPerPage } from 'src/services/branchEnrollService';
 import { InstructorWorkspaceShell } from 'src/features/instructor-profile/components/instructor-workspace-shell';
-import {
-  normalizeBranchEnrollPage,
-  normalizeBranchEnrollPerPage,
-} from 'src/services/branchEnrollService';
 
 import { Iconify } from 'src/components/iconify';
 import { ExportExcelButton } from 'src/components/export-excel-button';

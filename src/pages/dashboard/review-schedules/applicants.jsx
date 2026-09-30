@@ -22,11 +22,8 @@ import { useLmsReviewScheduleApplicantsPaginated } from 'src/hooks/use-lms';
 import { CONFIG } from 'src/global-config';
 import { downloadBlob } from 'src/features/enrollment/utils/enrollment-excel';
 import { fetchReviewScheduleApplicantsExcelExport } from 'src/redux/api/lmsApi';
+import { normalizeReviewSchedulePage, normalizeReviewSchedulePerPage } from 'src/services/reviewScheduleService';
 import { InstructorWorkspaceShell } from 'src/features/instructor-profile/components/instructor-workspace-shell';
-import {
-  normalizeReviewSchedulePage,
-  normalizeReviewSchedulePerPage,
-} from 'src/services/reviewScheduleService';
 
 import { Iconify } from 'src/components/iconify';
 import { ExportExcelButton } from 'src/components/export-excel-button';

@@ -20,13 +20,10 @@ import { RouterLink } from 'src/routes/components';
 import { useLmsLearningModeApplicantsPaginated } from 'src/hooks/use-lms';
 
 import { CONFIG } from 'src/global-config';
-import { fetchLearningModeApplicantsExcelExport } from 'src/redux/api/lmsApi';
 import { downloadBlob } from 'src/features/enrollment/utils/enrollment-excel';
+import { fetchLearningModeApplicantsExcelExport } from 'src/redux/api/lmsApi';
+import { normalizeLearningModePage, normalizeLearningModePerPage } from 'src/services/learningModeService';
 import { InstructorWorkspaceShell } from 'src/features/instructor-profile/components/instructor-workspace-shell';
-import {
-  normalizeLearningModePage,
-  normalizeLearningModePerPage,
-} from 'src/services/learningModeService';
 
 import { Iconify } from 'src/components/iconify';
 import { ExportExcelButton } from 'src/components/export-excel-button';

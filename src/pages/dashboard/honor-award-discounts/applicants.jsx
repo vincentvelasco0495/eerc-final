@@ -23,10 +23,7 @@ import { CONFIG } from 'src/global-config';
 import { downloadBlob } from 'src/features/enrollment/utils/enrollment-excel';
 import { fetchHonorAwardDiscountApplicantsExcelExport } from 'src/redux/api/lmsApi';
 import { InstructorWorkspaceShell } from 'src/features/instructor-profile/components/instructor-workspace-shell';
-import {
-  normalizeHonorAwardDiscountPage,
-  normalizeHonorAwardDiscountPerPage,
-} from 'src/services/honorAwardDiscountService';
+import { normalizeHonorAwardDiscountPage, normalizeHonorAwardDiscountPerPage } from 'src/services/honorAwardDiscountService';
 
 import { Iconify } from 'src/components/iconify';
 import { ExportExcelButton } from 'src/components/export-excel-button';
