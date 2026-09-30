@@ -11,7 +11,7 @@ export const themeConfig = {
   /** **************************************
    * Base
    *************************************** */
-  defaultMode: 'dark',
+  defaultMode: 'light',
   modeStorageKey: 'theme-mode',
   direction: 'ltr',
   classesPrefix: 'minimal',

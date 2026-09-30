@@ -1,21 +1,21 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-color-scheme="light">
   <head>
     <meta charset="UTF-8" />
-    <meta name="theme-color" content="#001632" />
+    <meta name="theme-color" content="#F5F7FA" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="dark light" />
+    <meta name="color-scheme" content="light dark" />
     <title>EERC LMS</title>
     <link rel="icon" type="image/png" href="/logo/eerc-badge.png" />
     <style>
       html,
       body {
         margin: 0;
-        background-color: #001632;
-      }
-      html[data-color-scheme='light'],
-      html[data-color-scheme='light'] body {
         background-color: #f5f7fa;
+      }
+      html[data-color-scheme='dark'],
+      html[data-color-scheme='dark'] body {
+        background-color: #001632;
       }
     </style>
     <!--
@@ -26,21 +26,29 @@
     <script>
       (function () {
         try {
-          var stored = localStorage.getItem('theme-mode') || 'dark';
+          if (!localStorage.getItem('eerc-default-mode-light')) {
+            localStorage.setItem('theme-mode', 'light');
+            localStorage.setItem('eerc-default-mode-light', '1');
+            var rawSettings = localStorage.getItem('app-settings');
+            if (rawSettings) {
+              var parsedSettings = JSON.parse(rawSettings);
+              parsedSettings.mode = 'light';
+              localStorage.setItem('app-settings', JSON.stringify(parsedSettings));
+            }
+          }
+          var stored = localStorage.getItem('theme-mode') || 'light';
           var mode =
             stored === 'system'
               ? window.matchMedia('(prefers-color-scheme: light)').matches
                 ? 'light'
                 : 'dark'
               : stored;
-          if (mode === 'light') {
-            document.documentElement.setAttribute('data-color-scheme', 'light');
-            document
-              .querySelector('meta[name="theme-color"]')
-              .setAttribute('content', '#F5F7FA');
-          }
+          document.documentElement.setAttribute('data-color-scheme', mode);
+          document
+            .querySelector('meta[name="theme-color"]')
+            .setAttribute('content', mode === 'dark' ? '#001632' : '#F5F7FA');
         } catch (error) {
-          /* localStorage unavailable (private mode) — fall back to the dark default. */
+          /* localStorage unavailable (private mode) — keep the light default. */
         }
       })();
     </script>
