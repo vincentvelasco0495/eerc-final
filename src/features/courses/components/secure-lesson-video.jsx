@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback } from 'react';
+import { useRef, useMemo, useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
@@ -6,6 +6,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import LinearProgress from '@mui/material/LinearProgress';
 
+import { usePaintVideoPreviewFrame } from 'src/hooks/use-paint-video-preview-frame';
 import {
   usePlayerFullscreen,
   getFullscreenElement,
@@ -26,6 +27,7 @@ import {
 
 export function SecureLessonVideo({
   src,
+  sources,
   title,
   watermarkText,
   dateLabel,
@@ -49,6 +51,25 @@ export function SecureLessonVideo({
   const [liveWatching, setLiveWatching] = useState(() => Math.max(0, Number(watchingNow) || 0));
   const draggingRef = useRef(false);
   const clickTimerRef = useRef(0);
+  const playbackSources = useMemo(() => {
+    const list = Array.isArray(sources) ? sources.filter(Boolean) : [];
+    if (src) {
+      list.unshift(src);
+    }
+    return [...new Set(list)];
+  }, [src, sources]);
+  const [sourceIndex, setSourceIndex] = useState(0);
+  const activeSrc =
+    playbackSources[Math.min(sourceIndex, Math.max(playbackSources.length - 1, 0))] || '';
+  const sourceKey = playbackSources.join('\n');
+
+  useEffect(() => {
+    setSourceIndex(0);
+  }, [sourceKey]);
+
+  const tryNextSource = useCallback(() => {
+    setSourceIndex((current) => (current + 1 < playbackSources.length ? current + 1 : current));
+  }, [playbackSources.length]);
 
   useEffect(() => {
     setLiveWatching(Math.max(0, Number(watchingNow) || 0));
@@ -224,11 +245,12 @@ export function SecureLessonVideo({
 
   useEffect(() => {
     seekedRef.current = false;
-  }, [src]);
+  }, [activeSrc]);
 
   const { isFullscreen, toggle: toggleFullscreen } = usePlayerFullscreen(playerRef);
-  useBlockContextMenu(playerRef, src);
-  useLockPremiumVideoElement(videoRef, src);
+  useBlockContextMenu(playerRef, activeSrc);
+  useLockPremiumVideoElement(videoRef, activeSrc);
+  usePaintVideoPreviewFrame(videoRef, activeSrc, initialPositionSeconds);
 
   const handleMediaClick = useCallback(
     (event) => {
@@ -274,7 +296,16 @@ export function SecureLessonVideo({
       document.removeEventListener('fullscreenchange', abortNativeVideoFullscreen);
       document.removeEventListener('webkitfullscreenchange', abortNativeVideoFullscreen);
     };
-  }, [src]);
+  }, [activeSrc]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !activeSrc) {
+      return undefined;
+    }
+    video.load();
+    return undefined;
+  }, [activeSrc]);
 
   useEffect(() => {
     const wrap = playerRef.current;
@@ -350,11 +381,12 @@ export function SecureLessonVideo({
           <Box
             ref={videoRef}
             component="video"
-            src={src}
+            src={activeSrc}
             title={title}
             playsInline
-            preload="metadata"
+            preload="auto"
             {...premiumVideoProtectionProps}
+            onError={tryNextSource}
             onPlay={() => setPaused(false)}
             onPause={() => {
               setPaused(true);
@@ -363,6 +395,8 @@ export function SecureLessonVideo({
             onTimeUpdate={handleTimeUpdate}
             onEnded={handleEnded}
             onLoadedMetadata={handleLoadedMetadata}
+            onLoadedData={syncDuration}
+            onSeeked={handleTimeUpdate}
             onDurationChange={syncDuration}
             sx={{
               position: 'absolute',
@@ -383,7 +417,7 @@ export function SecureLessonVideo({
             containerRef={playerRef}
             username={watermarkText}
             dateLabel={dateLabel}
-            observeKey={src}
+            observeKey={activeSrc}
           />
         ) : null}
         {paused ? (

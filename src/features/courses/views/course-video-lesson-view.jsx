@@ -31,6 +31,7 @@ import { guestCanAccessLesson } from 'src/features/courses/utils/lesson-preview-
 import { SecureLessonVideo } from 'src/features/courses/components/secure-lesson-video';
 import { patchLmsLessonProgress, getLessonMaterialPlaybackUrl } from 'src/redux/api/lmsApi';
 import { useLmsCourseDetailShell } from 'src/features/courses/hooks/use-lms-course-detail-shell';
+import { resolveLessonVideoPlaybackUrls } from 'src/features/courses/utils/resolve-lesson-video-playback-urls';
 
 import { Iconify } from 'src/components/iconify';
 import { WatermarkOverlay } from 'src/components/common/watermark-overlay';
@@ -200,6 +201,7 @@ export function CourseVideoLessonView() {
   const fileMaterialId = lessonPayload?.primaryVideoMaterial?.id ?? null;
 
   const [fileVideoObjectUrl, setFileVideoObjectUrl] = useState(null);
+  const [fileVideoSources, setFileVideoSources] = useState([]);
   const [fileVideoError, setFileVideoError] = useState(null);
   const [fileVideoLoading, setFileVideoLoading] = useState(false);
 
@@ -209,12 +211,14 @@ export function CourseVideoLessonView() {
     async function load() {
       if (!fileMaterialId || !CONFIG.serverUrl?.trim()) {
         setFileVideoObjectUrl(null);
+        setFileVideoSources([]);
         setFileVideoError(null);
         setFileVideoLoading(false);
         return;
       }
       if (isGuest) {
         setFileVideoObjectUrl(null);
+        setFileVideoSources([]);
         setFileVideoError('Sign in to watch this video.');
         setFileVideoLoading(false);
         return;
@@ -226,14 +230,24 @@ export function CourseVideoLessonView() {
         if (cancelled) {
           return;
         }
-        setFileVideoObjectUrl(src);
+        const urls = resolveLessonVideoPlaybackUrls(fileMaterialId, src);
+        setFileVideoObjectUrl(urls[0] || src);
+        setFileVideoSources(urls);
         setFileVideoError(null);
       } catch {
         if (cancelled) {
           return;
         }
-        setFileVideoObjectUrl(null);
-        setFileVideoError('Could not load the uploaded video file.');
+        const urls = resolveLessonVideoPlaybackUrls(fileMaterialId);
+        if (urls[0]) {
+          setFileVideoObjectUrl(urls[0]);
+          setFileVideoSources(urls);
+          setFileVideoError(null);
+        } else {
+          setFileVideoObjectUrl(null);
+          setFileVideoSources([]);
+          setFileVideoError('Could not load the uploaded video file.');
+        }
       } finally {
         if (!cancelled) {
           setFileVideoLoading(false);
@@ -526,6 +540,7 @@ export function CourseVideoLessonView() {
                 {fileVideoObjectUrl ? (
                   <SecureLessonVideo
                     src={fileVideoObjectUrl}
+                    sources={fileVideoSources}
                     title={lessonPayload.title}
                     watermarkText={watermarkText}
                     dateLabel={dateLabel}

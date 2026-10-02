@@ -33,9 +33,8 @@ const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>EERC LMS User Manual</title>
+  <title>EERC Learning Center User Manual</title>
   <style>
-    @page { margin: 18mm 15mm; }
     body {
       font-family: "Segoe UI", Arial, sans-serif;
       font-size: 11pt;
@@ -44,23 +43,29 @@ const html = `<!DOCTYPE html>
       max-width: 100%;
     }
     h1 {
-      font-size: 22pt;
-      margin: 28px 0 12px;
+      font-size: 20pt;
+      margin: 26px 0 12px;
       page-break-after: avoid;
-      border-bottom: 2px solid #222;
+      color: #001632;
+      border-bottom: 2px solid #E5A900;
       padding-bottom: 6px;
     }
+    h1:first-of-type {
+      font-size: 26pt;
+      border-bottom: 3px solid #E5A900;
+      margin-top: 0;
+    }
     h2 {
-      font-size: 16pt;
-      margin: 24px 0 10px;
+      font-size: 15pt;
+      margin: 22px 0 10px;
       page-break-after: avoid;
-      color: #222;
+      color: #001632;
     }
     h3 {
-      font-size: 13pt;
-      margin: 18px 0 8px;
+      font-size: 12.5pt;
+      margin: 16px 0 8px;
       page-break-after: avoid;
-      color: #333;
+      color: #063B73;
     }
     p { margin: 0 0 10px; }
     ul, ol { margin: 0 0 12px 22px; padding: 0; }
@@ -70,33 +75,34 @@ const html = `<!DOCTYPE html>
       width: 100%;
       margin: 12px 0 16px;
       font-size: 10pt;
+      page-break-inside: avoid;
     }
     th, td {
-      border: 1px solid #ccc;
+      border: 1px solid #C7D2E0;
       padding: 7px 10px;
       text-align: left;
       vertical-align: top;
     }
-    th { background: #f3f3f3; }
+    th { background: #001632; color: #fff; font-weight: 600; }
     blockquote {
-      border-left: 4px solid #bbb;
+      border-left: 4px solid #E5A900;
       margin: 12px 0;
       padding: 4px 0 4px 14px;
-      color: #444;
+      color: #333;
     }
     hr {
       border: none;
-      border-top: 1px solid #ddd;
+      border-top: 1px solid #DCE3ED;
       margin: 20px 0;
     }
     code {
-      background: #f4f4f4;
+      background: #F5F7FA;
       padding: 1px 5px;
       border-radius: 3px;
       font-size: 10pt;
     }
-    strong { color: #111; }
-    a { color: #1565c0; text-decoration: none; }
+    strong { color: #001632; }
+    a { color: #063B73; text-decoration: none; }
   </style>
 </head>
 <body>${bodyHtml}</body>
@@ -114,7 +120,10 @@ try {
     path: outputPath,
     format: 'A4',
     printBackground: true,
-    margin: { top: '18mm', bottom: '18mm', left: '15mm', right: '15mm' },
+    displayHeaderFooter: true,
+    headerTemplate: `<div style="font-size:8px;width:100%;padding:0 15mm;color:#5E7B9C;font-family:'Segoe UI',Arial,sans-serif;">EERC Learning Center — User Manual</div>`,
+    footerTemplate: `<div style="font-size:8px;width:100%;padding:0 15mm;color:#5E7B9C;font-family:'Segoe UI',Arial,sans-serif;display:flex;justify-content:space-between;"><span>For students, teachers, and office staff</span><span>Page <span class="pageNumber"></span> of <span class="totalPages"></span></span></div>`,
+    margin: { top: '20mm', bottom: '18mm', left: '15mm', right: '15mm' },
   });
   console.log(`Created ${outputPath}`);
 } finally {

@@ -1,7 +1,8 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useMemo, useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 
+import { usePaintVideoPreviewFrame } from 'src/hooks/use-paint-video-preview-frame';
 import {
   usePlayerFullscreen,
   getFullscreenElement,
@@ -25,6 +26,7 @@ import {
  */
 export function PremiumPlayableVideo({
   src,
+  sources,
   poster,
   title = 'Video',
   aspectRatio = '16 / 9',
@@ -35,10 +37,30 @@ export function PremiumPlayableVideo({
   const videoRef = useRef(null);
   const playerRef = useRef(null);
   const clickTimerRef = useRef(0);
+  const playbackSources = useMemo(() => {
+    const list = Array.isArray(sources) ? sources.filter(Boolean) : [];
+    if (src) {
+      list.unshift(src);
+    }
+    return [...new Set(list)];
+  }, [src, sources]);
+  const [sourceIndex, setSourceIndex] = useState(0);
+  const activeSrc = playbackSources[Math.min(sourceIndex, Math.max(playbackSources.length - 1, 0))] || '';
+  const sourceKey = playbackSources.join('\n');
+
+  useEffect(() => {
+    setSourceIndex(0);
+  }, [sourceKey]);
+
+  const tryNextSource = useCallback(() => {
+    setSourceIndex((current) => (current + 1 < playbackSources.length ? current + 1 : current));
+  }, [playbackSources.length]);
+
   const { isFullscreen, toggle: toggleFullscreen } = usePlayerFullscreen(playerRef);
-  useBlockContextMenu(playerRef, src);
-  useLockPremiumVideoElement(videoRef, src);
-  const chrome = useHtmlVideoChrome(videoRef, src);
+  useBlockContextMenu(playerRef, activeSrc);
+  useLockPremiumVideoElement(videoRef, activeSrc);
+  const chrome = useHtmlVideoChrome(videoRef, activeSrc);
+  usePaintVideoPreviewFrame(videoRef, activeSrc);
 
   const handleMediaClick = useCallback(
     (event) => {
@@ -105,9 +127,18 @@ export function PremiumPlayableVideo({
       document.removeEventListener('fullscreenchange', abortNativeVideoFullscreen);
       document.removeEventListener('webkitfullscreenchange', abortNativeVideoFullscreen);
     };
-  }, [src]);
+  }, [activeSrc]);
 
-  if (!src) {
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !activeSrc) {
+      return undefined;
+    }
+    video.load();
+    return undefined;
+  }, [activeSrc]);
+
+  if (!activeSrc) {
     return null;
   }
 
@@ -135,12 +166,13 @@ export function PremiumPlayableVideo({
       <Box
         ref={videoRef}
         component="video"
-        src={src}
+        src={activeSrc}
         poster={poster || undefined}
         title={title}
         playsInline
-        preload="metadata"
+        preload="auto"
         {...premiumVideoProtectionProps}
+        onError={tryNextSource}
         sx={{
           position: 'absolute',
           inset: 0,
@@ -160,7 +192,7 @@ export function PremiumPlayableVideo({
           containerRef={playerRef}
           username={watermarkText}
           dateLabel={dateLabel}
-          observeKey={src}
+          observeKey={activeSrc}
         />
       ) : null}
 

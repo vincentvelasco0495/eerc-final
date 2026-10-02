@@ -1,5 +1,5 @@
-import { useEffect, useCallback } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
+import { useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
@@ -88,14 +88,18 @@ export function HomepageV2CmsView() {
     defaultValues: buildDefaultFormValues(HOMEPAGE_V2_DEFAULTS.sections),
   });
 
+  const [formReady, setFormReady] = useState(false);
   const { reset, handleSubmit, formState } = methods;
   const { isDirty } = formState;
 
   useEffect(() => {
-    if (!query.data || isDirty) {
+    if (!query.data) {
       return;
     }
-    reset(buildDefaultFormValues(adminDataToFormSections(query.data)));
+    if (!isDirty) {
+      reset(buildDefaultFormValues(adminDataToFormSections(query.data)));
+    }
+    setFormReady(true);
   }, [query.data, query.dataUpdatedAt, reset, isDirty]);
 
   useEffect(() => {
@@ -151,14 +155,21 @@ export function HomepageV2CmsView() {
             </Typography>
           </Stack>
 
-          {isLoading ? (
+          {isLoading || !formReady ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
               <CircularProgress />
             </Box>
           ) : (
             <Stack spacing={2}>
               {ACCORDIONS.map(({ key, title, Editor }) => (
-                <Accordion key={key} defaultExpanded={key === 'hero'} disableGutters elevation={0} sx={{ '&:before': { display: 'none' } }}>
+                <Accordion
+                  key={key}
+                  defaultExpanded={key === 'hero' || key === 'sample_lecture'}
+                  disableGutters
+                  elevation={0}
+                  slotProps={{ transition: { unmountOnExit: true } }}
+                  sx={{ '&:before': { display: 'none' } }}
+                >
                   <AccordionSummary expandIcon={<Iconify icon="solar:alt-arrow-down-linear" />}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                       {title}

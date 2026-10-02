@@ -48,7 +48,7 @@ eerc-v2/
 
 **Production URLs (example):**
 
-- Frontend: `https://eerc-v2.netlify.app` (Netlify)
+- Frontend: `https://eerc-v2.netlify.app` and `https://eerc-final.netlify.app` (Netlify)
 - Backend API: `https://api.atlanticseamandormitory.com` (Hostinger)
 
 ---
@@ -463,29 +463,22 @@ Ensure **`storage/`** and **`bootstrap/cache/`** are writable.
 
 The browser blocks API responses if the backend does not allow the frontend origin.
 
-**Option A — via `.env` on Hostinger:**
+Allow **every** live frontend origin (no trailing slash). Do not hardcode a single Netlify URL — that makes the other site fail:
 
 ```env
-CORS_ALLOWED_ORIGINS=https://eerc-v2.netlify.app
+CORS_ALLOWED_ORIGINS=https://eerc-v2.netlify.app,https://eerc-final.netlify.app
 ```
 
-**Option B — hardcode in `backend/config/cors.php` (what worked in production):**
-
-```php
-'allowed_origins' => [
-    'https://eerc-v2.netlify.app',
-],
-'supports_credentials' => false,  // OK when using Bearer tokens, not cookies
-```
-
-After any change:
+`backend/config/cors.php` already includes both sites plus localhost. After uploading files on Hostinger:
 
 ```bash
 php artisan config:clear
 php artisan config:cache
 ```
 
-**Verify CORS:**
+If Hostinger/hPanel has a CORS field set to only one URL (for example only `https://eerc-final.netlify.app`), **clear it**. A static `Access-Control-Allow-Origin` that never matches the page you opened is the usual production CORS error.
+
+**Verify CORS** (the echoed origin must match the `Origin` you sent):
 
 ```bash
 curl -I "https://api.atlanticseamandormitory.com/api/programs" \
@@ -498,9 +491,7 @@ You should see:
 Access-Control-Allow-Origin: https://eerc-v2.netlify.app
 ```
 
-### `.htaccess`
-
-The file `backend/public/.htaccess` only routes requests to Laravel. **Do not** add CORS headers there unless Laravel CORS is broken — use `config/cors.php` instead.
+Repeat with `Origin: https://eerc-final.netlify.app` and confirm that header is `https://eerc-final.netlify.app`.
 
 ---
 
@@ -625,9 +616,11 @@ Response shape:
 
 **Fix:**
 
-1. Add Netlify URL to `CORS_ALLOWED_ORIGINS` or `config/cors.php` on Hostinger.  
-2. Run `php artisan config:clear` and `php artisan config:cache`.  
-3. Confirm with `curl -I` (see [Production deployment](#9-production-deployment)).
+1. Upload updated `backend/config/cors.php` and `backend/public/.htaccess` to Hostinger.  
+2. Set `CORS_ALLOWED_ORIGINS` to **both** Netlify URLs (see [Production deployment](#9-production-deployment)).  
+3. Remove any Hostinger/hPanel CORS setting that always sends a single origin.  
+4. Run `php artisan config:clear` and `php artisan config:cache`.  
+5. Confirm with `curl -I` that `Access-Control-Allow-Origin` **matches** the request `Origin`.
 
 ### Frontend shows mock data instead of API
 

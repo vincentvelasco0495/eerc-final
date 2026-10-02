@@ -1,599 +1,1021 @@
-# EERC Learning Management System (LMS) User Manual
+# EERC Learning Center User Manual
+
+**A plain-language guide to every page in the EERC online learning system**
+
+This booklet is for students, parents helping a student, teachers, and office staff. You do not need any technical background. If a button has a special name on the screen, that name is written in **bold** so you can match it while you click.
 
 ---
 
 # Welcome
 
-Welcome to the **EERC Learning Management System (LMS)**.
+EERC Learning Center (Esplana Engineering Review Center) uses this website as an online school. You can:
 
-This guide will help you learn how to use the system whether you are a **Student** or an **Administrator**. Each section explains what a feature is for and how to use it step by step.
+- Learn about the center and its programs
+- Create an account and apply for enrollment
+- Pay fees and track your remaining balance
+- Study lessons, watch videos, take quizzes, and submit assignments
+- See scores and rankings
+- (For staff) Review applications, build courses, and update the public website
 
-For technical setup and deployment, see **[DOCUMENTATION.md](./DOCUMENTATION.md)**.
-
----
-
-# Table of Contents
-
-1. Getting Started
-2. Student Guide
-3. Administrator Guide
-4. Enrollment & Payment Process
-5. Frequently Asked Questions
-6. Need Help?
+The website usually opens in **light mode** (a bright, paper-like look). You can switch to a darker look later if you prefer.
 
 ---
 
-# 1. Getting Started
+# How to use this guide
 
-## Sign In
+Read the section that matches what you are doing:
 
-The sign-in page is where you enter the system with your account.
+| If you are… | Start here |
+|-------------|------------|
+| Visiting the site for the first time | **Part 1 — The public website** |
+| Signing in or creating an account | **Part 2 — Your account** |
+| A student | **Part 3 — Student pages** |
+| Studying a course | **Part 4 — Inside a course** |
+| A teacher or office administrator | **Part 5 — Staff pages** |
+| Applying or paying | **Part 6 — Enrollment and payments** |
+| Stuck | **Part 7 — Common questions** |
 
-1. Open the EERC LMS website.
-2. Click **Sign In**.
-3. Enter your email and password.
-4. Click **Sign In**.
+Words you will see often:
 
-After logging in:
-
-* **Students** are redirected to the **Programs** page.
-* **Administrators** are redirected to the **Dashboard**.
-
-> **Note:** Only one active session is kept per account. Signing in on another device may sign you out elsewhere.
-
----
-
-## Register
-
-Registration lets you create a new student account when your organization allows it.
-
-If registration is available:
-
-1. Click **Create Account** (from the sign-in page).
-2. Fill in your information.
-3. Submit the registration form.
-
-New accounts are automatically created as **Student** accounts.
-
-If registration is unavailable, contact an administrator to create your account.
+- **Program** — a full review offering (for example Civil Engineering), which can contain several courses.
+- **Course** — one subject or class inside a program, with lessons, quizzes, and assignments.
+- **Enrollment** — your application to join a program, including documents and payment.
+- **Staff** — teachers and administrators who manage the school side of the website.
 
 ---
 
-## Log Out
+# Part 1 — The public website
 
-Logging out ends your session and keeps your account secure on shared devices.
+Anyone can open these pages without signing in. The words and pictures on Home, About Us, and Contact Us can be updated by staff, so what you see may differ slightly from this booklet.
 
-1. Open the left sidebar.
-2. Scroll to **System Setting**.
-3. Click **Log Out**.
+## The top menu (navy bar)
+
+A dark navy bar sits at the top of every public page. From left to right you typically see:
+
+- The **round yellow EERC Learning Center logo** — click it to return to Home.
+- **Home** — the main landing page.
+- **About Us** — the story and mission of the center.
+- **Programs** — a list of active programs. Hover or tap to open the list, then choose a program.
+- **Leaderboard** — top learners (you may be asked to sign in).
+- **Contact Us** — phone, email, map, and a message form.
+- A small **settings** icon — appearance options, including light or dark look.
+- **Login** — a gold button that takes you to the sign-in page.
+
+On a phone, the same links sit behind a menu button (three lines).
+
+## The footer (bottom of the page)
+
+The bottom of public pages is also navy. You can find:
+
+- About us and Contact us links
+- The office email and phone number
+- The EERC logo
+
+There is no shadow on this bar; it is a flat navy strip.
+
+## Changing light and dark look
+
+1. Click the **settings** icon (often a gear or sliders) in the top bar.
+2. Under **Mode**, turn the option on for a dark screen, or off for a light screen.
+3. Close the panel when you are done.
+
+The site remembers your choice on that computer or phone. If you never change it, the site stays in **light** mode.
 
 ---
 
-# 2. Student Guide
+## Home
 
-## Programs
+Home is the first page people see. Scroll from top to bottom. Typical sections:
 
-The **Programs** page is your main home in the LMS. Here you can see every program offered by EERC and manage your enrollment in one place.
+### Welcome banner (hero)
 
-From this page you can:
+A large picture or several preview images with a headline and a short invitation to enroll or learn more. If there is more than one image, you can move through them (arrows or dots).
 
-* Browse available programs
-* See each program’s **enrollment fee**
-* Apply for enrollment
-* Check your enrollment status
-* View your payment history
-* Pay remaining balances
-* Open courses after you are approved
+### Benefits
 
-### Enrollment Status
+A row of cards that explain why students choose EERC (for example studying at your own pace, number of lessons, instructors, success rate, or flexible pricing). Staff can change the titles and text.
 
-Each program card shows where you are in the enrollment process:
+### Instructor showcase
 
-| Status | What it means |
+Portrait cards of instructors. You may see:
+
+- Instructor name
+- Role or title
+- Program and year
+- A score or rank badge
+
+**Hover** (or tap on a phone) to read achievements. There can be as many instructor cards as staff add. Pictures load with a placeholder first so the page does not look broken while photos download.
+
+### Sample lecture
+
+A free preview video, similar to a lesson video: play, pause, volume, and a progress bar. A **watermark** (name or text chosen by staff) may appear on the picture so the video is clearly an EERC sample. Right-click save/download is blocked because this content is protected.
+
+### Statistics
+
+Large numbers (for example students helped or passing rates). These are for marketing; they are not your personal grades.
+
+### Success stories
+
+Quotes or stories from passers. Staff can show or hide this block.
+
+### How it works
+
+Usually three steps, such as Review, Refresher, and Final Coaching. This explains the study path in simple language.
+
+### Featured content (announcements)
+
+A slideshow of announcements. Each card shows a **title** and a **description**. If the description is long, use **See more** / **See less**. **Click the card** (not a raw web address) to open the linked page, such as a Facebook post or article.
+
+---
+
+## About Us
+
+This page tells the center’s story. You will typically see:
+
+- **Company Overview** — how EERC started and what makes the teaching approach different.
+- **Mission** — what the center aims to do for board exam reviewees.
+
+There may be a banner image. Staff can edit this page from the office side of the system.
+
+---
+
+## Programs (from the top menu)
+
+When you open **Programs**, you see the **active** programs the office has published. Choosing one opens that program’s public page.
+
+On a program page you can usually:
+
+- Read a description of the program
+- See courses that belong to it
+- See fees or enrollment information
+- Start enrollment if you are signed in (or you will be asked to log in first)
+
+This is a browsing page. Your personal enrollment status lives later on the **Programs** page inside your student account.
+
+---
+
+## Leaderboard (public menu)
+
+The leaderboard shows rankings (for example daily, weekly, or overall). You may need to **sign in** before the full list appears. Rankings come from quiz and assignment activity. It is meant for motivation, not as an official transcript.
+
+---
+
+## Contact Us
+
+Use this page when you need the office.
+
+Typical parts:
+
+- **Contact info** — phone and email (for example the learning-center email used for instructor and learner support).
+- **Location info** — branch addresses (Manila, Baguio, Legazpi, and any others the office has published).
+- **Map** — a map of the listed office.
+- **Your Contact** — a named contact person or “EERC Learning” with phone and email.
+- **Feedback form** — send a message to the office.
+
+### How to send a message
+
+1. Open **Contact Us**.
+2. Type your **name**, **email**, **phone number**, and **message**.
+3. Click **Submit**.
+
+Staff read these messages in an inbox called **Feedback**. You should get a reply by email or phone, not inside this website unless the office contacts you another way.
+
+---
+
+# Part 2 — Your account
+
+## Sign in (Login)
+
+1. Click **Login** on the top bar.
+2. Enter the **email address** of your account.
+3. Enter your **password**. Use the eye icon if you want to see the letters while typing.
+4. Click **Sign in**.
+
+After a successful sign-in:
+
+- **Students** go to the **Programs** page (your student home).
+- **Teachers and administrators** go to the **Analytics** dashboard (staff home).
+
+**Important**
+
+- Only **one active sign-in** is kept per account. If you log in on another phone or computer, the older session may be signed out.
+- If you forgot your password, contact the EERC office. Do not rely on “Forgot password?” unless the office has told you that self-reset is available.
+
+Keep your password private. Do not share your login. Online lessons are only for the enrolled student.
+
+---
+
+## Create an account (Sign up)
+
+If the office allows self-registration:
+
+1. From the sign-in page, open **Create account** (or similar wording).
+2. Fill in:
+   - First name
+   - Last name
+   - Email
+   - Password
+   - Confirm password (must match)
+3. Read that you agree to the terms of service and privacy policy.
+4. Submit.
+
+New accounts are created as **student** accounts. Teachers and administrators are created by the office.
+
+If you cannot register, ask the office to create your account.
+
+---
+
+## Sign out (Log out)
+
+Always sign out on a shared computer.
+
+**Students**
+
+1. Look at the **left menu**.
+2. Under **System Setting**, click **Log out**.
+
+**Staff**
+
+1. Look at the **left menu**.
+2. Under **System Setting**, click **Log out**.
+
+---
+
+# Part 3 — Student pages
+
+After you sign in as a student, a **left sidebar** stays with you. The main work area is on the right.
+
+## Student menu at a glance
+
+**Main**
+
+- **Programs** — browse programs, apply, pay, and open courses when approved.
+- **My Assignments** — homework and projects assigned to you.
+- **Quizzes** — quizzes you can take, plus history and rankings.
+
+**System Setting**
+
+- **Profile** — your name, phone, birthday, school, and password.
+- **Log out**
+
+The **bell** icon at the top is for **notifications** (enrollment and payment updates, announcements).
+
+---
+
+## Programs (student home)
+
+This is your main page. Each program appears as a card. You can:
+
+- See the **enrollment fee**
+- See your **status** (not enrolled, pending, approved, hold, or rejected)
+- **Apply** if you have not enrolled yet
+- Open **payment history**
+- **Pay remaining balance** if you still owe money
+- Open **courses** after you are **Approved**
+
+### What each status means
+
+| Status | Plain meaning |
 |--------|----------------|
-| **Not Enrolled** | You have not applied yet. |
-| **Pending** | Your application was submitted and is waiting for review. |
-| **Approved** | Your enrollment is accepted — you can access courses. |
-| **Hold** | Your application is paused — contact the office for details. |
-| **Rejected** | Your application was not accepted. |
+| **Not Enrolled** | You have not applied to this program yet. |
+| **Pending** | Your form is in. The office is still reviewing it. |
+| **Approved** | You are in. You can open the courses you are allowed to take. |
+| **Hold** | The office paused your application. Call or visit them to ask why. |
+| **Rejected** | This application was not accepted. Ask the office if you may apply again. |
+
+Take your time. You can go back a step in the application before you submit.
 
 ---
 
-## How to Apply for Enrollment
+## Applying for enrollment (six steps)
 
-When you are ready to join a program, the system guides you through **6 easy steps**. Take your time on each step — you can go back before submitting.
+Click **Apply** (or **Enroll**) on a program card. A step-by-step form opens. At the top you see which step you are on (for example “Step 2 of 6”).
 
-### Step 1 – Enrollment Details
+### Step 1 — Enrollment Setup
 
 Choose how and where you will study:
 
-* **Batch** — your intake or class group
-* **Learning Mode** — how the program is delivered
-* **Branch** — which campus or location
-* **Review Schedule** — your preferred review schedule
+- **Batch enrolled** — your intake or class batch (for example Batch 1). Batches with the same name can exist in different programs; always pick the batch that belongs to **this** program.
+- **Mode of learning** — how classes are delivered, such as:
+  - **PURE ONLINE CLASS** — study through this website
+  - Face-to-face — attend in person
+  - Blended — a mix of both
+- **Branch to enroll** — campus or location. Pure online may use a special online “branch.”
+- **Review schedule** — the timetable you prefer (days and hours).
 
 Click **Next**.
 
----
+### Step 2 — Personal Information
 
-### Step 2 – Personal Information
+Enter:
 
-Enter your personal details so the office can process your application:
+- **Name** (full name)
+- **Alias name** (nickname, if asked)
+- **School**
+- **Gender**
+- **Date of birth**
+- **Contact number**
+- **Home address**
 
-* Full Name
-* Birthday
-* Gender
-* Address
-* Contact Number
-* School Name
+Use the same identity the office expects on official records. Click **Next**.
 
-Click **Next**.
+### Step 3 — Documents & Discounts
 
----
+- **Profile picture** — a clear photo of you.
+- **Honors / awards / discount** — choose a discount type if it applies (or none).
+- **Discount proof** — upload a file if you claimed a discount (clear photo or PDF).
 
-### Step 3 – Upload Documents
+Accepted file types are usually pictures (JPG, PNG, WebP) and documents (PDF, Word). Files have a size limit (about 10 MB). Click **Next**.
 
-Upload files that support your application:
+### Step 4 — Exam & Payment
 
-* **Profile Picture**
-* **Discount or Scholarship Documents** (if applicable)
+- **Board exam experience** — whether you have taken the board exam before.
+- **Retaker attempts** and **retaker proof** — if you are a retaker, fill these as instructed.
+- **Downpayment / scholarship** — amount of your first payment or scholarship note.
+- **Payment proof** — photo or scan of your deposit slip, e-wallet screenshot, or receipt.
 
-Click **Next**.
+The office publishes **bank** and **e-wallet** details under payment settings. Send money using those details, then upload proof here. Click **Next**.
 
----
+### Step 5 — Package & Consent
 
-### Step 4 – Payment Information
-
-Tell the office about your exam and first payment:
-
-* **Board Exam Information**
-* **Down Payment Amount**
-* **Payment Receipt or Proof of Payment** (upload a clear photo or scan)
-
-Click **Next**.
-
----
-
-### Step 5 – Package & Agreement
-
-Choose your package and confirm you agree to the terms:
-
-* Select your **package**
-* Provide your **signature**
-* Read and accept the **Terms and Conditions**
+- Choose your **package** (the bundle of services you are buying).
+- Provide your **signature** (draw or upload as the form requires).
+- Read the important notices. In short: your data is used for enrollment and school records; sharing your online access is not allowed; fees are generally non-refundable; scholarship slots are not transferable; you may agree to promotional use of your name or photo if you pass with distinction — read the live text on screen, because the office can update it.
 
 Click **Next**.
 
----
+### Step 6 — Review & Submit
 
-### Step 6 – Review & Submit
+Read the summary. Each block has **Edit** if you need to change something. When everything is correct, tick the confirmation and click **Submit**.
 
-Check everything one last time on the summary screen.
-
-If all information is correct, click **Submit**.
-
-Your enrollment is sent to an administrator for review. You will be notified when your status changes.
+Your status becomes **Pending**. Watch the **notification bell**. The office will **Approve**, put on **Hold**, or **Reject**.
 
 ---
 
-## Paying Your Remaining Balance
+## Paying the remaining balance
 
-After enrollment, you may still owe part of the program fee. You can submit additional payments from your program card without re-applying.
+If you still owe money after the down payment:
 
-If you still have a balance:
-
-1. Open your enrolled program on the **Programs** page.
-2. Click **Pay Remaining Balance**.
-3. Enter the payment amount.
-4. Upload your payment receipt or proof.
+1. Open **Programs**.
+2. On that program card, click **Pay Remaining Balance**.
+3. Enter the amount you paid.
+4. Upload a new receipt.
 5. Submit.
 
-Your payment will show as **Pending review** until an administrator verifies it.
+The payment stays **Pending review** until staff mark it **Correct** or **Invalid**. Only **Correct** payments lower what you still owe.
 
 ---
 
-## Payment Status
+## Payment history (student)
 
-Every payment you submit has a verification status. Only approved payments reduce what you still owe.
+From the program card, open **Payment history**. You will see:
 
-| Status | Meaning |
-|--------|---------|
-| **Pending review** | Waiting for an administrator to check your receipt. |
-| **Correct** | Payment accepted — it counts toward your balance. |
-| **Invalid** | Payment rejected — it does not reduce your balance. |
+- Down payment
+- Later payments
+- Dates
+- Status: **Pending review**, **Correct**, or **Invalid**
+- Your uploaded receipts
 
-Only **Correct** payments reduce your remaining balance.
-
----
-
-## Payment History
-
-Payment history shows every payment linked to your enrollment so you can track what you have paid and what is still under review.
-
-You can view:
-
-* Down payment
-* Additional payments
-* Payment dates
-* Payment status (Pending review, Correct, or Invalid)
-* Uploaded receipts
-
-Open payment history from your program card on the **Programs** page.
+Keep copies of receipts on your phone as well.
 
 ---
 
-## Profile
+## Payment status (quick table)
 
-Your profile stores your account information. Keeping it updated helps the office reach you and keeps your records accurate.
-
-Go to **System Setting → Profile** (`/settings`).
-
-You can edit:
-
-* First Name
-* Last Name
-* Contact Number
-* Birthday
-* School Name
-* Password (optional)
-
-Click **Save Changes** after updating your information.
-
-> **Tip:** Contact Number and Birthday are required before you can save.
+| Status | What it means for you |
+|--------|------------------------|
+| **Pending review** | The office has not checked this receipt yet. Your balance does not change yet. |
+| **Correct** | Accepted. This amount is counted. |
+| **Invalid** | Not accepted (unclear photo, wrong amount, and so on). It does **not** reduce your balance. Upload again if the office asks. |
 
 ---
 
-## Courses
+## Profile (student)
 
-Once your enrollment is **Approved**, you can open courses inside that program and start learning.
+Open **System Setting → Profile**.
 
-Each course may include:
+You can update:
 
-* **Text lessons** — read content in the browser
-* **Video lessons** — watch lesson videos
-* **Quizzes** — answer questions and see your score
-* **Assignments** — submit work for grading
+- First name and last name
+- **Phone number** (required)
+- **Birthday** (required; you must be at least 18)
+- **School held** (the school you belong to or came from)
+- Password (only if you want to change it)
+- Profile photo, if the page offers an upload
 
-Open a course from your approved program on the **Programs** page.
-
----
-
-## Quizzes
-
-Quizzes help you test what you have learned. Some quizzes have a time limit, so finish before the timer runs out.
-
-From **Quizzes** in the sidebar you can:
-
-* Take available quizzes
-* View your scores
-* Review previous attempts in **Quiz history** (`/quizzes/history`)
-
-Some quizzes also show a **Leaderboard** where you can compare scores with other learners.
+Click **Save Changes**. If save fails, fill in phone and birthday first.
 
 ---
 
-## Assignments
+## My Assignments
 
-Assignments are tasks you complete and submit for grading. Check due dates so you do not miss a deadline.
+Open **My Assignments** in the left menu.
 
-From **My Assignments** in the sidebar you can:
+For each assignment you can usually:
 
-* Read assignment instructions
-* Upload or submit your work
-* View grades and feedback when graded
+- Read the title, course, and instructions
+- See the due date
+- Open the assignment to submit files or answers
+- See your grade and comments after it is checked
+- Open a **leaderboard** for that assignment if the teacher turned it on
 
-Some assignments include a **Leaderboard** for top scores.
+Submit before the deadline. Late rules depend on the teacher.
+
+---
+
+## Quizzes (student list)
+
+Open **Quizzes** in the left menu.
+
+You can:
+
+- See quizzes available to you
+- Open a quiz to read the start screen, then take it
+- Open **Quiz history** to review past attempts and scores
+- Open a quiz **leaderboard** to compare scores (when enabled)
+
+Some quizzes have a **time limit**. When time runs out, the system may submit what you have answered.
 
 ---
 
 ## Notifications
 
-The notification bell (top of the screen) alerts you when something important happens in the system.
+Click the **bell** at the top.
 
-You will receive notifications when:
+Typical alerts:
 
-* Your enrollment status changes
-* Your payment is verified (marked **Correct** or **Invalid**)
-* A new announcement is posted
+- Enrollment approved, on hold, or rejected
+- Payment marked Correct or Invalid
+- A new **announcement** from staff
 
-Click a notification to read it. Mark it as read when you are done.
-
----
-
-# 3. Administrator Guide
-
-## Dashboard
-
-The **Dashboard** is the administrator home page. It gives you a quick snapshot of how the LMS is being used.
-
-The dashboard shows an overview of:
-
-* Programs available
-* Enrollments
-* Students
-* Learning activity
+Open a notification to read it. Mark it as read when you are finished.
 
 ---
 
-## Manage Enrollments
+# Part 4 — Inside a course
 
-The **Enrollment** page is your inbox for student applications. Review each application before students can access courses.
+When your enrollment is **Approved**, open the program, then open a **course**.
 
-From **Enrollment → Enrollment** (`/enrollment`) you can:
+## Course page
 
-* Review applications
-* View submitted documents
-* Open **Payment history** for a specific enrollment
-* **Approve** applications
-* Put applications on **Hold**
-* **Reject** applications (you may be asked for a reason)
+The course page has a large header (name, banner picture, duration if shown) and tabs:
 
-**Tip:** Verify down payments before approving when payment is required.
+| Tab | What you find |
+|-----|----------------|
+| **Description** | What the course is about. |
+| **Curriculum** | The list of modules and lessons. |
+| **FAQ** | Common questions about this course (if the teacher added any). |
+| **Notice** | Important notes from the teacher. |
+| **Reviews** | Ratings or comments (if used). |
 
----
-
-## Verify Payments
-
-Students upload payment receipts when they enroll or pay a balance. Administrators must verify each payment so balances stay accurate.
-
-You can verify payments in two places:
-
-1. **Enrollment → Payment history** (`/payment-history`) — all payments across enrollments, with search and filters
-2. **Enrollment → Enrollment** — open **Payment history** on a single application
-
-For each payment, choose:
-
-* **Correct** — payment is accepted and counts toward the balance
-* **Invalid** — payment is rejected and does not count
-
-Payments still waiting for review appear highlighted so you can find them quickly.
-
-Only **Correct** payments count toward the student’s balance.
+Use the **back** arrow to return to the previous page.
 
 ---
 
-## Programs
+## Who can open the lesson list (Curriculum)
 
-Programs group courses together and set the **enrollment fee** students see when they apply.
+The **Curriculum** list of lessons is shown to:
 
-From **System Setting → Programs** (`/setting-program`) you can:
+- Students enrolled in **PURE ONLINE CLASS** (online) for that program/course, and
+- **Administrators**
 
-* Create programs
-* Edit program details
-* Set enrollment fees
-* Activate or deactivate programs
+If you enrolled **face-to-face** or **blended**, you may still see the course page, but the lesson list can show a message such as: *This curriculum is available to students enrolled in online class, and to administrators.* That is on purpose. Classroom students receive lessons in person; the website video list is for online enrollees.
 
----
-
-## Courses
-
-Courses hold the actual learning content — lessons, videos, quizzes, and assignments.
-
-From **Main → Add Courses** (course curriculum builder) you can create and manage:
-
-* Modules
-* Text and video lessons
-* Quizzes
-* Assignments
-
-Publish courses when they are ready for students.
+Teachers building the course use a different **Add Courses** screen, not this student curriculum list.
 
 ---
 
-## Gradebook, Quizzes & Assignments
+## Types of lessons
 
-These tools help you track how students are doing during the term.
+Inside a module you may see:
 
-| Menu | What you do |
-|------|-------------|
-| **Gradebook** | View grades and student performance |
-| **Quizzes** | See quiz attempts, scores, and leaderboards |
-| **Assignments** | Review submissions, grade work, view leaderboards |
+- **Text lesson** — reading material in the browser.
+- **Video lesson** — a recorded lecture.
+- **Quiz** — a test with a start screen, then questions.
+- **Assignment** — work you submit for grading.
+
+Some courses **lock lessons in order**. You must finish earlier items before the next one opens.
 
 ---
 
-## Announcements
+## Text lesson
 
-Announcements send messages to enrolled students. Use them for schedules, reminders, and important updates.
+Open the text lesson from the curriculum. Read the page. When you are done, go back to the course. There is no “download the whole course” button; the content stays in the browser.
 
-From **Communication → Announcement** you can create and publish announcements. Students see them in their notification bell.
+---
+
+## Video lesson
+
+Open the video lesson.
+
+**How to watch**
+
+- Click the **play** button in the middle or on the bar.
+- Drag the **progress bar** to move forward or back (if the teacher allows seeking).
+- Use **volume**.
+- Use **fullscreen**. Controls stay available in fullscreen (play, seek, volume, time).
+- A **watermark** (often your name or school text the teacher set) can appear **on the video picture**, including in fullscreen, so the recording is identified as yours to view, not to copy.
+
+**Please do not try to download premium videos**
+
+- Right-click save is disabled.
+- Opening the video address in another tab is blocked.
+- Removing player buttons in the browser inspector does not give a legal download.
+
+Treat videos like a classroom lecture you are allowed to watch, not a file you own.
+
+---
+
+## Starting a quiz
+
+From the curriculum, click the quiz. The **start** page shows:
+
+- Quiz title
+- Number of questions
+- Time limit (or none)
+- How many attempts you have used, and whether retakes are limited
+
+If you have no attempts left, you cannot start again. Click **Start** (or similar) when you are ready. Use a stable internet connection.
+
+---
+
+## Taking a quiz
+
+- Answer each item. Many items are **A, B, C, D**.
+- Some items show an **image** or a **full PDF page**. **Click the image or PDF** to enlarge it. Click outside or use close to return.
+- Move to the next item. Watch the timer if there is one.
+- Submit when you finish, or let the timer submit for you.
+
+Afterward you may see your score. Open **Quiz history** later to review.
+
+---
+
+## Assignment inside the course
+
+Open the assignment from the curriculum or from **My Assignments**.
+
+- Read instructions and the due date.
+- Upload your file or type your answer as instructed.
+- Submit once. If the teacher allows another try, the page will say so.
+- Come back for the grade and comments.
+
+---
+
+# Part 5 — Staff pages (teachers and administrators)
+
+After staff sign in, the left menu is longer. What you see depends on your role and permissions. If a menu item is missing, ask an administrator to grant access.
+
+The staff home is titled **Analytics** (also reached from **Dashboard** in the Main group).
+
+---
+
+## Staff menu at a glance
+
+**Main**
+
+- **Dashboard** — analytics home.
+- **Add Courses** — create and edit course content (curriculum builder).
+
+**Enrollment**
+
+- **Enrollment** — review student applications.
+- **Payment history** — all receipts waiting for or already checked.
+
+**Communication**
+
+- **Announcement** — messages to enrolled students.
+- **Feedback** — messages from the public Contact Us form.
+
+**Progress**
+
+- **Gradebook** — grades and performance.
+- **Quizzes** — student quiz results (staff view).
+- **Assignments** — student submissions (staff view).
+
+**Content Management**
+
+- **Homepage** — edit the public home page.
+- **About Us** — edit the About page.
+- **Contact Us** — edit the Contact page.
+
+**System Setting**
+
+- **Profile** — your staff profile.
+- **Programs** — create programs and fees; see who applied.
+- **Enrollment** (submenu) — batches, learning modes, branches, schedules, discounts, packages; each has an **applicants** list.
+- **Students** — student accounts.
+- **Payment** — bank and e-wallet details shown to students.
+- **Instructors** — teacher accounts (when you have access).
+- **Log out**
+
+---
+
+## Dashboard / Analytics
+
+This is the staff home.
+
+At the top you see summary cards, such as:
+
+- **Programs Available**
+- **Enrollments**
+- **Students**
+
+Below that, program cards. Filter with **All**, **Active**, or **Inactive**. Use page numbers if there are many programs.
+
+This page is for a quick pulse of the school, not for grading an individual quiz.
+
+---
+
+## Add Courses (curriculum builder)
+
+Open **Add Courses** to build or edit a course.
+
+Typical workflow:
+
+1. Create or open a course.
+2. Add **modules** (chapters), for example “Hydraulics.”
+3. Inside a module, add lessons. When you add a lesson you choose a type:
+   - **Text lesson**
+   - **Video lesson**
+   - **Quiz**
+   - **Assignment**
+4. Click a lesson to edit it on the right.
+5. **Save** often.
+
+### Course settings (Course tab)
+
+Common fields:
+
+- Course name
+- Which **program** it belongs to
+- Banner / cover image
+- Course duration and video duration labels
+- Description students see on the Description tab
+- Option to **lock lessons in order**
+
+Publish the course when students should see it. Draft courses stay hidden.
+
+### Text lessons
+
+Type or paste the reading content. Save.
+
+### Video lessons
+
+Upload the video the same way you would for a sample lecture: wait until the upload **finishes**. Then you should see the player, not an empty “Browse files” box.
+
+You can set **watermark text** for that video so each student’s player shows an overlay. This helps protect paid content.
+
+### Quizzes (building)
+
+- Add questions one by one, or
+- **Upload a PDF** of a full exam (for example 50 items on one file). The system asks **how many items** to create (up to 50). It creates Item 1, Item 2, … with choices **A–D**. You mark the correct letter for each item.
+- Each item can show the **full uncut PDF** (or an image). Click to enlarge while editing, the same way students do while taking the quiz.
+- Set time limit, attempt limits, and other quiz settings in the quiz settings panel.
+
+Question pictures are **quiz images**, not lesson files in the video library.
+
+### Assignments (building)
+
+Write instructions, due dates, and how students submit. Save.
+
+---
+
+## Enrollment (review applications)
+
+Open **Enrollment → Enrollment**.
+
+This is the office inbox for applications. For each row you can:
+
+- Open the student’s answers and uploads
+- Open **Payment history** for that application
+- **Approve**, put on **Hold**, or **Reject** (you may type a reason for reject)
+
+**Tip:** Check that the down payment is marked **Correct** before you approve, if payment is required.
+
+---
+
+## Payment history (staff)
+
+Open **Enrollment → Payment history**.
+
+You see payments from all enrollments. Search and filter to find receipts that are still **Pending review**.
+
+For each payment choose:
+
+- **Correct** — counts toward the student’s balance
+- **Invalid** — does not count; the student may need to pay again or send a clearer receipt
+
+Students are notified when you decide.
+
+---
+
+## Announcement
+
+Open **Communication → Announcement**.
+
+Write a **title** and **message**, then publish. Enrolled students receive it through the **notification bell**. Use this for schedule changes, holiday notices, and reminders.
 
 ---
 
 ## Feedback
 
-The **Feedback** inbox holds messages sent from the public **Contact Us** form on the website.
+Open **Communication → Feedback**.
 
-From **Communication → Feedback** (`/feedback`) you can read and follow up on visitor inquiries.
-
----
-
-## Students
-
-Student accounts let learners sign in, enroll, and take courses.
-
-From **System Setting → Students** (`/setting-student`) you can:
-
-* Add students
-* Edit student information
-* Activate or deactivate accounts
+These are messages from the public **Contact Us** form (name, email, phone, message). Reply by email or phone; this screen is the inbox.
 
 ---
 
-## Instructors
+## Gradebook
 
-Instructor accounts are used for staff who teach or manage courses (when enabled in your setup).
+Open **Progress → Gradebook**.
 
-From **System Setting → Instructors** (`/setting-instructor`) you can:
-
-* Add instructors
-* Edit instructor information
-* Upload profile photos
-* Activate or deactivate accounts
+Use this to see student performance across courses: scores, progress, and who may need follow-up. It is an overview, not a replacement for talking to a struggling student.
 
 ---
 
-## Payment Settings
+## Quizzes (staff)
 
-Payment settings tell students where to send money — bank accounts and e-wallet details shown during enrollment.
+Open **Progress → Quizzes**.
 
-From **System Setting → Payment** (`/setting-payment`) configure:
-
-* Bank accounts
-* E-wallet accounts
-
-Students use these details when making down payments and balance payments.
+You see quizzes and counts (passed, not passed, pending — depending on how the page is set up). Open a quiz to see **which students** took it, then open a **leaderboard** if needed.
 
 ---
 
-## Enrollment Settings
+## Assignments (staff)
 
-These options control the choices students see in the enrollment form (batches, branches, packages, and more).
+Open **Progress → Assignments**.
 
-Under **System Setting → Enrollment** you can configure:
-
-* **Batch enroll** — intake batches per program
-* **Mode of learning** — delivery options
-* **Branch to enroll** — campus or location choices
-* **Review schedule** — review session options
-* **Honors / awards / discount** — discount types
-* **Package enroll** — package tiers
-
-Changes appear automatically in the student enrollment wizard.
+A badge may show how many submissions are waiting. Open an assignment to see **students**, grade their work, and view the assignment **leaderboard**.
 
 ---
 
-## Website Content
+## Content Management — Homepage
 
-Website content tools let you edit what visitors see on the public site without changing code.
+Open **Content Management → Homepage**.
 
-From **Content Management** you can update:
+Each block of the public home page is an expandable section. For every section you can usually:
 
-| Page | What you edit |
-|------|----------------|
-| **Homepage** | Hero, benefits, instructor showcase, sample lecture video, statistics, success stories, how it works, featured content |
-| **About Us** | About page text and images |
-| **Contact Us** | Contact page content |
+- Turn **Visible** on or off
+- Save as **Draft** or **Published**
 
-For each section you can set **Visible** on or off and save as **Draft** or **Published**.
+Sections include:
 
-**Sample lecture:** On the Homepage editor, use **Advertise Sample Lecture** to upload a sample video (MP4, WebM, or OGG) and optional poster image.
+| Section | What you edit |
+|---------|----------------|
+| **Hero Section** | Welcome pictures and headline. You can add more than a few preview images. |
+| **Benefits Cards** | The benefit titles and short texts. |
+| **Instructor Showcase** | Instructor **name**, photo, role, achievements (shown on hover), program/year, score. Add as many instructors as you need. |
+| **Advertise Sample Lecture** | Upload the sample video and optional poster; watermark works like lesson videos. Wait until upload completes so the player appears. |
+| **Statistics Banner** | The big numbers. |
+| **Success Stories** | Testimonials. |
+| **How It Works** | The step-by-step process. |
+| **Featured Content** | Announcements: title, description, and a URL. Visitors see title and description; clicking the card opens the URL. You can add more announcements. |
 
-Use **Preview** on the live site with `?preview=1` while logged in to see drafts before publishing.
-
----
-
-## Analytics & Leaderboard
-
-Analytics and leaderboard pages help you see engagement and top-performing learners.
-
-* **Analytics** (`/analytics`) — summary metrics for programs, enrollments, and activity
-* **Leaderboard** (`/leaderboard`) — daily, weekly, and overall rankings
+Use **Preview** on the live site (staff preview) before you publish if that button is available.
 
 ---
 
-# 4. Enrollment & Payment Process
+## Content Management — About Us
 
-## Student Process
-
-This is the full journey from applying to learning:
-
-1. Submit your enrollment application (6 steps).
-2. Upload your down payment receipt.
-3. Wait for payment verification (**Correct** or **Invalid**).
-4. Wait for enrollment approval (**Approved**, **Hold**, or **Rejected**).
-5. Access your courses after approval.
-6. Continue paying any remaining balance until fully paid.
+Edit **Company Overview** and **Mission** text and images. Set visible/draft/published the same way as the homepage.
 
 ---
 
-## Administrator Process
+## Content Management — Contact Us
 
-This is how staff handle enrollments from start to finish:
-
-1. Review each submitted payment — mark **Correct** or **Invalid**.
-2. Check documents and application details.
-3. Approve, hold, or reject the enrollment.
-4. Verify future balance payments until the student’s account is fully paid.
-5. Use **Payment history** to find unreviewed payments quickly.
+Edit phone, email, Facebook, addresses, map, the “Your Contact” person, and the labels on the feedback form.
 
 ---
 
-# 5. Frequently Asked Questions
+## Profile (staff)
+
+Open **System Setting → Profile**.
+
+Typical fields:
+
+- First name, last name
+- Position
+- Bio
+- How your **display name** appears publicly
+- Photo / banner
+- Password
+- Social links, if shown
+
+Click **Save Changes**.
+
+---
+
+## Programs (staff)
+
+Open **System Setting → Programs**.
+
+You can:
+
+- Add a program (name, description, banner, **enrollment fee**, active/inactive)
+- Edit or deactivate a program
+- Open **applicants** for that program — **everyone who applied to that specific program** (not mixed with other programs)
+- Export the applicant list to Excel when the button is offered
+- Filter applicants by status, search by name, and change how many rows appear per page
+
+Only **active** programs appear in the public Programs menu.
+
+---
+
+## Enrollment settings (staff submenu)
+
+These lists control the **dropdowns** students see in Step 1 and later steps of the application. After you add or rename an option, students see it on the next application.
+
+For **each** option you can open **applicants**: everyone who chose **that exact option**. Do not guess by name alone when names repeat (for example two “Batch 1” rows for two different programs). Always open applicants **from that row**.
+
+### Batch enroll
+
+Intake groups per program. View applicants per batch. Export if needed.
+
+### Mode of learning
+
+Examples: PURE ONLINE CLASS, face-to-face, blended. View everyone who chose a given mode.
+
+### Branch to enroll
+
+Campuses and the online branch. View everyone who chose a given branch.
+
+### Review schedule
+
+Class time slots. View everyone who chose a given schedule.
+
+### Honors / awards / discount
+
+Discount types. View everyone who selected each type.
+
+### Package enroll
+
+Fee packages. View everyone who selected each package.
+
+On applicant pages you can typically:
+
+- Search
+- Filter by program, batch, and status
+- Change page size
+- **Export Excel**
+- Open the full application
+
+---
+
+## Students (accounts)
+
+Open **System Setting → Students**.
+
+- Add a student
+- Edit name and details
+- Activate or deactivate the account (deactivated students cannot sign in)
+
+Use this when registration is closed or a student needs help.
+
+---
+
+## Instructors (accounts)
+
+Open **System Setting → Instructors** (if you have permission).
+
+- Add instructors
+- Edit information
+- Upload profile photos
+- Activate or deactivate accounts
+
+Instructor photos can also appear on the public **Instructor Showcase** if you add them in Homepage content.
+
+---
+
+## Payment (bank and e-wallet)
+
+Open **System Setting → Payment**.
+
+Enter the **bank accounts** and **e-wallet** names and numbers students should pay to. These details appear during enrollment and balance payment. Keep them accurate so receipts match.
+
+---
+
+## Appearance while signed in
+
+Staff and students can still open the **settings** icon on the navy header to switch **light** and **dark**. The signed-in header matches the public navy bar (logo, icons, no drop shadow).
+
+---
+
+# Part 6 — Enrollment and payments (full story)
+
+## Student journey
+
+1. Create an account and sign in.
+2. Open **Programs** and apply (six steps), including down-payment proof.
+3. Wait until the office marks the payment **Correct** or **Invalid**.
+4. Wait until enrollment is **Approved**, **Hold**, or **Rejected**.
+5. If approved and you are in **PURE ONLINE CLASS**, open courses and the **Curriculum**.
+6. Pay remaining balances until the account is fully paid.
+7. Watch the bell for news.
+
+## Staff journey
+
+1. Open **Payment history** and mark receipts **Correct** or **Invalid**.
+2. Open **Enrollment**, check documents, then Approve / Hold / Reject.
+3. Check later balance payments the same way.
+4. Use each setting’s **applicants** page when you need “everyone who chose this batch / branch / package,” not a guess from similar names.
+
+---
+
+# Part 7 — Common questions
+
+### The site opened dark before. Now I want light.
+
+The default is light. Use the settings icon and turn **Mode** off for light, or on for dark. Refresh if the page looks stuck.
 
 ### My enrollment is still pending.
 
-Your application is waiting for administrator review. You will be notified when the status changes.
-
----
+The office has not finished review. Check the bell and your email. You cannot rush this from the website.
 
 ### My payment is still pending.
 
-Your payment has not yet been verified. An administrator must mark it **Correct** before it reduces your balance.
+Staff have not marked the receipt yet. Only **Correct** payments change your balance.
 
----
+### Why didn’t my remaining balance go down?
 
-### Why didn't my balance decrease?
-
-Only **Correct** payments are deducted from your remaining balance. **Invalid** or **Pending review** payments do not count.
-
----
+The receipt is still pending or was marked **Invalid**. Send a clearer photo or the correct amount if the office asks.
 
 ### I cannot save my profile.
 
-Make sure your **Contact Number** and **Birthday** are filled in before clicking **Save Changes**.
+Fill in **phone number** and **birthday**. You must be 18 or older.
+
+### “School held” looks wrong.
+
+That field is the school name on your profile. Correct it and save. If an old value remains, contact the office.
+
+### I enrolled face-to-face but I cannot see video lessons.
+
+Online lesson lists are for **PURE ONLINE CLASS** (and administrators). Face-to-face and blended students follow the classroom schedule. If you believe you should be online, ask the office to check your **mode of learning**.
+
+### The quiz said it could not be found.
+
+Go back to the course **Curriculum** and open the quiz again. Sign in if you were logged out. If it still fails, tell the teacher the quiz name.
+
+### A quiz picture looks tiny.
+
+Click the picture or PDF to enlarge it. Click outside to close.
+
+### The sample lecture or lesson video is empty after I uploaded it (staff).
+
+Wait until the upload fully finishes. Then the player should appear. If not, remove and upload again on a stable connection.
+
+### Can I use my phone?
+
+Yes. Use an updated Chrome, Edge, Safari, or Firefox. For quizzes, a larger screen is easier.
+
+### I got signed out.
+
+Someone may have signed in on another device, or your session expired. Sign in again. Do not share your password.
+
+### Videos will not download.
+
+That is intentional for premium lessons. Watch them in the player.
+
+### I need a receipt or certificate on paper.
+
+Ask the office. This website tracks enrollment and learning; official paper documents still come from EERC Learning Center.
 
 ---
 
-### Why does "School held" show wrong text?
+# Quick reminders
 
-This field may show placeholder or legacy data. Contact the office if your school name looks incorrect.
+## Students
 
----
+- Complete every required enrollment field before submit.
+- Upload **clear** receipts.
+- Check the **bell** often.
+- Keep phone and birthday up to date.
+- Finish quizzes and assignments before the deadline.
+- Only **Correct** payments reduce your balance.
+- Do not share your login.
 
-### Can I use the LMS on my phone?
+## Staff
 
-Yes. The EERC LMS works on most modern mobile browsers (Chrome, Edge, Safari, Firefox).
-
----
-
-### Quiz timer ran out.
-
-If the quiz had a time limit, your attempt may be submitted automatically when time expires. Check **Quiz history** for your result.
-
----
-
-# 6. Need Help?
-
-For enrollment or payment concerns, contact the **EERC Office** using the **Contact Us** page on the public website.
-
-For technical issues, contact your **System Administrator**. Developers can refer to **[DOCUMENTATION.md](./DOCUMENTATION.md)**.
+- Verify payments before approving paid enrollments.
+- Open **applicants** from the exact batch, branch, or package row.
+- Keep program fees and payment accounts up to date.
+- Publish announcements for schedule changes.
+- Preview homepage drafts before publishing.
+- Wait for video uploads to finish before leaving the page.
 
 ---
 
-# Quick Tips
+# Need help?
 
-## For Students
+For enrollment, payment, schedules, and branches, use **Contact Us** on the website or visit your branch.
 
-* Complete all required information before submitting enrollment.
-* Upload clear, readable payment receipts.
-* Check your notifications regularly.
-* Keep your profile updated.
-* Submit quizzes and assignments before the deadline.
-* Only **Correct** payments reduce what you still owe.
+Typical published contacts (confirm on the live Contact page, because staff can change them):
 
----
+- Phone: **09364999263**
+- Email: **eercinstructor@gmail.com**
+- Facebook: **facebook.com/eerclearning**
 
-## For Administrators
-
-* Verify payments before approving enrollments when payment is required.
-* Review uploaded documents carefully.
-* Use **Payment history** filters to find pending payments.
-* Keep program fees and payment method details updated.
-* Post announcements for schedule changes and reminders.
-* Monitor student progress through the Gradebook.
-* Publish CMS changes when drafts are ready — use preview mode first.
+Manila, Baguio, and Legazpi branch addresses are listed on **Contact Us**.
 
 ---
 
-**Thank you for using the EERC Learning Management System (LMS)!**
+Thank you for studying and working with **EERC Learning Center**.

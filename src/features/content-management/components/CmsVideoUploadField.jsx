@@ -10,12 +10,14 @@ import LinearProgress from '@mui/material/LinearProgress';
 import CircularProgress from '@mui/material/CircularProgress';
 
 import { deleteCmsMedia } from 'src/features/homepage-v2/api/homepage-v2-api';
-import { resolveCmsMediaUrl } from 'src/features/homepage-v2/utils/resolve-cms-media-url';
 import { getLmsAxiosErrorMessage, uploadLessonVideoInChunks } from 'src/redux/api/lmsApi';
+import { resolveCmsVideoPlaybackUrls } from 'src/features/homepage-v2/utils/resolve-cms-media-url';
 
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 import { PremiumPlayableVideo } from 'src/components/common/premium-playable-video';
+
+import { CmsVideo } from 'src/sections/home-v2/components/CmsVideo';
 
 function slugifyLabel(label) {
   return String(label ?? 'video')
@@ -57,6 +59,7 @@ function unwrapUploadedCmsVideo(raw) {
 export function CmsVideoUploadField({
   label,
   value,
+  posterMedia,
   onChange,
   onUploaded,
   disabled,
@@ -67,8 +70,10 @@ export function CmsVideoUploadField({
   const [uploadPercent, setUploadPercent] = useState(null);
   const [blobPreviewUrl, setBlobPreviewUrl] = useState('');
   const inputId = useMemo(() => `cms-video-upload-${slugifyLabel(label)}`, [label]);
-  const storedUrl = resolveCmsMediaUrl(value?.url, value?.mediaId ?? null);
-  const previewUrl = blobPreviewUrl || storedUrl;
+  const playbackUrls = useMemo(() => resolveCmsVideoPlaybackUrls(value), [value]);
+  const hasStoredVideo = playbackUrls.length > 0;
+  const previewUrl = blobPreviewUrl || (hasStoredVideo ? playbackUrls[0] : '');
+  const playerKey = playbackUrls[0] || blobPreviewUrl || 'empty';
 
   const assignBlobPreview = useCallback((nextUrl) => {
     setBlobPreviewUrl((current) => {
@@ -89,10 +94,24 @@ export function CmsVideoUploadField({
   );
 
   useEffect(() => {
-    if (storedUrl && blobPreviewUrl) {
-      assignBlobPreview('');
+    if (!hasStoredVideo || !blobPreviewUrl) {
+      return undefined;
     }
-  }, [assignBlobPreview, blobPreviewUrl, storedUrl]);
+    const probe = document.createElement('video');
+    probe.preload = 'metadata';
+    const onReady = () => {
+      if (probe.duration > 0 && Number.isFinite(probe.duration)) {
+        assignBlobPreview('');
+      }
+    };
+    probe.addEventListener('loadedmetadata', onReady);
+    probe.src = playbackUrls[0];
+    return () => {
+      probe.removeEventListener('loadedmetadata', onReady);
+      probe.removeAttribute('src');
+      probe.load();
+    };
+  }, [assignBlobPreview, blobPreviewUrl, hasStoredVideo, playbackUrls]);
 
   const onDrop = useCallback(
     async (files) => {
@@ -164,26 +183,37 @@ export function CmsVideoUploadField({
   return (
     <Stack spacing={1.5}>
       <Typography variant="subtitle2">{label}</Typography>
-      <Box
-        {...getRootProps()}
-        sx={{
-          borderRadius: 2,
-          border: (theme) => `2px dashed ${theme.palette.divider}`,
-          bgcolor: 'background.neutral',
-          p: 2,
-          cursor: disabled ? 'not-allowed' : 'default',
-          opacity: disabled ? 0.6 : 1,
-        }}
-      >
-        <input {...getInputProps()} id={inputId} />
-        {previewUrl ? (
+      <input {...getInputProps()} id={inputId} />
+      {previewUrl ? (
+        <Box
+          {...getRootProps()}
+          sx={{
+            borderRadius: 2,
+            border: (theme) => `2px dashed ${theme.palette.divider}`,
+            bgcolor: 'background.neutral',
+            p: 2,
+            opacity: disabled ? 0.6 : 1,
+          }}
+        >
           <Box sx={{ position: 'relative' }}>
-            <PremiumPlayableVideo
-              src={previewUrl}
-              title={value?.alt || label}
-              aspectRatio="16 / 9"
-              watermarkText={watermarkText}
-            />
+            {blobPreviewUrl ? (
+              <PremiumPlayableVideo
+                key={playerKey}
+                src={blobPreviewUrl}
+                title={value?.alt || label}
+                aspectRatio="16 / 9"
+                watermarkText={watermarkText}
+              />
+            ) : (
+              <CmsVideo
+                key={playerKey}
+                media={value}
+                posterMedia={posterMedia}
+                label={value?.alt || label}
+                aspectRatio="16 / 9"
+                watermarkText={watermarkText}
+              />
+            )}
             {uploading ? (
               <Box
                 sx={{
@@ -217,35 +247,49 @@ export function CmsVideoUploadField({
               </Box>
             ) : null}
           </Box>
-        ) : uploading ? (
-          <Stack alignItems="center" spacing={1.25} py={4}>
-            <CircularProgress size={32} />
-            {Number.isFinite(Number(uploadPercent)) ? (
-              <>
-                <LinearProgress
-                  variant="determinate"
-                  value={Math.max(0, Math.min(100, Number(uploadPercent)))}
-                  sx={{ width: 1, maxWidth: 360, height: 8, borderRadius: 99 }}
-                />
-                <Typography variant="body2" color="text.secondary">
-                  {Number(uploadPercent) >= 99
-                    ? 'Assembling video… keep this tab open.'
-                    : `Uploading ${Math.round(Number(uploadPercent))}%`}
-                </Typography>
-              </>
-            ) : null}
-          </Stack>
-        ) : (
-          <Stack alignItems="center" spacing={1} py={3}>
-            <Iconify icon="solar:videocamera-add-bold-duotone" width={36} />
-            <Typography variant="body2" color="text.secondary" textAlign="center">
-              {isDragActive
-                ? 'Drop video here'
-                : 'Drag & drop or browse to upload. Large files upload in chunks and can resume if interrupted.'}
-            </Typography>
-          </Stack>
-        )}
-      </Box>
+        </Box>
+      ) : (
+        <Box
+          {...getRootProps()}
+          sx={{
+            borderRadius: 2,
+            border: (theme) => `2px dashed ${theme.palette.divider}`,
+            bgcolor: 'background.neutral',
+            p: 2,
+            cursor: disabled ? 'not-allowed' : 'default',
+            opacity: disabled ? 0.6 : 1,
+          }}
+        >
+          {uploading ? (
+            <Stack alignItems="center" spacing={1.25} py={4}>
+              <CircularProgress size={32} />
+              {Number.isFinite(Number(uploadPercent)) ? (
+                <>
+                  <LinearProgress
+                    variant="determinate"
+                    value={Math.max(0, Math.min(100, Number(uploadPercent)))}
+                    sx={{ width: 1, maxWidth: 360, height: 8, borderRadius: 99 }}
+                  />
+                  <Typography variant="body2" color="text.secondary">
+                    {Number(uploadPercent) >= 99
+                      ? 'Assembling video… keep this tab open.'
+                      : `Uploading ${Math.round(Number(uploadPercent))}%`}
+                  </Typography>
+                </>
+              ) : null}
+            </Stack>
+          ) : (
+            <Stack alignItems="center" spacing={1} py={3}>
+              <Iconify icon="solar:videocamera-add-bold-duotone" width={36} />
+              <Typography variant="body2" color="text.secondary" textAlign="center">
+                {isDragActive
+                  ? 'Drop video here'
+                  : 'Drag & drop or browse to upload. Large files upload in chunks and can resume if interrupted.'}
+              </Typography>
+            </Stack>
+          )}
+        </Box>
+      )}
       <TextField
         size="small"
         label="Alt text"

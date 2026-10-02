@@ -399,6 +399,7 @@ export function InstructorsEditor() {
 export function SampleLectureEditor() {
   const { control, watch, setValue, getValues } = useFormContext();
   const watermarkText = String(watch('sections.sample_lecture.watermarkText') ?? '').trim();
+  const posterMedia = watch('sections.sample_lecture.poster');
 
   const persistSampleLectureVideo = async (next) => {
     const row = getValues('sections.sample_lecture') ?? {};
@@ -426,6 +427,7 @@ export function SampleLectureEditor() {
             <CmsVideoUploadField
               label="Sample lecture video"
               value={field.value}
+              posterMedia={posterMedia}
               onChange={(next) => {
                 field.onChange(next);
                 setValue('sections.sample_lecture.video', next, { shouldDirty: true, shouldTouch: true });

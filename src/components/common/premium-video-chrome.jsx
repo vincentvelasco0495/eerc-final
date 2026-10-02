@@ -218,6 +218,8 @@ export function useHtmlVideoChrome(videoRef, observeKey) {
       }
     };
 
+    setDuration(0);
+    setCurrentTime(0);
     pull();
     node.addEventListener('play', pull);
     node.addEventListener('pause', pull);
@@ -225,6 +227,9 @@ export function useHtmlVideoChrome(videoRef, observeKey) {
     node.addEventListener('timeupdate', pull);
     node.addEventListener('volumechange', pull);
     node.addEventListener('loadedmetadata', pull);
+    node.addEventListener('loadeddata', pull);
+    node.addEventListener('canplay', pull);
+    node.addEventListener('seeked', pull);
     node.addEventListener('durationchange', pull);
     return () => {
       node.removeEventListener('play', pull);
@@ -233,6 +238,9 @@ export function useHtmlVideoChrome(videoRef, observeKey) {
       node.removeEventListener('timeupdate', pull);
       node.removeEventListener('volumechange', pull);
       node.removeEventListener('loadedmetadata', pull);
+      node.removeEventListener('loadeddata', pull);
+      node.removeEventListener('canplay', pull);
+      node.removeEventListener('seeked', pull);
       node.removeEventListener('durationchange', pull);
     };
   }, [observeKey, videoRef]);

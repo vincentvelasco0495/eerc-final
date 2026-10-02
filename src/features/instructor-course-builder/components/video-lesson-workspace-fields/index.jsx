@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 
 import Box from '@mui/material/Box';
@@ -12,20 +12,8 @@ import FormControl from '@mui/material/FormControl';
 import LinearProgress from '@mui/material/LinearProgress';
 import CircularProgress from '@mui/material/CircularProgress';
 
-import {
-  usePlayerFullscreen,
-  htmlVideoNoNativeFullscreenSx,
-} from 'src/hooks/use-redirect-video-fullscreen';
-
 import { Iconify } from 'src/components/iconify';
-import { VideoFrameWatermark } from 'src/components/common/video-frame-watermark';
-import { PremiumVideoChrome, useHtmlVideoChrome } from 'src/components/common/premium-video-chrome';
-import {
-  premiumVideoSx,
-  useBlockContextMenu,
-  useLockPremiumVideoElement,
-  premiumVideoProtectionProps,
-} from 'src/components/common/premium-video-protection';
+import { PremiumPlayableVideo } from 'src/components/common/premium-playable-video';
 
 import { styles } from './styles';
 import { VIDEO_WATERMARK_MAX_LENGTH } from '../../utils/lesson-authoring-helpers';
@@ -43,17 +31,12 @@ function MediaDropzone({
   isVideo = false,
   disabled = false,
   previewUrl = '',
+  previewSources = [],
   uploading = false,
   uploadPercent = null,
+  previewLoading = false,
   watermarkText = '',
 }) {
-  const videoRef = useRef(null);
-  const previewWrapRef = useRef(null);
-  const { isFullscreen, toggle: toggleFullscreen } = usePlayerFullscreen(previewWrapRef);
-  useBlockContextMenu(previewWrapRef, previewUrl);
-  useLockPremiumVideoElement(videoRef, previewUrl);
-  const chrome = useHtmlVideoChrome(videoRef, previewUrl);
-
   const onDrop = useCallback(
     (acceptedFiles) => {
       onFiles?.(acceptedFiles);
@@ -83,54 +66,16 @@ function MediaDropzone({
       <input {...getInputProps()} />
       <Stack sx={{ alignItems: 'center', width: 1, gap: showPreview ? 1.5 : 0 }}>
         {showPreview ? (
-          <Box ref={previewWrapRef} sx={styles.previewWrap}>
+          <Box sx={{ position: 'relative', width: 1 }}>
             {isVideo ? (
-              <Box
-                  sx={{
-                    position: 'relative',
-                    width: 1,
-                    height: 1,
-                    isolation: 'isolate',
-                  }}
-                >
-                  <Box
-                    ref={videoRef}
-                    component="video"
-                    src={previewUrl}
-                    playsInline
-                    {...premiumVideoProtectionProps}
-                    sx={[styles.videoPreview, htmlVideoNoNativeFullscreenSx, premiumVideoSx]}
-                    {...(previewUrl.startsWith('blob:') ? { muted: true } : {})}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      chrome.togglePlay();
-                    }}
-                  />
-                  {watermarkText ? (
-                    <VideoFrameWatermark
-                      videoRef={videoRef}
-                      containerRef={previewWrapRef}
-                      username={watermarkText}
-                      observeKey={previewUrl}
-                    />
-                  ) : null}
-                  <PremiumVideoChrome
-                    paused={chrome.paused}
-                    muted={chrome.muted}
-                    volume={chrome.volume}
-                    currentTime={chrome.currentTime}
-                    duration={chrome.duration}
-                    isFullscreen={isFullscreen}
-                    onTogglePlay={chrome.togglePlay}
-                    onSeek={chrome.handleSeek}
-                    onSeekCommitted={chrome.handleSeekCommitted}
-                    onToggleMute={chrome.toggleMute}
-                    onVolume={chrome.handleVolume}
-                    onSkipBack={() => chrome.skipBy(-10)}
-                    onSkipForward={() => chrome.skipBy(10)}
-                    onToggleFullscreen={toggleFullscreen}
-                  />
-                </Box>
+              <PremiumPlayableVideo
+                key={previewUrl}
+                src={previewUrl}
+                sources={previewSources}
+                title="Lesson video"
+                aspectRatio="16 / 9"
+                watermarkText={watermarkText}
+              />
             ) : (
               <Box component="img" src={previewUrl} alt="" sx={styles.posterPreview} loading="lazy" />
             )}
@@ -156,7 +101,7 @@ function MediaDropzone({
               </Box>
             ) : null}
           </Box>
-        ) : uploading ? (
+        ) : uploading || previewLoading ? (
           <Stack spacing={1.25} sx={{ alignItems: 'center', width: 1, maxWidth: 360, my: 2 }}>
             <CircularProgress />
             {Number.isFinite(Number(uploadPercent)) ? (
@@ -172,7 +117,11 @@ function MediaDropzone({
                     : `Uploading ${Math.round(Number(uploadPercent))}%`}
                 </Typography>
               </>
-            ) : null}
+            ) : (
+              <Typography sx={styles.hint}>
+                {previewLoading ? 'Loading lesson video…' : 'Uploading…'}
+              </Typography>
+            )}
           </Stack>
         ) : (
           <Iconify
@@ -182,10 +131,12 @@ function MediaDropzone({
           />
         )}
 
-        <Typography sx={styles.hint}>{showPreview || uploading ? hintWhenPreview ?? hint : hint}</Typography>
+        <Typography sx={styles.hint}>
+          {showPreview || uploading || previewLoading ? hintWhenPreview ?? hint : hint}
+        </Typography>
 
         <Stack direction={{ xs: 'column', sm: 'row' }} sx={styles.actionRow}>
-          {!showPreview && !uploading ? (
+          {!showPreview && !uploading && !previewLoading ? (
             <Button
               type="button"
               variant="contained"
@@ -234,8 +185,10 @@ export function VideoLessonWorkspaceFields({
   onVideoFiles,
   videoSecondaryHint = null,
   videoPreviewUrl = '',
+  videoPreviewSources = [],
   videoUploading = false,
   videoUploadPercent = null,
+  videoPreviewLoading = false,
   onVideoRemove,
   showVideoRemove = false,
   watermarkText = '',
@@ -273,8 +226,10 @@ export function VideoLessonWorkspaceFields({
           isVideo
           disabled={videoUploading}
           previewUrl={videoPreviewUrl}
+          previewSources={videoPreviewSources}
           uploading={videoUploading}
           uploadPercent={videoUploadPercent}
+          previewLoading={videoPreviewLoading}
           watermarkText={watermarkText}
         />
         {videoSecondaryHint ? (

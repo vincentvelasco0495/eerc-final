@@ -1,6 +1,9 @@
 import Box from '@mui/material/Box';
 
-import { resolveCmsMediaFromRecord } from 'src/features/homepage-v2/utils/resolve-cms-media-url';
+import {
+  resolveCmsMediaFromRecord,
+  resolveCmsVideoPlaybackUrls,
+} from 'src/features/homepage-v2/utils/resolve-cms-media-url';
 
 import { PremiumPlayableVideo } from 'src/components/common/premium-playable-video';
 
@@ -14,10 +17,10 @@ export function CmsVideo({
   watermarkText = '',
   sx,
 }) {
-  const url = resolveCmsMediaFromRecord(media);
+  const sources = resolveCmsVideoPlaybackUrls(media);
   const posterUrl = resolveCmsMediaFromRecord(posterMedia);
 
-  if (url) {
+  if (sources.length > 0) {
     return (
       <Box
         sx={[
@@ -26,7 +29,8 @@ export function CmsVideo({
         ]}
       >
         <PremiumPlayableVideo
-          src={url}
+          src={sources[0]}
+          sources={sources}
           poster={posterUrl}
           title={media?.alt || label}
           aspectRatio={aspectRatio}

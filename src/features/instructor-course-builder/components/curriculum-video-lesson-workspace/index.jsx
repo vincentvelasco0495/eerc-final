@@ -8,6 +8,7 @@ import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 
 import { CONFIG } from 'src/global-config';
+import { resolveLessonVideoPlaybackUrls } from 'src/features/courses/utils/resolve-lesson-video-playback-urls';
 import {
   deleteLessonMaterial,
   getLmsAxiosErrorMessage,
@@ -44,6 +45,8 @@ export function CurriculumVideoLessonWorkspace({
   const [videoUploading, setVideoUploading] = useState(false);
   const [videoUploadPercent, setVideoUploadPercent] = useState(null);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState('');
+  const [videoPreviewSources, setVideoPreviewSources] = useState([]);
+  const [videoPreviewLoading, setVideoPreviewLoading] = useState(false);
   const videoBlobRef = useRef(null);
 
   const assignVideoPreviewUrl = useCallback((blobUrlOrNull) => {
@@ -55,6 +58,9 @@ export function CurriculumVideoLessonWorkspace({
     }
     videoBlobRef.current = next && next.startsWith('blob:') ? next : null;
     setVideoPreviewUrl(next ?? '');
+    if (!next || next.startsWith('blob:')) {
+      setVideoPreviewSources(next ? [next] : []);
+    }
   }, []);
 
   useEffect(
@@ -233,16 +239,29 @@ export function CurriculumVideoLessonWorkspace({
       if (videoUploading) return;
       if (!vid || !CONFIG.serverUrl?.trim()) {
         assignVideoPreviewUrl(null);
+        setVideoPreviewSources([]);
+        setVideoPreviewLoading(false);
         return;
       }
 
+      setVideoPreviewLoading(true);
       try {
         const src = await getLessonMaterialPlaybackUrl(vid);
-        if (!src) return;
         if (cancelled || videoUploading) return;
-        assignVideoPreviewUrl(src);
+        const urls = resolveLessonVideoPlaybackUrls(vid, src);
+        assignVideoPreviewUrl(urls[0] || src);
+        setVideoPreviewSources(urls);
       } catch {
-        /* keep optimistic preview during transient API errors */
+        if (cancelled || videoUploading) return;
+        const urls = resolveLessonVideoPlaybackUrls(vid);
+        if (urls[0]) {
+          assignVideoPreviewUrl(urls[0]);
+          setVideoPreviewSources(urls);
+        }
+      } finally {
+        if (!cancelled) {
+          setVideoPreviewLoading(false);
+        }
       }
     }
 
@@ -529,8 +548,10 @@ export function CurriculumVideoLessonWorkspace({
             onVideoFiles={handleVideoFiles}
             videoSecondaryHint={videoSecondaryHint}
             videoPreviewUrl={videoPreviewUrl}
+            videoPreviewSources={videoPreviewSources}
             videoUploading={videoUploading}
             videoUploadPercent={videoUploadPercent}
+            videoPreviewLoading={videoPreviewLoading}
             onVideoRemove={handleRemoveVideo}
             showVideoRemove={showVideoRemoveControls}
             watermarkText={watermarkText}
