@@ -238,8 +238,19 @@ export function CurriculumVideoLessonWorkspace({
     async function load() {
       if (videoUploading) return;
       if (!vid || !CONFIG.serverUrl?.trim()) {
-        assignVideoPreviewUrl(null);
-        setVideoPreviewSources([]);
+        if (!videoBlobRef.current) {
+          assignVideoPreviewUrl(null);
+          setVideoPreviewSources([]);
+        }
+        setVideoPreviewLoading(false);
+        return;
+      }
+
+      if (videoBlobRef.current?.startsWith('blob:')) {
+        const urls = resolveLessonVideoPlaybackUrls(vid);
+        setVideoPreviewSources(
+          [...new Set([videoBlobRef.current, ...urls].filter(Boolean))]
+        );
         setVideoPreviewLoading(false);
         return;
       }

@@ -24,6 +24,7 @@ import {
 } from 'src/hooks/use-lms';
 
 import { resolveApiAssetUrl } from 'src/utils/resolve-api-asset-url';
+import { resolveCourseMarketingBannerUrl } from 'src/utils/course-hero-image';
 
 import { CONFIG } from 'src/global-config';
 import { DashboardContent } from 'src/layouts/dashboard';
@@ -541,6 +542,7 @@ export function CourseVideoLessonView() {
                   <SecureLessonVideo
                     src={fileVideoObjectUrl}
                     sources={fileVideoSources}
+                    poster={resolveCourseMarketingBannerUrl(course)}
                     title={lessonPayload.title}
                     watermarkText={watermarkText}
                     dateLabel={dateLabel}

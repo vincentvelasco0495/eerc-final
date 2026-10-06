@@ -12,6 +12,6 @@ export function useAboutContent({ preview = false } = {}) {
     queryKey: ['about-us', preview ? 'preview' : 'public'],
     queryFn: () => (hasApi ? fetchAboutUsPublic(preview) : Promise.resolve(ABOUT_US_DEFAULTS)),
     // No placeholderData: lets the About page show a skeleton for CMS media until the first fetch completes.
-    staleTime: 120_000,
+    staleTime: 300_000,
   });
 }

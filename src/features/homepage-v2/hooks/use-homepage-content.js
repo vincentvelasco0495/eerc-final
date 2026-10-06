@@ -12,7 +12,7 @@ export function useHomepageContent({ preview = false } = {}) {
     queryKey: ['homepage-v2', preview ? 'preview' : 'public'],
     queryFn: () => (hasApi ? fetchHomepageV2Public(preview) : Promise.resolve(HOMEPAGE_V2_DEFAULTS)),
     placeholderData: (prev) => prev ?? HOMEPAGE_V2_DEFAULTS,
-    staleTime: 120_000,
+    staleTime: 300_000,
   });
 }
 

@@ -4,9 +4,11 @@ import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url'; // eslint-dis
 
 import Box from '@mui/material/Box';
 import Dialog from '@mui/material/Dialog';
+import { useTheme } from '@mui/material/styles';
 import IconButton from '@mui/material/IconButton';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import CircularProgress from '@mui/material/CircularProgress';
 
 import { fetchLessonMaterialBlob } from 'src/lib/lms-instructor-api';
@@ -15,6 +17,9 @@ import { QUIZ_PDF_MAX_PAGES } from 'src/features/instructor-course-builder/utils
 import { Iconify } from 'src/components/iconify';
 
 const pdfBytesCache = new Map();
+const MAX_CANVAS_EDGE = 4096;
+const PDF_CACHE_NAME = 'eerc-quiz-pdf-v1';
+const PDF_CACHE_MAX_BYTES = 15 * 1024 * 1024;
 
 function ensurePdfWorker() {
   GlobalWorkerOptions.workerSrc = pdfjsWorker;
@@ -22,6 +27,41 @@ function ensurePdfWorker() {
 
 function trimId(value) {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function pdfCacheRequest(key) {
+  return new Request(`https://eerc.local/pdf-cache/${encodeURIComponent(key)}`);
+}
+
+async function readPersistentPdf(key) {
+  if (typeof caches === 'undefined') {
+    return null;
+  }
+  try {
+    const store = await caches.open(PDF_CACHE_NAME);
+    const hit = await store.match(pdfCacheRequest(key));
+    if (!hit) {
+      return null;
+    }
+    return new Uint8Array(await hit.arrayBuffer());
+  } catch {
+    return null;
+  }
+}
+
+async function writePersistentPdf(key, bytes) {
+  if (typeof caches === 'undefined' || bytes.length > PDF_CACHE_MAX_BYTES) {
+    return;
+  }
+  try {
+    const store = await caches.open(PDF_CACHE_NAME);
+    await store.put(
+      pdfCacheRequest(key),
+      new Response(bytes, { headers: { 'Content-Type': 'application/pdf' } })
+    );
+  } catch {
+    // Quota or private mode.
+  }
 }
 
 async function loadPdfBytes(materialPublicId, src) {
@@ -34,15 +74,23 @@ async function loadPdfBytes(materialPublicId, src) {
     pdfBytesCache.set(
       key,
       (async () => {
+        const persisted = await readPersistentPdf(key);
+        if (persisted?.byteLength) {
+          return persisted;
+        }
         if (id) {
           const blob = await fetchLessonMaterialBlob(id, { inline: 1 });
-          return new Uint8Array(await blob.arrayBuffer());
+          const bytes = new Uint8Array(await blob.arrayBuffer());
+          await writePersistentPdf(key, bytes);
+          return bytes;
         }
         const response = await fetch(src);
         if (!response.ok) {
           throw new Error('Could not load the PDF.');
         }
-        return new Uint8Array(await response.arrayBuffer());
+        const bytes = new Uint8Array(await response.arrayBuffer());
+        await writePersistentPdf(key, bytes);
+        return bytes;
       })().catch((err) => {
         pdfBytesCache.delete(key);
         throw err;
@@ -53,29 +101,34 @@ async function loadPdfBytes(materialPublicId, src) {
   return bytes.slice();
 }
 
+function outputScale() {
+  const dpr = Number(window.devicePixelRatio) || 1;
+  return Math.min(Math.max(dpr, 1), 3);
+}
+
 function PdfPages({ materialPublicId, src, maxHeight = 520 }) {
   const hostRef = useRef(null);
   const [status, setStatus] = useState('loading');
 
   useEffect(() => {
     let cancelled = false;
+    let timer = 0;
+    let lastWidth = 0;
     const host = hostRef.current;
     if (!host) {
       return undefined;
     }
 
-    host.replaceChildren();
-    setStatus('loading');
     ensurePdfWorker();
 
-    (async () => {
+    const render = async () => {
+      const cssWidth = host.clientWidth;
+      if (cssWidth < 40) {
+        return;
+      }
+      host.replaceChildren();
+      setStatus('loading');
       try {
-        await new Promise((resolve) => {
-          requestAnimationFrame(() => requestAnimationFrame(resolve));
-        });
-        if (cancelled) {
-          return;
-        }
         const data = await loadPdfBytes(materialPublicId, src);
         if (cancelled) {
           return;
@@ -86,18 +139,22 @@ function PdfPages({ materialPublicId, src, maxHeight = 520 }) {
           return;
         }
         const pageLimit = Math.min(pdf.numPages, QUIZ_PDF_MAX_PAGES);
+        const pixelRatio = outputScale();
         for (let pageNumber = 1; pageNumber <= pageLimit; pageNumber += 1) {
           const page = await pdf.getPage(pageNumber);
           if (cancelled) {
             break;
           }
           const unscaled = page.getViewport({ scale: 1 });
-          const width = Math.max(host.clientWidth || 560, 240);
-          const scale = width / unscaled.width;
-          const viewport = page.getViewport({ scale: Math.min(Math.max(scale, 0.6), 2) });
+          const fitWidth = Math.max(host.clientWidth, 240);
+          const viewport = page.getViewport({ scale: fitWidth / unscaled.width });
+          let drawScale = pixelRatio;
+          if (viewport.width * drawScale > MAX_CANVAS_EDGE) {
+            drawScale = MAX_CANVAS_EDGE / viewport.width;
+          }
           const canvas = document.createElement('canvas');
-          canvas.width = Math.ceil(viewport.width);
-          canvas.height = Math.ceil(viewport.height);
+          canvas.width = Math.floor(viewport.width * drawScale);
+          canvas.height = Math.floor(viewport.height * drawScale);
           canvas.style.width = '100%';
           canvas.style.height = 'auto';
           canvas.style.display = 'block';
@@ -109,7 +166,8 @@ function PdfPages({ materialPublicId, src, maxHeight = 520 }) {
           }
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
-          await page.render({ canvasContext: ctx, viewport }).promise;
+          const transform = drawScale !== 1 ? [drawScale, 0, 0, drawScale, 0, 0] : null;
+          await page.render({ canvasContext: ctx, viewport, transform }).promise;
           if (!cancelled) {
             host.appendChild(canvas);
             if (pageNumber === 1) {
@@ -126,10 +184,30 @@ function PdfPages({ materialPublicId, src, maxHeight = 520 }) {
           setStatus('error');
         }
       }
-    })();
+    };
+
+    const schedule = () => {
+      const nextWidth = host.clientWidth;
+      if (nextWidth < 40) {
+        return;
+      }
+      if (lastWidth > 0 && Math.abs(nextWidth - lastWidth) < 8) {
+        return;
+      }
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        lastWidth = host.clientWidth;
+        void render();
+      }, lastWidth === 0 ? 0 : 120);
+    };
+
+    const observer = new ResizeObserver(schedule);
+    observer.observe(host);
 
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
+      observer.disconnect();
       host.replaceChildren();
     };
   }, [materialPublicId, src]);
@@ -152,6 +230,7 @@ function PdfPages({ materialPublicId, src, maxHeight = 520 }) {
           display: status === 'error' ? 'none' : 'block',
           maxHeight,
           overflow: 'auto',
+          WebkitOverflowScrolling: 'touch',
           px: 1,
           py: 1,
           bgcolor: 'background.neutral',
@@ -163,6 +242,8 @@ function PdfPages({ materialPublicId, src, maxHeight = 520 }) {
 }
 
 export function QuizPdfDocument({ materialPublicId, src, fileName, maxHeight = 520 }) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [open, setOpen] = useState(false);
   const id = trimId(materialPublicId);
 
@@ -193,6 +274,7 @@ export function QuizPdfDocument({ materialPublicId, src, fileName, maxHeight = 5
       <Dialog
         open={open}
         onClose={() => setOpen(false)}
+        fullScreen={isMobile}
         maxWidth="md"
         fullWidth
         slotProps={{
@@ -200,7 +282,7 @@ export function QuizPdfDocument({ materialPublicId, src, fileName, maxHeight = 5
             sx: {
               bgcolor: 'background.paper',
               backgroundImage: 'none',
-              height: '90vh',
+              height: isMobile ? '100%' : '90vh',
             },
           },
         }}
@@ -213,9 +295,13 @@ export function QuizPdfDocument({ materialPublicId, src, fileName, maxHeight = 5
         >
           <Iconify icon="eva:close-fill" width={22} />
         </IconButton>
-        <DialogContent sx={{ pt: 0 }}>
+        <DialogContent sx={{ pt: 0, px: { xs: 1, sm: 3 } }}>
           {open ? (
-            <PdfPages materialPublicId={id} src={src} maxHeight="calc(90vh - 88px)" />
+            <PdfPages
+              materialPublicId={id}
+              src={src}
+              maxHeight={isMobile ? 'calc(100dvh - 72px)' : 'calc(90vh - 88px)'}
+            />
           ) : null}
         </DialogContent>
       </Dialog>

@@ -2,6 +2,8 @@ import { useRef, useMemo, useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 
+import { useInstantVideoStart } from 'src/hooks/use-instant-video-start';
+import { useVideoPosterFromSrc } from 'src/hooks/use-video-poster-from-src';
 import { usePaintVideoPreviewFrame } from 'src/hooks/use-paint-video-preview-frame';
 import {
   usePlayerFullscreen,
@@ -11,8 +13,8 @@ import {
   htmlVideoNoNativeFullscreenSx,
 } from 'src/hooks/use-redirect-video-fullscreen';
 
-import { Iconify } from 'src/components/iconify';
 import { VideoFrameWatermark } from 'src/components/common/video-frame-watermark';
+import { PremiumVideoStartOverlay } from 'src/components/common/premium-video-start-overlay';
 import { PremiumVideoChrome, useHtmlVideoChrome } from 'src/components/common/premium-video-chrome';
 import {
   premiumVideoSx,
@@ -32,6 +34,7 @@ export function PremiumPlayableVideo({
   aspectRatio = '16 / 9',
   watermarkText = '',
   dateLabel,
+  preload = 'metadata',
   sx,
 }) {
   const videoRef = useRef(null);
@@ -47,6 +50,13 @@ export function PremiumPlayableVideo({
   const [sourceIndex, setSourceIndex] = useState(0);
   const activeSrc = playbackSources[Math.min(sourceIndex, Math.max(playbackSources.length - 1, 0))] || '';
   const sourceKey = playbackSources.join('\n');
+  const blobPoster = useVideoPosterFromSrc(activeSrc);
+  const resolvedPoster = poster || blobPoster;
+  const { showPoster, buffering, hidePoster, handlePlaying, handleWaiting } = useInstantVideoStart(
+    resolvedPoster,
+    sourceKey,
+    videoRef
+  );
 
   useEffect(() => {
     setSourceIndex(0);
@@ -129,15 +139,6 @@ export function PremiumPlayableVideo({
     };
   }, [activeSrc]);
 
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video || !activeSrc) {
-      return undefined;
-    }
-    video.load();
-    return undefined;
-  }, [activeSrc]);
-
   if (!activeSrc) {
     return null;
   }
@@ -167,12 +168,15 @@ export function PremiumPlayableVideo({
         ref={videoRef}
         component="video"
         src={activeSrc}
-        poster={poster || undefined}
+        poster={resolvedPoster || undefined}
         title={title}
         playsInline
-        preload="auto"
+        preload={preload}
         {...premiumVideoProtectionProps}
         onError={tryNextSource}
+        onWaiting={handleWaiting}
+        onPlaying={handlePlaying}
+        onCanPlay={resolvedPoster ? undefined : hidePoster}
         sx={{
           position: 'absolute',
           inset: 0,
@@ -196,34 +200,13 @@ export function PremiumPlayableVideo({
         />
       ) : null}
 
-      {chrome.paused ? (
-        <Box
-          sx={{
-            position: 'absolute',
-            inset: 0,
-            zIndex: 3,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            pointerEvents: 'none',
-          }}
-        >
-          <Box
-            sx={{
-              width: 64,
-              height: 64,
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              bgcolor: 'rgba(0,0,0,0.55)',
-              color: 'common.white',
-            }}
-          >
-            <Iconify icon="solar:play-bold" width={28} />
-          </Box>
-        </Box>
-      ) : null}
+      <PremiumVideoStartOverlay
+        poster={resolvedPoster}
+        showPoster={showPoster}
+        buffering={buffering}
+        paused={chrome.paused}
+        onPosterError={hidePoster}
+      />
 
       <PremiumVideoChrome
         paused={chrome.paused}

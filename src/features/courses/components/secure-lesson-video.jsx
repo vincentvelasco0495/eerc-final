@@ -6,6 +6,8 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import LinearProgress from '@mui/material/LinearProgress';
 
+import { useInstantVideoStart } from 'src/hooks/use-instant-video-start';
+import { useVideoPosterFromSrc } from 'src/hooks/use-video-poster-from-src';
 import { usePaintVideoPreviewFrame } from 'src/hooks/use-paint-video-preview-frame';
 import {
   usePlayerFullscreen,
@@ -15,8 +17,8 @@ import {
   htmlVideoNoNativeFullscreenSx,
 } from 'src/hooks/use-redirect-video-fullscreen';
 
-import { Iconify } from 'src/components/iconify';
 import { VideoFrameWatermark } from 'src/components/common/video-frame-watermark';
+import { PremiumVideoStartOverlay } from 'src/components/common/premium-video-start-overlay';
 import { formatVideoClock, PremiumVideoChrome } from 'src/components/common/premium-video-chrome';
 import {
   premiumVideoSx,
@@ -28,6 +30,7 @@ import {
 export function SecureLessonVideo({
   src,
   sources,
+  poster,
   title,
   watermarkText,
   dateLabel,
@@ -62,6 +65,13 @@ export function SecureLessonVideo({
   const activeSrc =
     playbackSources[Math.min(sourceIndex, Math.max(playbackSources.length - 1, 0))] || '';
   const sourceKey = playbackSources.join('\n');
+  const blobPoster = useVideoPosterFromSrc(activeSrc);
+  const resolvedPoster = poster || blobPoster;
+  const { showPoster, buffering, hidePoster, handlePlaying, handleWaiting } = useInstantVideoStart(
+    resolvedPoster,
+    sourceKey,
+    videoRef
+  );
 
   useEffect(() => {
     setSourceIndex(0);
@@ -299,15 +309,6 @@ export function SecureLessonVideo({
   }, [activeSrc]);
 
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video || !activeSrc) {
-      return undefined;
-    }
-    video.load();
-    return undefined;
-  }, [activeSrc]);
-
-  useEffect(() => {
     const wrap = playerRef.current;
     if (!wrap) {
       return undefined;
@@ -382,11 +383,17 @@ export function SecureLessonVideo({
             ref={videoRef}
             component="video"
             src={activeSrc}
+            poster={resolvedPoster || undefined}
             title={title}
             playsInline
-            preload="auto"
+            preload="metadata"
             {...premiumVideoProtectionProps}
             onError={tryNextSource}
+            onWaiting={handleWaiting}
+            onPlaying={() => {
+              setPaused(false);
+              handlePlaying();
+            }}
             onPlay={() => setPaused(false)}
             onPause={() => {
               setPaused(true);
@@ -396,6 +403,7 @@ export function SecureLessonVideo({
             onEnded={handleEnded}
             onLoadedMetadata={handleLoadedMetadata}
             onLoadedData={syncDuration}
+            onCanPlay={resolvedPoster ? undefined : hidePoster}
             onSeeked={handleTimeUpdate}
             onDurationChange={syncDuration}
             sx={{
@@ -420,34 +428,13 @@ export function SecureLessonVideo({
             observeKey={activeSrc}
           />
         ) : null}
-        {paused ? (
-          <Box
-            sx={{
-              position: 'absolute',
-              inset: 0,
-              zIndex: 3,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              pointerEvents: 'none',
-            }}
-          >
-            <Box
-              sx={{
-                width: 64,
-                height: 64,
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                bgcolor: 'rgba(0,0,0,0.55)',
-                color: 'common.white',
-              }}
-            >
-              <Iconify icon="solar:play-bold" width={28} />
-            </Box>
-          </Box>
-        ) : null}
+        <PremiumVideoStartOverlay
+          poster={resolvedPoster}
+          showPoster={showPoster}
+          buffering={buffering}
+          paused={paused}
+          onPosterError={hidePoster}
+        />
         <PremiumVideoChrome
           paused={paused}
           muted={muted}

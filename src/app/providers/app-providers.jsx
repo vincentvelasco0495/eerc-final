@@ -59,7 +59,14 @@ export default function AppProviders({ children }) {
   return (
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
-      <SWRConfig value={{ revalidateOnFocus: false }}>
+      <SWRConfig
+        value={{
+          revalidateOnFocus: false,
+          revalidateIfStale: true,
+          dedupingInterval: 30_000,
+          errorRetryCount: 1,
+        }}
+      >
         <StoreBootstrapper>
           <I18nProvider>
             <AuthProvider>

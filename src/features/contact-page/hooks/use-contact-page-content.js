@@ -12,6 +12,6 @@ export function useContactPageContent({ preview = false } = {}) {
     queryKey: ['contact-page', preview ? 'preview' : 'public'],
     queryFn: () => (hasApi ? fetchContactPagePublic(preview) : Promise.resolve(CONTACT_PAGE_DEFAULTS)),
     placeholderData: (prev) => prev ?? CONTACT_PAGE_DEFAULTS,
-    staleTime: 120_000,
+    staleTime: 300_000,
   });
 }

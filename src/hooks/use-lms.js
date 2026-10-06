@@ -67,7 +67,7 @@ function useReduxLmsResource(endpoint, enabled = true, options = {}) {
   const cacheKey = options.cacheKey ?? endpoint;
   const useRedux = Boolean(enabled && fetchEndpoint && shouldUseReduxRead(fetchEndpoint));
   const resource = useSelector((state) => selectLmsResourceByKey(state, cacheKey));
-  const ttlMs = Number(options.ttlMs ?? 10_000);
+  const ttlMs = Number(options.ttlMs ?? 30_000);
   const canRefetch = Boolean(options.refetchOnMount ?? true);
   const retryOnError = Boolean(options.retryOnError ?? false);
 
@@ -138,7 +138,7 @@ export function useLmsUser(enabled = true) {
 }
 
 export function useLmsMeta() {
-  const redux = useReduxLmsResource(lmsEndpoints.meta(), true, { ttlMs: 60_000 });
+  const redux = useReduxLmsResource(lmsEndpoints.meta(), true, { ttlMs: 120_000 });
   const source = redux.data;
   return (
     source ?? {
@@ -150,7 +150,7 @@ export function useLmsMeta() {
 }
 
 export function useLmsPrograms() {
-  const redux = useReduxLmsResource(lmsEndpoints.programs(), true, { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(lmsEndpoints.programs(), true, { ttlMs: 120_000 });
   return {
     programs: redux.data?.data ?? [],
     isLoading: redux.isLoading,
@@ -169,7 +169,7 @@ export function useLmsProgramsPaginated(page = 1, perPage = 10, search = '') {
       }),
     [page, perPage, search]
   );
-  const redux = useReduxLmsResource(endpoint, true, { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(endpoint, true, { ttlMs: 30_000 });
   const payload = redux.data ?? {};
   const meta = payload?.meta ?? null;
   return {
@@ -203,7 +203,7 @@ export function useLmsProgramApplicantsPaginated(
         : null,
     [page, perPage, programId, ready, search, status]
   );
-  const redux = useReduxLmsResource(endpoint, ready, { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(endpoint, ready, { ttlMs: 30_000 });
   const payload = redux.data ?? {};
   return {
     program: payload.program ?? null,
@@ -217,7 +217,7 @@ export function useLmsProgramApplicantsPaginated(
 }
 
 export function useLmsBranchEnrolls() {
-  const redux = useReduxLmsResource(lmsEndpoints.branchEnrolls(), true, { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(lmsEndpoints.branchEnrolls(), true, { ttlMs: 30_000 });
   return {
     branchEnrolls: redux.data?.data ?? [],
     isLoading: redux.isLoading,
@@ -236,7 +236,7 @@ export function useLmsBatchEnrollsPaginated(page = 1, perPage = 10, search = '')
       }),
     [page, perPage, search]
   );
-  const redux = useReduxLmsResource(endpoint, true, { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(endpoint, true, { ttlMs: 30_000 });
   const payload = redux.data ?? {};
   const meta = payload?.meta ?? null;
   return {
@@ -270,7 +270,7 @@ export function useLmsBatchApplicantsPaginated(
         : null,
     [batchId, page, perPage, ready, search, status]
   );
-  const redux = useReduxLmsResource(endpoint, ready, { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(endpoint, ready, { ttlMs: 30_000 });
   const payload = redux.data ?? {};
   return {
     batch: payload.batch ?? null,
@@ -293,7 +293,7 @@ export function useLmsLearningModesPaginated(page = 1, perPage = 10, search = ''
       }),
     [page, perPage, search]
   );
-  const redux = useReduxLmsResource(endpoint, true, { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(endpoint, true, { ttlMs: 30_000 });
   const payload = redux.data ?? {};
   const meta = payload?.meta ?? null;
   return {
@@ -331,7 +331,7 @@ export function useLmsLearningModeApplicantsPaginated(
         : null,
     [batch, modeId, page, perPage, program, ready, search, status]
   );
-  const redux = useReduxLmsResource(endpoint, ready, { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(endpoint, ready, { ttlMs: 30_000 });
   const payload = redux.data ?? {};
   return {
     learningMode: payload.learningMode ?? null,
@@ -373,7 +373,7 @@ export function useLmsBranchApplicantsPaginated(
         : null,
     [batch, branchId, learningMode, page, perPage, program, ready, search, status]
   );
-  const redux = useReduxLmsResource(endpoint, ready, { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(endpoint, ready, { ttlMs: 30_000 });
   const payload = redux.data ?? {};
   return {
     branch: payload.branch ?? null,
@@ -397,7 +397,7 @@ export function useLmsBranchEnrollsPaginated(page = 1, perPage = 10, search = ''
       }),
     [page, perPage, search]
   );
-  const redux = useReduxLmsResource(endpoint, true, { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(endpoint, true, { ttlMs: 30_000 });
   const payload = redux.data ?? {};
   const meta = payload?.meta ?? null;
   return {
@@ -437,7 +437,7 @@ export function useLmsReviewScheduleApplicantsPaginated(
         : null,
     [batch, learningMode, page, perPage, program, ready, scheduleId, search, status]
   );
-  const redux = useReduxLmsResource(endpoint, ready, { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(endpoint, ready, { ttlMs: 30_000 });
   const payload = redux.data ?? {};
   return {
     reviewSchedule: payload.reviewSchedule ?? null,
@@ -463,7 +463,7 @@ export function useLmsReviewSchedulesPaginated(page = 1, perPage = 10, search = 
       }),
     [page, perPage, search]
   );
-  const redux = useReduxLmsResource(endpoint, true, { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(endpoint, true, { ttlMs: 30_000 });
   const payload = redux.data ?? {};
   const meta = payload?.meta ?? null;
   return {
@@ -503,7 +503,7 @@ export function useLmsHonorAwardDiscountApplicantsPaginated(
         : null,
     [batch, branch, optionId, page, perPage, program, ready, search, status]
   );
-  const redux = useReduxLmsResource(endpoint, ready, { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(endpoint, ready, { ttlMs: 30_000 });
   const payload = redux.data ?? {};
   return {
     honorAwardDiscount: payload.honorAwardDiscount ?? null,
@@ -527,7 +527,7 @@ export function useLmsHonorAwardDiscountsPaginated(page = 1, perPage = 10, searc
       }),
     [page, perPage, search]
   );
-  const redux = useReduxLmsResource(endpoint, true, { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(endpoint, true, { ttlMs: 30_000 });
   const payload = redux.data ?? {};
   const meta = payload?.meta ?? null;
   return {
@@ -567,7 +567,7 @@ export function useLmsPackageEnrollApplicantsPaginated(
         : null,
     [batch, branch, packageId, page, perPage, program, ready, search, status]
   );
-  const redux = useReduxLmsResource(endpoint, ready, { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(endpoint, ready, { ttlMs: 30_000 });
   const payload = redux.data ?? {};
   return {
     packageEnroll: payload.packageEnroll ?? null,
@@ -591,7 +591,7 @@ export function useLmsPackageEnrollsPaginated(page = 1, perPage = 10, search = '
       }),
     [page, perPage, search]
   );
-  const redux = useReduxLmsResource(endpoint, true, { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(endpoint, true, { ttlMs: 30_000 });
   const payload = redux.data ?? {};
   const meta = payload?.meta ?? null;
   return {
@@ -618,7 +618,7 @@ export function useRefreshLmsProgramsCatalog() {
 
 /** Full instructor roster (`GET /api/instructors` without pagination). */
 export function useLmsInstructors() {
-  const redux = useReduxLmsResource(lmsEndpoints.instructors(), true, { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(lmsEndpoints.instructors(), true, { ttlMs: 60_000 });
   return {
     instructors: redux.data?.data ?? [],
     isLoading: redux.isLoading,
@@ -637,7 +637,7 @@ export function useLmsInstructorsPaginated(page = 1, perPage = 10, search = '') 
       }),
     [page, perPage, search]
   );
-  const redux = useReduxLmsResource(endpoint, true, { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(endpoint, true, { ttlMs: 30_000 });
   const payload = redux.data ?? {};
   const meta = payload?.meta ?? null;
   return {
@@ -664,7 +664,7 @@ export function useRefreshInstructorsCatalog() {
 
 export function useLmsInstructorLinkableUsers() {
   const endpoint = lmsEndpoints.instructorsLinkableUsers();
-  const redux = useReduxLmsResource(endpoint, true, { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(endpoint, true, { ttlMs: 30_000 });
   return {
     linkableUsers: redux.data?.data ?? [],
     isLoading: redux.isLoading,
@@ -683,7 +683,7 @@ export function useLmsStudentsPaginated(page = 1, perPage = 10, search = '') {
       }),
     [page, perPage, search]
   );
-  const redux = useReduxLmsResource(endpoint, true, { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(endpoint, true, { ttlMs: 30_000 });
   const payload = redux.data ?? {};
   const meta = payload?.meta ?? null;
   return {
@@ -710,7 +710,7 @@ export function useRefreshStudentsCatalog() {
 
 export function useLmsStudentLinkableUsers() {
   const endpoint = lmsEndpoints.studentsLinkableUsers();
-  const redux = useReduxLmsResource(endpoint, true, { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(endpoint, true, { ttlMs: 30_000 });
   return {
     linkableUsers: redux.data?.data ?? [],
     isLoading: redux.isLoading,
@@ -721,7 +721,7 @@ export function useLmsStudentLinkableUsers() {
 
 export function useLmsProgramStats(programPublicId) {
   const key = programPublicId ? lmsEndpoints.programStats(programPublicId) : null;
-  const redux = useReduxLmsResource(key, Boolean(key), { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(key, Boolean(key), { ttlMs: 30_000 });
   return {
     stats: redux.data?.data ?? null,
     isLoading: redux.isLoading,
@@ -731,7 +731,7 @@ export function useLmsProgramStats(programPublicId) {
 
 export function useLmsCourses(page = 1, limit = 100, program = '', status = '') {
   const key = lmsEndpoints.courses({ page, limit, program, status });
-  const redux = useReduxLmsResource(key, true, { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(key, true, { ttlMs: 30_000 });
   const payload = redux.data ?? {};
   return {
     courses: payload?.data ?? [],
@@ -824,7 +824,7 @@ export function useLmsEnrolledProgramCourses(enrollments = []) {
 export function useLmsCourseByLookup(courseLookup) {
   const normalized = String(courseLookup ?? '').trim();
   const key = normalized ? lmsEndpoints.courseDetail(normalized) : null;
-  const redux = useReduxLmsResource(key, Boolean(key), { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(key, Boolean(key), { ttlMs: 30_000 });
   return {
     course: redux.data?.data ?? null,
     isLoading: redux.isLoading,
@@ -880,7 +880,7 @@ export function useLmsCourse(courseId) {
 
 export function useLmsCourseStats(courseId) {
   const key = courseId ? lmsEndpoints.courseStats(courseId) : null;
-  const redux = useReduxLmsResource(key, Boolean(key), { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(key, Boolean(key), { ttlMs: 30_000 });
   return {
     stats: redux.data?.data ?? null,
     isLoading: redux.isLoading,
@@ -890,7 +890,7 @@ export function useLmsCourseStats(courseId) {
 
 export function useLmsModulesByCourse(courseId, swrOptions = {}) {
   const key = courseId ? lmsEndpoints.modulesByCourse(courseId) : null;
-  const redux = useReduxLmsResource(key, Boolean(key), { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(key, Boolean(key), { ttlMs: 30_000 });
   void swrOptions;
   return {
     modules: redux.data?.data ?? [],
@@ -901,14 +901,14 @@ export function useLmsModulesByCourse(courseId, swrOptions = {}) {
 
 export function useLmsModule(moduleId) {
   const key = moduleId ? lmsEndpoints.moduleById(moduleId) : null;
-  const redux = useReduxLmsResource(key, Boolean(key), { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(key, Boolean(key), { ttlMs: 30_000 });
   const list = redux.data?.data ?? [];
   return { module: list[0] ?? null, isLoading: redux.isLoading };
 }
 
 export function useLmsQuizzes(moduleId) {
   const key = lmsEndpoints.quizzes(moduleId);
-  const redux = useReduxLmsResource(key, true, { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(key, true, { ttlMs: 30_000 });
   return {
     quizzes: redux.data?.data ?? [],
     isLoading: redux.isLoading,
@@ -940,7 +940,7 @@ export function useLmsQuiz(quizId) {
 }
 
 export function useLmsQuizHistory(quizId) {
-  const redux = useReduxLmsResource(lmsEndpoints.quizResults(), true, { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(lmsEndpoints.quizResults(), true, { ttlMs: 30_000 });
   const source = redux.data;
   return useMemo(() => {
     const results = source?.data ?? [];
@@ -950,13 +950,13 @@ export function useLmsQuizHistory(quizId) {
 
 export function useLmsQuizResults(enabled = true) {
   const key = enabled ? lmsEndpoints.quizResults() : null;
-  const redux = useReduxLmsResource(key, Boolean(key), { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(key, Boolean(key), { ttlMs: 30_000 });
   return { results: redux.data?.data ?? [], isLoading: redux.isLoading, mutate: redux.mutate };
 }
 
 export function useLmsAssignmentSummaries(enabled = true) {
   const key = enabled ? lmsEndpoints.assignmentSummaries() : null;
-  const redux = useReduxLmsResource(key, Boolean(key), { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(key, Boolean(key), { ttlMs: 30_000 });
   return {
     summaries: redux.data?.data ?? [],
     isLoading: redux.isLoading,
@@ -966,7 +966,7 @@ export function useLmsAssignmentSummaries(enabled = true) {
 
 export function useLmsQuizSummaries(enabled = true) {
   const key = enabled ? lmsEndpoints.quizSummaries() : null;
-  const redux = useReduxLmsResource(key, Boolean(key), { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(key, Boolean(key), { ttlMs: 30_000 });
   return {
     summaries: redux.data?.data ?? [],
     isLoading: redux.isLoading,
@@ -998,7 +998,7 @@ export function useLmsGradebookPaginated(courseId, page = 1, perPage = 10, enabl
         : null,
     [courseId, page, perPage, ready]
   );
-  const redux = useReduxLmsResource(endpoint, ready, { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(endpoint, ready, { ttlMs: 30_000 });
   const payload = redux.data ?? {};
   return {
     course: payload.course ?? null,
@@ -1174,7 +1174,7 @@ export function useLmsMyAssignmentsPaginated(
         : null,
     [enabled, page, perPage, search, statusParam]
   );
-  const redux = useReduxLmsResource(endpoint, enabled, { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(endpoint, enabled, { ttlMs: 30_000 });
   const payload = redux.data ?? {};
   return {
     assignments: payload.data ?? [],
@@ -1212,7 +1212,7 @@ export function useLmsMyQuizzesPaginated(
         : null,
     [enabled, page, perPage, search, statusParam]
   );
-  const redux = useReduxLmsResource(endpoint, enabled, { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(endpoint, enabled, { ttlMs: 30_000 });
   const payload = redux.data ?? {};
   return {
     quizzes: payload.data ?? [],
@@ -1225,7 +1225,7 @@ export function useLmsMyQuizzesPaginated(
 
 export function useLmsLessonProgress(courseId, enabled = true) {
   const key = enabled && courseId ? lmsEndpoints.lessonProgress(courseId) : null;
-  const redux = useReduxLmsResource(key, Boolean(key), { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(key, Boolean(key), { ttlMs: 30_000 });
   return {
     lessonProgressKeys: Array.isArray(redux.data?.data) ? redux.data.data : [],
     lessonProgressRecords: Array.isArray(redux.data?.records) ? redux.data.records : [],
@@ -1243,7 +1243,7 @@ export function useLmsQuestionSets() {
 }
 
 export function useLmsAnalytics() {
-  const redux = useReduxLmsResource(lmsEndpoints.analytics(), true, { ttlMs: 15_000 });
+  const redux = useReduxLmsResource(lmsEndpoints.analytics(), true, { ttlMs: 45_000 });
   return { analytics: redux.data ?? null, isLoading: redux.isLoading };
 }
 
@@ -1251,13 +1251,13 @@ export function useSuggestedModules() {
   const { analytics } = useLmsAnalytics();
   const ids = analytics?.suggestedModuleIds ?? [];
   const key = ids.length ? lmsEndpoints.modulesByIds(ids) : null;
-  const redux = useReduxLmsResource(key, Boolean(key), { ttlMs: 15_000 });
+  const redux = useReduxLmsResource(key, Boolean(key), { ttlMs: 45_000 });
   return redux.data?.data ?? [];
 }
 
 export function useLeaderboard(period) {
   const key = lmsEndpoints.leaderboard(period);
-  const redux = useReduxLmsResource(key, true, { ttlMs: 15_000 });
+  const redux = useReduxLmsResource(key, true, { ttlMs: 45_000 });
   return redux.data?.data ?? [];
 }
 
@@ -1268,7 +1268,7 @@ export function useLmsEnrollments(enabled = true) {
   const cacheKey = ready ? lmsEndpoints.enrollmentsCacheKey(user.id) : null;
 
   const redux = useReduxLmsResource(fetchEndpoint, ready, {
-    ttlMs: 10_000,
+    ttlMs: 30_000,
     fetchEndpoint,
     cacheKey: cacheKey ?? fetchEndpoint,
     retryOnError: true,
@@ -1290,7 +1290,7 @@ export function useLmsEnrolledCourses(enabled = true) {
   const cacheKey = ready ? lmsEndpoints.enrolledCoursesCacheKey(user.id) : null;
 
   const redux = useReduxLmsResource(fetchEndpoint, ready, {
-    ttlMs: 10_000,
+    ttlMs: 30_000,
     fetchEndpoint,
     cacheKey: cacheKey ?? fetchEndpoint,
     retryOnError: true,
@@ -1314,7 +1314,7 @@ export function useLmsEnrollmentsPaginated(page = 1, perPage = 10, search = '') 
       }),
     [page, perPage, search]
   );
-  const redux = useReduxLmsResource(endpoint, true, { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(endpoint, true, { ttlMs: 30_000 });
   const payload = redux.data ?? {};
   return {
     enrollments: payload?.data ?? [],
@@ -1341,7 +1341,7 @@ export function useLmsEnrollmentPaymentsPaginated(
       }),
     [page, perPage, search, verification]
   );
-  const redux = useReduxLmsResource(endpoint, true, { ttlMs: 10_000 });
+  const redux = useReduxLmsResource(endpoint, true, { ttlMs: 30_000 });
   const payload = redux.data ?? {};
   return {
     payments: payload?.data ?? [],
@@ -1366,7 +1366,7 @@ export function useRefreshEnrollmentsCatalog() {
 }
 
 export function useAdminData() {
-  const redux = useReduxLmsResource(lmsEndpoints.admin(), true, { ttlMs: 15_000 });
+  const redux = useReduxLmsResource(lmsEndpoints.admin(), true, { ttlMs: 45_000 });
   return {
     admin: redux.data ?? { users: [], uploads: [] },
     isLoading: redux.isLoading,

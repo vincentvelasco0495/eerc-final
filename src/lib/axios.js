@@ -5,6 +5,13 @@ import { CONFIG } from 'src/global-config';
 import { JWT_STORAGE_KEY } from 'src/auth/context/jwt/constant';
 
 import { LMS_SANCTUM_TOKEN_KEY } from './lms-api-auth-keys';
+import {
+  peekHttpGetEtag,
+  readHttpGetCache,
+  writeHttpGetCache,
+  reviveHttpGetCache,
+  invalidateHttpGetCache,
+} from './http-memory-cache';
 
 // ----------------------------------------------------------------------
 
@@ -13,9 +20,27 @@ const axiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  validateStatus: (status) => (status >= 200 && status < 300) || status === 304,
 });
 
 axiosInstance.interceptors.request.use((config) => {
+  const cached = readHttpGetCache(config);
+  if (cached) {
+    config.adapter = async () => cached;
+    return config;
+  }
+
+  const etag = peekHttpGetEtag(config);
+  if (etag) {
+    const headers = config.headers ?? {};
+    if (typeof headers.set === 'function') {
+      headers.set('If-None-Match', etag);
+    } else {
+      headers['If-None-Match'] = etag;
+    }
+    config.headers = headers;
+  }
+
   if (
     typeof FormData !== 'undefined' &&
     config.data instanceof FormData
@@ -43,7 +68,21 @@ axiosInstance.interceptors.request.use((config) => {
 });
 
 axiosInstance.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const method = String(response?.config?.method ?? 'get').toLowerCase();
+    if (method === 'get') {
+      if (response.status === 304) {
+        const revived = reviveHttpGetCache(response.config);
+        if (revived) {
+          return revived;
+        }
+      }
+      writeHttpGetCache(response);
+    } else {
+      invalidateHttpGetCache();
+    }
+    return response;
+  },
   (error) => {
     const data = error?.response?.data;
     let message = data?.message || error?.message || 'Something went wrong!';

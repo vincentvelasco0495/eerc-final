@@ -36,6 +36,8 @@ export function useContactPageAdmin() {
     queryKey: CONTACT_PAGE_ADMIN_QUERY_KEY,
     queryFn: () => (hasApi ? fetchContactPageAdmin() : Promise.resolve(CONTACT_PAGE_DEFAULTS)),
     enabled: hasApi,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const invalidateAll = useCallback(() => {

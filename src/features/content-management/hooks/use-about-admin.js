@@ -36,6 +36,8 @@ export function useAboutAdmin() {
     queryKey: ABOUT_US_ADMIN_QUERY_KEY,
     queryFn: () => (hasApi ? fetchAboutUsAdmin() : Promise.resolve(ABOUT_US_DEFAULTS)),
     enabled: hasApi,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const invalidateAll = useCallback(() => {

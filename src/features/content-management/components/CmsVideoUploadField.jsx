@@ -11,13 +11,14 @@ import CircularProgress from '@mui/material/CircularProgress';
 
 import { deleteCmsMedia } from 'src/features/homepage-v2/api/homepage-v2-api';
 import { getLmsAxiosErrorMessage, uploadLessonVideoInChunks } from 'src/redux/api/lmsApi';
-import { resolveCmsVideoPlaybackUrls } from 'src/features/homepage-v2/utils/resolve-cms-media-url';
+import {
+  resolveCmsMediaFromRecord,
+  resolveCmsVideoPlaybackUrls,
+} from 'src/features/homepage-v2/utils/resolve-cms-media-url';
 
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 import { PremiumPlayableVideo } from 'src/components/common/premium-playable-video';
-
-import { CmsVideo } from 'src/sections/home-v2/components/CmsVideo';
 
 function slugifyLabel(label) {
   return String(label ?? 'video')
@@ -71,9 +72,18 @@ export function CmsVideoUploadField({
   const [blobPreviewUrl, setBlobPreviewUrl] = useState('');
   const inputId = useMemo(() => `cms-video-upload-${slugifyLabel(label)}`, [label]);
   const playbackUrls = useMemo(() => resolveCmsVideoPlaybackUrls(value), [value]);
+  const posterUrl = resolveCmsMediaFromRecord(posterMedia);
   const hasStoredVideo = playbackUrls.length > 0;
-  const previewUrl = blobPreviewUrl || (hasStoredVideo ? playbackUrls[0] : '');
-  const playerKey = playbackUrls[0] || blobPreviewUrl || 'empty';
+  const playerSources = useMemo(() => {
+    const list = [];
+    if (blobPreviewUrl) {
+      list.push(blobPreviewUrl);
+    }
+    list.push(...playbackUrls);
+    return [...new Set(list.filter(Boolean))];
+  }, [blobPreviewUrl, playbackUrls]);
+  const previewUrl = playerSources[0] || '';
+  const playerKey = playerSources[0] || 'empty';
 
   const assignBlobPreview = useCallback((nextUrl) => {
     setBlobPreviewUrl((current) => {
@@ -92,26 +102,6 @@ export function CmsVideoUploadField({
     },
     [blobPreviewUrl]
   );
-
-  useEffect(() => {
-    if (!hasStoredVideo || !blobPreviewUrl) {
-      return undefined;
-    }
-    const probe = document.createElement('video');
-    probe.preload = 'metadata';
-    const onReady = () => {
-      if (probe.duration > 0 && Number.isFinite(probe.duration)) {
-        assignBlobPreview('');
-      }
-    };
-    probe.addEventListener('loadedmetadata', onReady);
-    probe.src = playbackUrls[0];
-    return () => {
-      probe.removeEventListener('loadedmetadata', onReady);
-      probe.removeAttribute('src');
-      probe.load();
-    };
-  }, [assignBlobPreview, blobPreviewUrl, hasStoredVideo, playbackUrls]);
 
   const onDrop = useCallback(
     async (files) => {
@@ -196,24 +186,17 @@ export function CmsVideoUploadField({
           }}
         >
           <Box sx={{ position: 'relative' }}>
-            {blobPreviewUrl ? (
+            {blobPreviewUrl || hasStoredVideo ? (
               <PremiumPlayableVideo
                 key={playerKey}
-                src={blobPreviewUrl}
+                src={previewUrl}
+                sources={playerSources}
+                poster={posterUrl}
                 title={value?.alt || label}
                 aspectRatio="16 / 9"
                 watermarkText={watermarkText}
               />
-            ) : (
-              <CmsVideo
-                key={playerKey}
-                media={value}
-                posterMedia={posterMedia}
-                label={value?.alt || label}
-                aspectRatio="16 / 9"
-                watermarkText={watermarkText}
-              />
-            )}
+            ) : null}
             {uploading ? (
               <Box
                 sx={{
