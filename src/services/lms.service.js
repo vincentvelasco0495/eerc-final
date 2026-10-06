@@ -1386,11 +1386,7 @@ export async function mockResponseForKey(key) {
     const statusFilter = (params.get('status') || '').trim().toLowerCase();
     let list = [...enrollments];
     if (courseFilter) {
-      list = list.filter(
-        (row) =>
-          row.courseId === courseFilter ||
-          (!row.courseId && row.programId && courses.some((c) => c.id === courseFilter && c.programId === row.programId))
-      );
+      list = list.filter((row) => row.courseId === courseFilter);
     }
     if (statusFilter) {
       list = list.filter((row) => String(row.status ?? '').toLowerCase() === statusFilter);
@@ -1427,11 +1423,11 @@ export async function mockResponseForKey(key) {
 
         let courseTitle = '—';
         if (courseTitles.length > 0 && hasProgramWide) {
-          courseTitle = `${courseTitles.join(', ')}, All courses`;
+          courseTitle = `${courseTitles.join(', ')}, Program enrollment`;
         } else if (courseTitles.length > 0) {
           courseTitle = courseTitles.join(', ');
         } else if (hasProgramWide) {
-          courseTitle = 'All courses';
+          courseTitle = 'Program enrollment';
         }
 
         return {
@@ -1556,7 +1552,7 @@ export async function mockResponseForKey(key) {
 }
 
 export async function submitEnrollmentRequest(payload) {
-  const { courseId, programId, paymentProofFile, formData } = payload ?? {};
+  const { courseId, programId, paymentProofFile, formData, accessRequest } = payload ?? {};
   await delay(180);
 
   let resolvedProgramId = programId;
@@ -1588,6 +1584,65 @@ export async function submitEnrollmentRequest(payload) {
     }
     return true;
   };
+
+  if (accessRequest) {
+    if (!courseId) {
+      throw new Error('Select a course before requesting access.');
+    }
+    const course = courses.find((c) => c.id === courseId);
+    if (!isPublishedEnrollmentCourse(course)) {
+      throw new Error('This course is not open for access requests yet.');
+    }
+    const programApproved = enrollments.some(
+      (row) =>
+        row.programId === course.programId &&
+        !row.courseId &&
+        row.status === ENROLLMENT_STATUSES[1]
+    );
+    if (!programApproved) {
+      throw new Error('Enroll in this program and wait for approval before requesting course access.');
+    }
+
+    const rejected = enrollments.find(
+      (row) => row.courseId === courseId && row.status === ENROLLMENT_STATUSES[2]
+    );
+    if (rejected) {
+      rejected.status = ENROLLMENT_STATUSES[0];
+      rejected.submittedAt = new Date().toISOString().slice(0, 10);
+      rejected.requestKind = 'course_access';
+      rejected.hasPaymentProof = false;
+      return { ...rejected };
+    }
+
+    const hasActive = enrollments.some(
+      (row) =>
+        row.courseId === courseId &&
+        (row.status === ENROLLMENT_STATUSES[0] ||
+          row.status === ENROLLMENT_STATUSES[1] ||
+          row.status === ENROLLMENT_STATUSES[3])
+    );
+    if (hasActive) {
+      throw new Error('You already have an access request for this course.');
+    }
+
+    const created = {
+      id: `enrollment-${Date.now()}`,
+      programId: course?.programId ?? '',
+      programTitle: programs.find((p) => p.id === course?.programId)?.title ?? '',
+      courseId,
+      courseTitle: course?.title ?? '',
+      requestKind: 'course_access',
+      userName: user.displayName,
+      userEmail: user.email,
+      phoneNumber: user.phoneNumber ?? '',
+      schoolHeld: user.schoolHeld ?? '',
+      submittedAt: new Date().toISOString().slice(0, 10),
+      status: ENROLLMENT_STATUSES[0],
+      hasPaymentProof: false,
+    };
+    enrollments.unshift(created);
+    return created;
+  }
 
   if (!resolvedPaymentProofFile) {
     throw new Error('Upload proof of payment before submitting.');

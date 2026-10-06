@@ -15,9 +15,8 @@ import CardContent from '@mui/material/CardContent';
 
 import { useLmsActions, useLmsPackageEnrollsPaginated } from 'src/hooks/use-lms';
 
-import { htmlToPlainText } from 'src/utils/html-content';
-
 import { CONFIG } from 'src/global-config';
+import { downloadLmsExcelExport } from 'src/lib/lms-excel-export';
 import { getLmsAxiosErrorMessage } from 'src/lib/lms-instructor-api';
 import { InstructorWorkspaceShell } from 'src/features/instructor-profile/components/instructor-workspace-shell';
 import {
@@ -591,29 +590,15 @@ export default function PackageEnrollsPage() {
                   <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
 
                     <ExportExcelButton
-
-                      fileName="package-enrolls"
-
-                      sheetName="Packages"
-
-                      headers={['Name', 'Status', 'Sort order', 'Description']}
-
-                      rows={packageEnrolls}
-
-                      mapRow={(row) => [
-
-                        row.name ?? '',
-
-                        row.status ?? '',
-
-                        row.sortOrder ?? '',
-
-                        htmlToPlainText(row.description),
-
-                      ]}
-
                       disabled={listLoading}
-
+                      onExport={({ from, to }) =>
+                        downloadLmsExcelExport(
+                          '/api/package-enrolls/export',
+                          { search: debouncedSearch, from, to },
+                          'package-enrolls.xlsx'
+                        )
+                      }
+                      successMessage="Package enroll list exported to Excel."
                     />
 
                     <ServerListPerPageControl

@@ -161,13 +161,14 @@ export default function EnrollmentPage() {
     [mutateEnrollmentsPage]
   );
 
-  const handleExportExcel = useCallback(async () => {
+  const handleExportExcel = useCallback(async ({ from, to } = {}) => {
     const { blob, fileName } = await fetchEnrollmentExcelExport({
       search: debouncedSearch,
-      rows: enrollments,
+      from,
+      to,
     });
     downloadBlob(blob, fileName);
-  }, [debouncedSearch, enrollments]);
+  }, [debouncedSearch]);
 
   return (
     <>

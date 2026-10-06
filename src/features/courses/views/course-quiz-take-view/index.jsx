@@ -285,16 +285,16 @@ export function CourseQuizTakeView() {
 
   const { shell, isLessonLocked } = useLmsCourseDetailShell(course, modules, quizzesForCourse);
 
-  const courseLinkHref = paths.dashboard.courseDetails(
+  const courseLinkHref = `${paths.dashboard.courseDetails(
     typeof course?.slug === 'string' && course.slug.trim() ? course.slug.trim() : courseLookup
-  );
+  )}#quiz`;
 
   useEffect(() => {
     if (!quizId || !resolvedCourseId || modulesLoading || !course || !shell) {
       return;
     }
     if (isLessonLocked(quizId)) {
-      navigate(`${courseLinkHref}#curriculum`, { replace: true });
+      navigate(courseLinkHref, { replace: true });
     }
   }, [quizId, resolvedCourseId, modulesLoading, course, shell, isLessonLocked, navigate, courseLinkHref]);
 

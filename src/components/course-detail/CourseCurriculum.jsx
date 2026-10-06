@@ -17,6 +17,7 @@ const MODULE_ICON = {
   quiz: { bg: 'rgb(255 193 7 / 0.16)', fg: '#FFC107' },
   assignment: { bg: 'rgb(45 212 191 / 0.16)', fg: '#2DD4BF' },
   stream: { bg: 'rgb(167 139 250 / 0.18)', fg: '#A78BFA' },
+  live: { bg: 'rgb(167 139 250 / 0.18)', fg: '#A78BFA' },
   zoom: { bg: 'rgb(56 189 248 / 0.16)', fg: '#38BDF8' },
 };
 
@@ -342,6 +343,7 @@ function lessonGlyphForType(type) {
         </svg>
       );
     case 'stream':
+    case 'live':
       return (
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path
@@ -366,7 +368,7 @@ function lessonGlyphForType(type) {
 function LessonTypeIcon({ type }) {
   const cfg = MODULE_ICON[type] ?? MODULE_ICON.document;
 
-  const circle = ['video', 'quiz', 'stream', 'zoom'].includes(type);
+  const circle = ['video', 'quiz', 'stream', 'live', 'zoom'].includes(type);
 
   return (
     <IconShell $circle={circle} $bg={cfg.bg} $fg={cfg.fg} aria-hidden>
@@ -375,12 +377,13 @@ function LessonTypeIcon({ type }) {
   );
 }
 
-/** Collapsible modules + typed lesson rows (Curriculum tab). */
+/** Collapsible modules + typed lesson rows (Quiz / Handouts / Lecture video / Group study tabs). */
 export function CourseCurriculum({
-  modules,
+  modules = [],
   courseLookup,
   requiresEnrollment = false,
   canAccessLessons = true,
+  emptyMessage = 'No items in this section yet.',
 }) {
   const { authenticated, user } = useAuthContext();
   const isGuest = !authenticated;
@@ -410,9 +413,14 @@ export function CourseCurriculum({
   if (!listAllowed) {
     return (
       <GateNotice role="status">
-        This curriculum is available to students enrolled in online class, and to administrators.
+        Quiz, handouts, and group study are available to Pure online class. Blended learning can
+        replay lecture videos only. Face to face enrollments cannot access these tabs.
       </GateNotice>
     );
+  }
+
+  if (!Array.isArray(modules) || modules.length === 0) {
+    return <GateNotice role="status">{emptyMessage}</GateNotice>;
   }
 
   return (
@@ -440,7 +448,8 @@ export function CourseCurriculum({
                       : courseLookup &&
                           (lesson.type === 'video' ||
                             lesson.type === 'stream' ||
-                            lesson.type === 'zoom')
+                            lesson.type === 'zoom' ||
+                            lesson.type === 'live')
                         ? paths.dashboard.courseVideoLesson(courseLookup, lesson.id)
                         : courseLookup && lesson.type === 'quiz'
                           ? paths.dashboard.courseQuiz(courseLookup, lesson.id)

@@ -9,8 +9,6 @@ import { usePathname } from 'src/routes/hooks';
 
 import { useLmsPrograms } from 'src/hooks/use-lms';
 
-import { _notifications } from 'src/_mock';
-
 import { Logo } from 'src/components/logo';
 
 import { useAuthContext } from 'src/auth/hooks';
@@ -20,14 +18,8 @@ import { AccountDrawer } from '../components/account-drawer';
 import { SettingsButton } from '../components/settings-button';
 import { PublicMarketingHeader } from './public-marketing-header';
 import { MainSection, LayoutSection, HeaderSection } from '../core';
-import NotificationsDrawer from '../components/notifications-drawer';
 import { buildMainNavData, navData as mainNavData } from '../nav-config-main';
-
-/** Bell badge count for `/course-detail` header (four unread). */
-const COURSE_DETAIL_NOTIFICATION_DATA = _notifications.map((notification, index) => ({
-  ...notification,
-  isUnRead: index < 4,
-}));
+import { LmsNotificationsDrawer } from '../dashboard/lms-notifications-drawer';
 
 // ----------------------------------------------------------------------
 
@@ -86,10 +78,7 @@ function MainLayout({ sx, cssVars, children, slotProps, layoutQuery = 'md' }) {
               [`& .${iconButtonClasses.root}`]: { color: 'text.secondary' },
             }}
           >
-            <NotificationsDrawer
-              data={COURSE_DETAIL_NOTIFICATION_DATA}
-              sx={{ color: 'inherit' }}
-            />
+            <LmsNotificationsDrawer sx={{ color: 'inherit' }} />
             <SettingsButton dotForced sx={{ color: 'inherit' }} />
             <AccountDrawer sx={{ color: 'inherit' }} />
           </Box>

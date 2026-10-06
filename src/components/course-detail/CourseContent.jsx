@@ -6,12 +6,15 @@ import Skeleton from '@mui/material/Skeleton';
 
 import { goldAlpha, brandVars } from 'src/theme';
 
-import { CourseFaq } from './CourseFaq';
 import { CourseTabs } from './CourseTabs';
-import { CourseNotice } from './CourseNotice';
-import { tabKeys } from './course-detail-data';
 import { CourseCurriculum } from './CourseCurriculum';
-import { radii, space, colors, shadow } from './course-detail-tokens';
+import { colors, radii, shadow, space } from './course-detail-tokens';
+import {
+  filterCurriculumModulesForTab,
+  resolveCourseDetailTabKey,
+  tabEmptyMessages,
+  tabKeys,
+} from './course-detail-data';
 
 const HeroFigure = styled.figure`
   margin: 0 0 ${space(2)};
@@ -36,29 +39,6 @@ const HeroImg = styled.img`
   box-shadow: ${shadow.card};
   background: ${colors.bg};
 `;
-
-const ProseStack = styled.div`
-  font-size: 14px;
-  line-height: 1.65;
-  color: ${colors.muted};
-`;
-
-const Para = styled.p`
-  margin: 0 0 ${space(2)};
-`;
-
-const PlaceholderPane = styled.div`
-  padding: ${space(3)};
-  border: 1px dashed ${colors.border};
-  border-radius: ${radii.card};
-  color: ${colors.muted};
-  font-size: 14px;
-  line-height: 1.6;
-`;
-
-const TAB_LABEL_READABLE = {
-  reviews: 'Reviews',
-};
 
 const ContentRoot = styled.div``;
 
@@ -106,41 +86,60 @@ const ProgramCourseLink = styled.a`
 
 /** Hero + tabs + panels (sits in right column beneath full-width course header). */
 export function CourseContent({
-  data,
   heroImageUrl,
-  noticeContent,
   curriculumModules,
-  faqItems,
   courseLookup,
   requiresEnrollment = false,
   canAccessLessons = true,
+  allowedTabKeys,
   programCourses,
   programCoursesHeading,
 }) {
-  const [tabKey, setTabKey] = useState('description');
+  const tabOptions = useMemo(() => {
+    if (!Array.isArray(allowedTabKeys)) {
+      return [...tabKeys];
+    }
+    return allowedTabKeys.filter((key) => tabKeys.includes(key));
+  }, [allowedTabKeys]);
+  const defaultTab = tabOptions[0] ?? 'quiz';
+  const [tabKey, setTabKey] = useState(defaultTab);
+  const filteredModules = useMemo(
+    () => filterCurriculumModulesForTab(curriculumModules, tabKey),
+    [curriculumModules, tabKey]
+  );
 
-  const tabOptions = useMemo(() => [...tabKeys], []);
+  const selectTab = useCallback((key) => {
+    setTabKey(key);
+    const nextHash = `#${key}`;
+    if (typeof window === 'undefined') {
+      return;
+    }
+    if (window.location.hash !== nextHash) {
+      window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}${nextHash}`);
+    }
+  }, []);
+
   useEffect(() => {
     const applyHashTab = () => {
-      const raw = String(window.location.hash || '').replace(/^#/, '').trim().toLowerCase();
-      if (raw === 'curriculum') {
-        setTabKey('curriculum');
-      } else if (raw === 'description') {
-        setTabKey('description');
-      } else if (raw === 'faq') {
-        setTabKey('faq');
-      } else if (raw === 'notice') {
-        setTabKey('notice');
-      } else if (raw === 'reviews') {
-        setTabKey('reviews');
+      const resolved = resolveCourseDetailTabKey(window.location.hash);
+      if (resolved && tabOptions.includes(resolved)) {
+        setTabKey(resolved);
+        return;
+      }
+      if (tabOptions.length > 0) {
+        selectTab(tabOptions[0]);
       }
     };
     applyHashTab();
     window.addEventListener('hashchange', applyHashTab);
     return () => window.removeEventListener('hashchange', applyHashTab);
-  }, []);
+  }, [selectTab, tabOptions]);
 
-  const { paragraphs } = data;
+  useEffect(() => {
+    if (tabOptions.length > 0 && !tabOptions.includes(tabKey)) {
+      selectTab(tabOptions[0]);
+    }
+  }, [selectTab, tabKey, tabOptions]);
 
   const [bannerLoadFailed, setBannerLoadFailed] = useState(false);
 
@@ -190,40 +189,18 @@ export function CourseContent({
         </ProgramCoursesWrap>
       ) : null}
 
-      <CourseTabs activeKey={tabKey} onChange={setTabKey} options={tabOptions} />
-
-      {tabKey === 'description' ? (
-        <ProseStack>
-          {paragraphs.map((text, index) => (
-            <Para key={String(index)}>{text}</Para>
-          ))}
-        </ProseStack>
+      {canAccessLessons && tabOptions.length > 0 ? (
+        <CourseTabs activeKey={tabKey} onChange={selectTab} options={tabOptions} />
       ) : null}
 
-      {tabKey === 'curriculum' ? (
-        <CourseCurriculum
-          modules={curriculumModules}
-          courseLookup={courseLookup}
-          requiresEnrollment={requiresEnrollment}
-          canAccessLessons={canAccessLessons}
-        />
-      ) : null}
-
-      {tabKey === 'faq' ? <CourseFaq items={faqItems} /> : null}
-
-      {tabKey === 'notice' && noticeContent ? (
-        <CourseNotice heading={noticeContent.heading} items={noticeContent.items} />
-      ) : null}
-
-      {tabKey === 'reviews' ? (
-        <PlaceholderPane role="region" aria-labelledby="placeholder-title">
-          <strong id="placeholder-title" style={{ color: colors.text }}>
-            {TAB_LABEL_READABLE.reviews}
-          </strong>
-          {' — '}
-          This reference page uses static copy for this tab until content is wired.
-        </PlaceholderPane>
-      ) : null}
+      <CourseCurriculum
+        key={canAccessLessons ? tabKey : 'locked'}
+        modules={canAccessLessons && tabOptions.includes(tabKey) ? filteredModules : []}
+        courseLookup={courseLookup}
+        requiresEnrollment={requiresEnrollment}
+        canAccessLessons={canAccessLessons}
+        emptyMessage={tabEmptyMessages[tabKey] ?? 'No items in this section yet.'}
+      />
     </ContentRoot>
   );
 }

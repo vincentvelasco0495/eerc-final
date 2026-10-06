@@ -9,6 +9,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { useLmsGradebookCourses, useLmsGradebookPaginated } from 'src/hooks/use-lms';
 
 import { CONFIG } from 'src/global-config';
+import { downloadLmsExcelExport } from 'src/lib/lms-excel-export';
 import { InstructorWorkspaceShell } from 'src/features/instructor-profile/components/instructor-workspace-shell';
 
 import { ExportExcelButton } from 'src/components/export-excel-button';
@@ -71,20 +72,15 @@ export function InstructorGradebookView() {
             The Gradebook
           </Typography>
           <ExportExcelButton
-            fileName="gradebook"
-            sheetName="Gradebook"
-            headers={['Student', 'Email', 'Lessons', 'Quizzes', 'Assignments', 'Progress', 'Started']}
-            rows={students}
-            mapRow={(row) => [
-              row.name ?? '',
-              row.email ?? '',
-              row.lessons ?? '',
-              row.quizzes ?? '',
-              row.assignments ?? '',
-              row.progress ?? '',
-              row.started ?? '',
-            ]}
-            disabled={isLoading || !students.length}
+            disabled={isLoading || !courseId}
+            onExport={({ from, to }) =>
+              downloadLmsExcelExport(
+                `/api/gradebook/courses/${encodeURIComponent(courseId)}/export`,
+                { from, to },
+                'gradebook.xlsx'
+              )
+            }
+            successMessage="Gradebook exported to Excel."
           />
         </Stack>
 

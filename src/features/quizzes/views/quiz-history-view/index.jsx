@@ -26,6 +26,8 @@ import {
   useResolvedCourseIdFromLookup,
 } from 'src/hooks/use-lms';
 
+import { downloadLmsExcelExport } from 'src/lib/lms-excel-export';
+
 import { LmsStatCard } from 'src/components/ui/lms-stat-card';
 import { LmsPageShell } from 'src/components/layout/lms-page-shell';
 import { ExportExcelButton } from 'src/components/export-excel-button';
@@ -122,18 +124,15 @@ export function QuizHistoryView() {
               >
                 <Typography variant="h6">Attempt records</Typography>
                 <ExportExcelButton
-                  fileName="quiz-history"
-                  sheetName="Attempts"
-                  headers={['Date', 'Quiz', 'Score', 'Correct', 'Time used']}
-                  rows={scopedResults}
-                  mapRow={(row) => [
-                    row.date ?? '',
-                    row.quizId ?? '',
-                    row.score != null ? `${row.score}%` : '',
-                    `${row.correctAnswers ?? ''}/${row.totalQuestions ?? ''}`,
-                    row.durationUsed ?? '',
-                  ]}
-                  disabled={!scopedResults.length}
+                  disabled={isLoading}
+                  onExport={({ from, to }) =>
+                    downloadLmsExcelExport(
+                      '/api/quiz-results/export',
+                      { quizId, from, to },
+                      'quiz-history.xlsx'
+                    )
+                  }
+                  successMessage="Quiz history exported to Excel."
                 />
               </Stack>
               <TableContainer>

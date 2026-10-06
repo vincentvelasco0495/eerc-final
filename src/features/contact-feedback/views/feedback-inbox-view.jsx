@@ -17,6 +17,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { fDateTime } from 'src/utils/format-time';
 
 import { CONFIG } from 'src/global-config';
+import { downloadLmsExcelExport } from 'src/lib/lms-excel-export';
 import { fetchContactFeedbackAdmin } from 'src/features/contact-feedback/api/contact-feedback-api';
 import { InstructorWorkspaceShell } from 'src/features/instructor-profile/components/instructor-workspace-shell';
 
@@ -113,18 +114,15 @@ export function FeedbackInboxView() {
               rowGap={1}
             >
               <ExportExcelButton
-                fileName="contact-feedback"
-                sheetName="Feedback"
-                headers={['Date', 'Name', 'Email', 'Phone', 'Message']}
-                rows={rows}
-                mapRow={(row) => [
-                  row.createdAt ? fDateTime(row.createdAt) : '',
-                  row.name ?? '',
-                  row.email ?? '',
-                  row.phone ?? '',
-                  row.message ?? '',
-                ]}
                 disabled={loading}
+                onExport={({ from, to }) =>
+                  downloadLmsExcelExport(
+                    '/api/admin/contact-feedback/export',
+                    { from, to },
+                    'contact-feedback.xlsx'
+                  )
+                }
+                successMessage="Contact feedback exported to Excel."
               />
               {resolvedPagination ? (
                 <ServerListPerPageControl

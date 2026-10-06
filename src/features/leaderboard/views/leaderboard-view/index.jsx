@@ -10,6 +10,8 @@ import CardContent from '@mui/material/CardContent';
 
 import { useLeaderboard } from 'src/hooks/use-lms';
 
+import { downloadLmsExcelExport } from 'src/lib/lms-excel-export';
+
 import { LmsStatCard } from 'src/components/ui/lms-stat-card';
 import { LmsPageShell } from 'src/components/layout/lms-page-shell';
 import { LeaderboardTable } from 'src/components/ui/leaderboard-table';
@@ -76,18 +78,14 @@ export function LeaderboardView() {
                     </Typography>
                   </Stack>
                   <ExportExcelButton
-                    fileName={`leaderboard-${period}`}
-                    sheetName="Leaderboard"
-                    headers={['Rank', 'Learner', 'Program', 'Score', 'Badge']}
-                    rows={rows}
-                    mapRow={(row, index) => [
-                      index + 1,
-                      row.name ?? '',
-                      row.program ?? '',
-                      row.score ?? '',
-                      row.badge ?? '',
-                    ]}
-                    disabled={!rows.length}
+                    onExport={({ from, to }) =>
+                      downloadLmsExcelExport(
+                        '/api/leaderboard/export',
+                        { type: period, from, to },
+                        `leaderboard-${period}.xlsx`
+                      )
+                    }
+                    successMessage="Leaderboard exported to Excel."
                   />
                 </Stack>
 

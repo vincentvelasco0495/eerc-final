@@ -742,22 +742,21 @@ export function useLmsCourses(page = 1, limit = 100, program = '', status = '') 
   };
 }
 
-/** Published catalog courses the learner may access (per approved course and/or legacy full-program approval). */
+/** Published catalog courses the learner may access (approved course enrollments only). */
 export function useLmsEnrolledProgramCourses(enrollments = []) {
-  const { approvedCourseIds, legacyApprovedProgramIds } = useMemo(
+  const { approvedCourseIds } = useMemo(
     () => getLearnerEnrollmentAccessSets(enrollments),
     [enrollments]
   );
-  const programIds = useMemo(() => [...legacyApprovedProgramIds], [legacyApprovedProgramIds]);
   const courseIds = useMemo(() => [...approvedCourseIds], [approvedCourseIds]);
-  const fetchKey = `${programIds.sort().join('|')}__${courseIds.sort().join('|')}`;
+  const fetchKey = [...courseIds].sort().join('|');
 
   const [courses, setCourses] = useState([]);
   const [isLoading, setIsLoading] = useState(Boolean(fetchKey));
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!programIds.length && !courseIds.length) {
+    if (!courseIds.length) {
       setCourses([]);
       setIsLoading(false);
       setError(null);
@@ -770,18 +769,11 @@ export function useLmsEnrolledProgramCourses(enrollments = []) {
 
     (async () => {
       try {
-        const programRequests = programIds.map((programId) =>
-          axios
-            .get(
-              lmsEndpoints.courses({ page: 1, limit: 500, program: programId, status: 'published' })
-            )
-            .then((res) => res.data)
-        );
         const courseRequests = courseIds.map((courseId) =>
           axios.get(lmsEndpoints.courseDetail(courseId)).then((res) => res.data)
         );
 
-        const responses = await Promise.allSettled([...programRequests, ...courseRequests]);
+        const responses = await Promise.allSettled(courseRequests);
 
         if (cancelled) {
           return;
@@ -815,7 +807,7 @@ export function useLmsEnrolledProgramCourses(enrollments = []) {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `fetchKey` encodes sorted program + course id lists
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `fetchKey` encodes sorted course ids
   }, [fetchKey]);
 
   return { courses, isLoading, error };
@@ -1390,6 +1382,21 @@ export function useLmsActions() {
       }),
     [dispatch, user?.id]
   );
+  const requestCourseAccess = useCallback(
+    (courseId) =>
+      new Promise((resolve, reject) => {
+        dispatch(
+          submitEnrollmentRequest({
+            courseId,
+            accessRequest: true,
+            authUserId: user?.id ?? null,
+            resolve,
+            reject,
+          })
+        );
+      }),
+    [dispatch, user?.id]
+  );
   const simulateQuiz = useCallback(
     (quizId) => dispatch(simulateQuizRequest({ quizId })),
     [dispatch]
@@ -1428,16 +1435,18 @@ export function useLmsActions() {
 
   return useMemo(
     () => ({
-      submitEnrollment,
-      simulateQuiz,
       fetchQuestionSet,
-      toggleModuleVisibility,
-      uploadModule,
-      updateEnrollmentStatus,
+      requestCourseAccess,
       runCommand,
+      simulateQuiz,
+      submitEnrollment,
+      toggleModuleVisibility,
+      updateEnrollmentStatus,
+      uploadModule,
     }),
     [
       fetchQuestionSet,
+      requestCourseAccess,
       runCommand,
       simulateQuiz,
       submitEnrollment,

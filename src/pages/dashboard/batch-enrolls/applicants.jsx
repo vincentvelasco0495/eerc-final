@@ -154,11 +154,13 @@ export default function BatchApplicantsPage() {
     [setSearchParams]
   );
 
-  const handleExportExcel = useCallback(async () => {
+  const handleExportExcel = useCallback(async ({ from, to } = {}) => {
     const { blob, fileName } = await fetchBatchApplicantsExcelExport({
       batchId,
       search: debouncedSearch,
       status: statusFilter,
+      from,
+      to,
     });
     downloadBlob(blob, fileName);
   }, [batchId, debouncedSearch, statusFilter]);

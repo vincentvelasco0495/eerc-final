@@ -167,13 +167,15 @@ export default function LearningModeApplicantsPage() {
     [setSearchParams]
   );
 
-  const handleExportExcel = useCallback(async () => {
+  const handleExportExcel = useCallback(async ({ from, to } = {}) => {
     const { blob, fileName } = await fetchLearningModeApplicantsExcelExport({
       modeId,
       search: debouncedSearch,
       status: statusFilter,
       program: programFilter,
       batch: batchFilter,
+      from,
+      to,
     });
     downloadBlob(blob, fileName);
   }, [batchFilter, debouncedSearch, modeId, programFilter, statusFilter]);

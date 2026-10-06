@@ -73,8 +73,8 @@ const derivedCourseConfig = {
   },
 };
 
-/** Approved program ids for legacy enrollments only (no `courseId` — unlocks all courses in the program). */
-export function getApprovedProgramIds(enrollments = [], courses = []) {
+/** Approved program ids for program enrollment only (no `courseId`). Does not unlock courses. */
+export function getApprovedProgramIds(enrollments = []) {
   const approved = new Set();
 
   for (const item of enrollments) {
@@ -95,12 +95,12 @@ export function getApprovedProgramIds(enrollments = [], courses = []) {
 }
 
 /**
- * Approved course public ids plus legacy full-program approvals.
- * @returns {{ approvedCourseIds: Set<string>, legacyApprovedProgramIds: Set<string> }}
+ * Approved course public ids. Program-level approval does not grant course access.
+ * @returns {{ approvedCourseIds: Set<string>, approvedProgramIds: Set<string> }}
  */
 export function getLearnerEnrollmentAccessSets(enrollments = []) {
   const approvedCourseIds = new Set();
-  const legacyApprovedProgramIds = new Set();
+  const approvedProgramIds = new Set();
 
   for (const item of enrollments ?? []) {
     if (!enrollmentGrantsCourseAccess(item?.status)) {
@@ -109,27 +109,23 @@ export function getLearnerEnrollmentAccessSets(enrollments = []) {
     if (item.courseId) {
       approvedCourseIds.add(item.courseId);
     } else if (item.programId) {
-      legacyApprovedProgramIds.add(item.programId);
+      approvedProgramIds.add(item.programId);
     }
   }
 
-  return { approvedCourseIds, legacyApprovedProgramIds };
+  return { approvedCourseIds, approvedProgramIds, legacyApprovedProgramIds: approvedProgramIds };
 }
 
 export function buildStudentProfileCourses(courses, programs, enrollments = []) {
   const programMap = new Map((programs ?? []).map((program) => [program.id, program.title]));
-  const { approvedCourseIds, legacyApprovedProgramIds } = getLearnerEnrollmentAccessSets(enrollments);
+  const { approvedCourseIds } = getLearnerEnrollmentAccessSets(enrollments);
 
-  if (approvedCourseIds.size === 0 && legacyApprovedProgramIds.size === 0) {
+  if (approvedCourseIds.size === 0) {
     return [];
   }
 
   return (courses ?? [])
-    .filter(
-      (course) =>
-        isPublishedCatalogCourse(course) &&
-        (approvedCourseIds.has(course.id) || legacyApprovedProgramIds.has(course.programId))
-    )
+    .filter((course) => isPublishedCatalogCourse(course) && approvedCourseIds.has(course.id))
     .map((course) => {
       const config = derivedCourseConfig[course.id] ?? {
         rating: 4.5,
@@ -186,27 +182,29 @@ export function getProgramEnrollmentRows(programId, enrollments = [], courses = 
   });
 }
 
-/** Highest-priority enrollment state for a program card (pending blocks "approved" badge). */
+/** Highest-priority enrollment state for a program card (program-level rows first). */
 export function getProgramEnrollmentKind(programId, enrollments = [], courses = []) {
   const rows = getProgramEnrollmentRows(programId, enrollments, courses);
+  const programLevel = rows.filter((item) => !item.courseId);
+  const relevant = programLevel.length ? programLevel : rows;
 
-  if (!rows.length) {
+  if (!relevant.length) {
     return 'none';
   }
 
-  if (rows.some((item) => item.status === 'pending')) {
+  if (relevant.some((item) => item.status === 'pending')) {
     return 'pending';
   }
 
-  if (rows.some((item) => item.status === 'hold')) {
+  if (relevant.some((item) => item.status === 'hold')) {
     return 'hold';
   }
 
-  if (rows.some((item) => enrollmentGrantsCourseAccess(item.status))) {
+  if (relevant.some((item) => enrollmentGrantsCourseAccess(item.status))) {
     return 'approved';
   }
 
-  if (rows.some((item) => item.status === 'rejected')) {
+  if (relevant.some((item) => item.status === 'rejected')) {
     return 'rejected';
   }
 
@@ -248,7 +246,9 @@ export function buildAvailableProgramCards(programs, courses, enrollments = []) 
 
       const enrollmentKind = getProgramEnrollmentKind(program.id, enrollments, publishedCourses);
       const enrollmentRows = getProgramEnrollmentRows(program.id, enrollments, publishedCourses);
-      const approvedEnrollment = enrollmentRows.find((item) => enrollmentGrantsCourseAccess(item.status));
+      const approvedEnrollment =
+        enrollmentRows.find((item) => !item.courseId && enrollmentGrantsCourseAccess(item.status)) ??
+        enrollmentRows.find((item) => enrollmentGrantsCourseAccess(item.status));
 
       let status = 'available';
       let enrollmentCaption = 'Available to enroll';

@@ -52,17 +52,16 @@ const TabBtn = styled.button`
 `;
 
 const TAB_LABELS = {
-  description: 'Description',
-  curriculum: 'Curriculum',
-  faq: 'FAQ',
-  notice: 'Notice',
-  reviews: 'Reviews',
+  quiz: 'Quiz',
+  handouts: 'Handouts',
+  'lecture-video': 'Lecture video',
+  'group-study': 'Group study',
 };
 
 /**
- * Accessible tabstrip for Description / Curriculum / … panels.
+ * Accessible tabstrip for Quiz / Handouts / Lecture video / Group study panels.
  *
- * `activeKey`: one of `tabKeys`; `options` defaults to canonical five tabs.
+ * `activeKey`: one of `tabKeys`; `options` defaults to the canonical four tabs.
  */
 export function CourseTabs({ activeKey, onChange, options }) {
   const keys = options ?? Object.keys(TAB_LABELS);

@@ -15,9 +15,8 @@ import CardContent from '@mui/material/CardContent';
 
 import { useLmsActions, useLmsBranchEnrolls, useLmsReviewSchedulesPaginated } from 'src/hooks/use-lms';
 
-import { htmlToPlainText } from 'src/utils/html-content';
-
 import { CONFIG } from 'src/global-config';
+import { downloadLmsExcelExport } from 'src/lib/lms-excel-export';
 import { getLmsAxiosErrorMessage } from 'src/lib/lms-instructor-api';
 import { InstructorWorkspaceShell } from 'src/features/instructor-profile/components/instructor-workspace-shell';
 import {
@@ -348,19 +347,15 @@ export default function ReviewSchedulesPage() {
                   </Typography>
                   <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
                     <ExportExcelButton
-                      fileName="review-schedules"
-                      sheetName="Schedules"
-                      headers={['Branch', 'Schedule', 'Capacity', 'Status', 'Sort order', 'Description']}
-                      rows={reviewSchedules}
-                      mapRow={(row) => [
-                        row.branchName ?? '',
-                        row.name ?? '',
-                        row.studentCapacity ?? '',
-                        row.status ?? '',
-                        row.sortOrder ?? '',
-                        htmlToPlainText(row.description),
-                      ]}
                       disabled={listLoading}
+                      onExport={({ from, to }) =>
+                        downloadLmsExcelExport(
+                          '/api/review-schedules/export',
+                          { search: debouncedSearch, from, to },
+                          'review-schedules.xlsx'
+                        )
+                      }
+                      successMessage="Review schedule list exported to Excel."
                     />
                     <ServerListPerPageControl
                       perPage={perPage}

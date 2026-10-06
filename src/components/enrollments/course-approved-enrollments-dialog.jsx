@@ -167,8 +167,8 @@ export function CourseApprovedEnrollmentsDialog({ open, courseId, courseTitle, o
       <DialogTitle sx={{ pb: 1 }}>{title}</DialogTitle>
       <DialogContent dividers>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Learners with an approved application for this course, including whole-program approvals in
-          the same program. Use Remove to revoke access (enrollment status becomes rejected).
+          Learners with an approved access request for this course. Use Remove to revoke access
+          (enrollment status becomes rejected).
         </Typography>
 
         {loading ? (

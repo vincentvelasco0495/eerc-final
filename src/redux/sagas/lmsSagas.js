@@ -35,14 +35,17 @@ import {
 } from 'src/redux/actions/lmsActions';
 
 function* submitEnrollmentSaga(action) {
-  const { courseId, programId, paymentProofFile, formData, resolve, reject } = action.payload ?? {};
+  const { courseId, programId, paymentProofFile, formData, accessRequest, resolve, reject } =
+    action.payload ?? {};
   try {
-    const payload = yield call(lmsApi.submitEnrollmentRequest, {
-      courseId,
-      programId,
-      paymentProofFile,
-      formData,
-    });
+    const payload = accessRequest
+      ? yield call(lmsApi.requestCourseAccess, { courseId })
+      : yield call(lmsApi.submitEnrollmentRequest, {
+          courseId,
+          programId,
+          paymentProofFile,
+          formData,
+        });
     yield put(submitEnrollmentSuccess(payload));
     const enrollmentsEndpoint = lmsEndpoints.enrollments();
     const authUserId = action.payload?.authUserId;
@@ -60,7 +63,9 @@ function* submitEnrollmentSaga(action) {
     yield put(
       lmsFlashSet({
         severity: 'success',
-        message: 'Enrollment submitted with payment proof. An administrator will verify it shortly.',
+        message: accessRequest
+          ? 'Course access requested. An administrator will review it shortly.'
+          : 'Enrollment submitted with payment proof. An administrator will verify it shortly.',
       })
     );
     if (typeof resolve === 'function') {

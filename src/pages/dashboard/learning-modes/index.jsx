@@ -15,9 +15,8 @@ import CardContent from '@mui/material/CardContent';
 
 import { useLmsActions, useLmsLearningModesPaginated } from 'src/hooks/use-lms';
 
-import { htmlToPlainText } from 'src/utils/html-content';
-
 import { CONFIG } from 'src/global-config';
+import { downloadLmsExcelExport } from 'src/lib/lms-excel-export';
 import { getLmsAxiosErrorMessage } from 'src/lib/lms-instructor-api';
 import { normalizeLearningModePage, normalizeLearningModePerPage } from 'src/services/learningModeService';
 import { InstructorWorkspaceShell } from 'src/features/instructor-profile/components/instructor-workspace-shell';
@@ -306,17 +305,15 @@ export default function LearningModesPage() {
                   </Typography>
                   <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
                     <ExportExcelButton
-                      fileName="learning-modes"
-                      sheetName="Learning modes"
-                      headers={['Name', 'Status', 'Sort order', 'Description']}
-                      rows={learningModes}
-                      mapRow={(row) => [
-                        row.name ?? '',
-                        row.status ?? '',
-                        row.sortOrder ?? '',
-                        htmlToPlainText(row.description),
-                      ]}
                       disabled={listLoading}
+                      onExport={({ from, to }) =>
+                        downloadLmsExcelExport(
+                          '/api/learning-modes/export',
+                          { search: debouncedSearch, from, to },
+                          'learning-modes.xlsx'
+                        )
+                      }
+                      successMessage="Learning mode list exported to Excel."
                     />
                     <ServerListPerPageControl
                       perPage={perPage}

@@ -25,6 +25,7 @@ import {
 import { resolveApiAssetUrl } from 'src/utils/resolve-api-asset-url';
 
 import { CONFIG } from 'src/global-config';
+import { downloadLmsExcelExport } from 'src/lib/lms-excel-export';
 import { getLmsAxiosErrorMessage } from 'src/lib/lms-instructor-api';
 import { normalizeProgramsPage, normalizeProgramsPerPage } from 'src/services/programService';
 import { StudentWorkspaceShell } from 'src/features/student-profile/components/student-workspace-shell';
@@ -39,6 +40,7 @@ import { InstructorTable as StudentRosterTable } from 'src/components/instructor
 
 const DEFAULT_FORM = {
   name: '',
+  aliasName: '',
   email: '',
   status: 'active',
   notes: '',
@@ -189,6 +191,7 @@ export default function StudentsPage() {
     try {
       const formData = new FormData();
       formData.append('name', form.name.trim());
+      formData.append('aliasName', form.aliasName.trim());
       formData.append('email', form.email.trim());
       formData.append('status', form.status);
       formData.append('notes', form.notes.trim() || '');
@@ -219,6 +222,7 @@ export default function StudentsPage() {
     setEditingId(row.id);
     setForm({
       name: row.name ?? '',
+      aliasName: row.aliasName ?? '',
       email: row.email ?? '',
       status: row.status === 'inactive' ? 'inactive' : 'active',
       notes: row.notes ?? '',
@@ -255,8 +259,8 @@ export default function StudentsPage() {
           <Box>
             <Typography variant="h4">Students</Typography>
             <Typography variant="body2" color="text.secondary">
-              Name and email are stored on the user account (editable here). Notes and profile photo are saved on the
-              student roster profile.
+              Name, alias name, and email are stored on the student record. Notes and profile photo are
+              saved on the student roster profile.
             </Typography>
           </Box>
 
@@ -272,6 +276,15 @@ export default function StudentsPage() {
                       onChange={handleChange('name')}
                       fullWidth
                       required
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      label="Alias name"
+                      value={form.aliasName}
+                      onChange={handleChange('aliasName')}
+                      fullWidth
+                      placeholder="Nickname or preferred name"
                     />
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
@@ -405,12 +418,15 @@ export default function StudentsPage() {
                   </Typography>
                   <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
                     <ExportExcelButton
-                      fileName="students"
-                      sheetName="Students"
-                      headers={['Name', 'Email', 'Status', 'Notes']}
-                      rows={students}
-                      mapRow={(row) => [row.name ?? '', row.email ?? '', row.status ?? '', row.notes ?? '']}
                       disabled={listLoading}
+                      onExport={({ from, to }) =>
+                        downloadLmsExcelExport(
+                          '/api/students/export',
+                          { search: debouncedSearch, from, to },
+                          'students.xlsx'
+                        )
+                      }
+                      successMessage="Student roster exported to Excel."
                     />
                     <ServerListPerPageControl
                       perPage={perPage}
@@ -423,12 +439,12 @@ export default function StudentsPage() {
                   Row id is the user&apos;s public UID (used for update/delete in the API).
                 </Typography>
                 <Typography component="div" variant="body2" color="text.secondary" sx={{ maxWidth: 560 }}>
-                  Search matches user name, email, notes, and account status.
+                  Search matches user name, alias name, email, notes, and account status.
                 </Typography>
                 <TextField
                   size="small"
                   label="Search"
-                  placeholder="Name, email, notes, or status…"
+                  placeholder="Name, alias, email, notes, or status…"
                   value={searchDraft}
                   onChange={(e) => setSearchDraft(e.target.value)}
                   sx={{ maxWidth: { xs: '100%', sm: 360 } }}
@@ -437,6 +453,7 @@ export default function StudentsPage() {
                   rows={students}
                   loading={listLoading}
                   resolveProfileSrc={resolveProfileSrc}
+                  showAliasName
                   onEdit={handleEdit}
                   onDelete={(row) => {
                     setPendingDeleteRow(row);

@@ -37,9 +37,9 @@ export const courseDetailMock = {
 };
 
 /**
- * Curriculum tab — collapsible modules + typed lesson rows (static demo).
+ * Quiz / Handouts / Lecture video / Group study tabs — collapsible modules + typed lesson rows (static demo).
  *
- * lesson.type: document | video | quiz | stream
+ * lesson.type: document | video | quiz | stream | zoom | live | assignment
  */
 export const curriculumModulesMock = [
   {
@@ -308,4 +308,63 @@ export const faqItemsMock = [
   },
 ];
 
-export const tabKeys = ['description', 'curriculum', 'faq', 'notice', 'reviews'];
+export const tabKeys = ['quiz', 'handouts', 'lecture-video', 'group-study'];
+
+/** Lesson types shown on each learner course-detail tab. */
+export const tabLessonTypes = {
+  quiz: ['quiz', 'assignment'],
+  handouts: ['document'],
+  'lecture-video': ['video'],
+  'group-study': ['stream', 'zoom', 'live'],
+};
+
+export const tabEmptyMessages = {
+  quiz: 'No quizzes are available in this course yet.',
+  handouts: 'No handouts are available in this course yet.',
+  'lecture-video': 'No lecture videos are available in this course yet.',
+  'group-study': 'No group study sessions are available in this course yet.',
+};
+
+const TAB_HASH_ALIASES = {
+  curriculum: 'quiz',
+  lecturevideo: 'lecture-video',
+  lecture_video: 'lecture-video',
+  'lecture video': 'lecture-video',
+  groupstudy: 'group-study',
+  group_study: 'group-study',
+  'group study': 'group-study',
+};
+
+/** Resolve `#quiz` / legacy `#curriculum` (and spacing aliases) to a `tabKeys` value. */
+export function resolveCourseDetailTabKey(rawHash) {
+  const raw = String(rawHash ?? '')
+    .replace(/^#/, '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_]+/g, ' ');
+  if (tabKeys.includes(raw)) {
+    return raw;
+  }
+  const compact = raw.replace(/\s+/g, '');
+  if (tabKeys.includes(compact)) {
+    return compact;
+  }
+  return TAB_HASH_ALIASES[raw] ?? TAB_HASH_ALIASES[compact] ?? null;
+}
+
+export function filterCurriculumModulesForTab(modules, tabKey) {
+  const types = new Set(tabLessonTypes[tabKey] ?? []);
+  if (types.size === 0) {
+    return [];
+  }
+  return (modules ?? [])
+    .map((mod) => ({
+      ...mod,
+      lessons: (mod.lessons ?? []).filter((lesson) => types.has(lesson.type)),
+    }))
+    .filter((mod) => (mod.lessons ?? []).length > 0)
+    .map((mod) => ({
+      ...mod,
+      lessons: mod.lessons.map((lesson, index) => ({ ...lesson, order: index + 1 })),
+    }));
+}

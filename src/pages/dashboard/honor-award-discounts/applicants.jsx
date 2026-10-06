@@ -170,7 +170,7 @@ export default function HonorAwardDiscountApplicantsPage() {
     [setSearchParams]
   );
 
-  const handleExportExcel = useCallback(async () => {
+  const handleExportExcel = useCallback(async ({ from, to } = {}) => {
     const { blob, fileName } = await fetchHonorAwardDiscountApplicantsExcelExport({
       optionId,
       search: debouncedSearch,
@@ -178,6 +178,8 @@ export default function HonorAwardDiscountApplicantsPage() {
       program: programFilter,
       batch: batchFilter,
       branch: branchFilter,
+      from,
+      to,
     });
     downloadBlob(blob, fileName);
   }, [batchFilter, branchFilter, debouncedSearch, optionId, programFilter, statusFilter]);

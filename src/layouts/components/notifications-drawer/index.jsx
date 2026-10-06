@@ -5,7 +5,6 @@ import { useBoolean } from 'minimal-shared/hooks';
 import Box from '@mui/material/Box';
 import Badge from '@mui/material/Badge';
 import Drawer from '@mui/material/Drawer';
-import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
@@ -76,10 +75,6 @@ export function NotificationsDrawer({
       <IconButton onClick={onClose} sx={{ display: { xs: 'inline-flex', sm: 'none' } }}>
         <Iconify icon="mingcute:close-line" />
       </IconButton>
-
-      <IconButton>
-        <Iconify icon="solar:settings-bold-duotone" />
-      </IconButton>
     </Box>
   );
 
@@ -103,7 +98,7 @@ export function NotificationsDrawer({
           />
           <Typography variant="subtitle1">No notifications</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            You&apos;re all caught up. New updates will appear here.
+            Enrollment and course updates will appear here.
           </Typography>
         </Box>
       );
@@ -154,14 +149,6 @@ export function NotificationsDrawer({
       >
         {renderHead()}
         {renderList()}
-
-        {notifications.length > 0 ? (
-          <Box sx={{ p: 1 }}>
-            <Button fullWidth size="large">
-              View all
-            </Button>
-          </Box>
-        ) : null}
       </Drawer>
     </>
   );

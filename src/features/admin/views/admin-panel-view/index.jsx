@@ -16,6 +16,8 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 
 import { useAdminData, useEnrollment, useLmsActions, useLmsCourses, useLmsModulesByCourse } from 'src/hooks/use-lms';
 
+import { downloadLmsExcelExport } from 'src/lib/lms-excel-export';
+
 import { LmsStatCard } from 'src/components/ui/lms-stat-card';
 import { LmsPageShell } from 'src/components/layout/lms-page-shell';
 import { ExportExcelButton } from 'src/components/export-excel-button';
@@ -171,17 +173,10 @@ export function AdminPanelView() {
               >
                 <Typography variant="h6">Manage users</Typography>
                 <ExportExcelButton
-                  fileName="admin-users"
-                  sheetName="Users"
-                  headers={['User', 'Role', 'Program', 'Status']}
-                  rows={admin.users}
-                  mapRow={(row) => [
-                    row.name ?? '',
-                    row.role ?? '',
-                    row.activeProgram ?? '',
-                    row.status ?? '',
-                  ]}
-                  disabled={!admin.users.length}
+                  onExport={({ from, to }) =>
+                    downloadLmsExcelExport('/api/admin/users/export', { from, to }, 'admin-users.xlsx')
+                  }
+                  successMessage="Users exported to Excel."
                 />
               </Stack>
               <Box sx={styles.dataGridBox}>
@@ -205,16 +200,14 @@ export function AdminPanelView() {
                 >
                   <Typography variant="h6">Manage enrollments</Typography>
                   <ExportExcelButton
-                    fileName="admin-enrollments"
-                    sheetName="Enrollments"
-                    headers={['Program', 'Submitted', 'Status']}
-                    rows={enrollmentRows}
-                    mapRow={(row) => [
-                      row.programTitle ?? '',
-                      row.submittedAt ?? '',
-                      row.status ?? '',
-                    ]}
-                    disabled={!enrollmentRows.length}
+                    onExport={({ from, to }) =>
+                      downloadLmsExcelExport(
+                        '/api/admin/enrollments/export',
+                        { from, to },
+                        'admin-enrollments.xlsx'
+                      )
+                    }
+                    successMessage="Enrollments exported to Excel."
                   />
                 </Stack>
                 <Box sx={styles.enrollmentGridBox}>

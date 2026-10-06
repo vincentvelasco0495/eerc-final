@@ -47,6 +47,8 @@ export function InstructorCourseCard({
   /** When set, shows a CTA below the meta row (outside the course preview link). */
   onEnrollNowClick,
   enrollNowLabel = 'Enroll now',
+  /** Student course-access CTA rendered outside the preview click target. */
+  studentAction = null,
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -274,6 +276,25 @@ export function InstructorCourseCard({
               )}
             </Stack>
           </Box>
+
+          {studentAction?.label ? (
+            <Button
+              size="small"
+              fullWidth
+              variant={studentAction.variant ?? 'contained'}
+              color={studentAction.color ?? 'primary'}
+              disabled={Boolean(studentAction.disabled || studentAction.loading)}
+              onClick={(event) => {
+                event.stopPropagation();
+                studentAction.onClick?.(course);
+              }}
+              startIcon={
+                studentAction.loading ? <CircularProgress size={16} color="inherit" /> : null
+              }
+            >
+              {studentAction.label}
+            </Button>
+          ) : null}
 
           {showStaffCourseStatusFooter ? (
             <>

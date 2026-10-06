@@ -29,6 +29,12 @@ function trimId(value) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function copyPdfBytes(bytes) {
+  const copy = new Uint8Array(bytes.byteLength);
+  copy.set(bytes);
+  return copy;
+}
+
 function pdfCacheRequest(key) {
   return new Request(`https://eerc.local/pdf-cache/${encodeURIComponent(key)}`);
 }
@@ -97,8 +103,7 @@ async function loadPdfBytes(materialPublicId, src) {
       })
     );
   }
-  const bytes = await pdfBytesCache.get(key);
-  return bytes.slice();
+  return copyPdfBytes(await pdfBytesCache.get(key));
 }
 
 function outputScale() {
@@ -112,7 +117,10 @@ function PdfPages({ materialPublicId, src, maxHeight = 520 }) {
 
   useEffect(() => {
     let cancelled = false;
+    let renderGen = 0;
     let timer = 0;
+    let frame = 0;
+    let widthWaits = 0;
     let lastWidth = 0;
     const host = hostRef.current;
     if (!host) {
@@ -122,31 +130,45 @@ function PdfPages({ materialPublicId, src, maxHeight = 520 }) {
     ensurePdfWorker();
 
     const render = async () => {
+      const gen = (renderGen += 1);
       const cssWidth = host.clientWidth;
       if (cssWidth < 40) {
+        widthWaits += 1;
+        if (widthWaits > 45) {
+          setStatus('error');
+          return;
+        }
+        frame = window.requestAnimationFrame(() => {
+          if (!cancelled) {
+            void render();
+          }
+        });
         return;
       }
-      host.replaceChildren();
-      setStatus('loading');
+      widthWaits = 0;
+
       try {
         const data = await loadPdfBytes(materialPublicId, src);
-        if (cancelled) {
+        if (cancelled || gen !== renderGen) {
           return;
         }
         const pdf = await getDocument({ data }).promise;
-        if (cancelled) {
+        if (cancelled || gen !== renderGen) {
           await pdf.destroy();
           return;
         }
+
         const pageLimit = Math.min(pdf.numPages, QUIZ_PDF_MAX_PAGES);
         const pixelRatio = outputScale();
+        const fragment = document.createDocumentFragment();
+        const fitWidth = Math.max(host.clientWidth, 240);
+
         for (let pageNumber = 1; pageNumber <= pageLimit; pageNumber += 1) {
-          const page = await pdf.getPage(pageNumber);
-          if (cancelled) {
+          if (cancelled || gen !== renderGen) {
             break;
           }
+          const page = await pdf.getPage(pageNumber);
           const unscaled = page.getViewport({ scale: 1 });
-          const fitWidth = Math.max(host.clientWidth, 240);
           const viewport = page.getViewport({ scale: fitWidth / unscaled.width });
           let drawScale = pixelRatio;
           if (viewport.width * drawScale > MAX_CANVAS_EDGE) {
@@ -158,7 +180,7 @@ function PdfPages({ materialPublicId, src, maxHeight = 520 }) {
           canvas.style.width = '100%';
           canvas.style.height = 'auto';
           canvas.style.display = 'block';
-          canvas.style.marginBottom = '8px';
+          canvas.style.marginBottom = pageNumber < pageLimit ? '8px' : '0';
           canvas.style.background = '#fff';
           const ctx = canvas.getContext('2d', { alpha: false });
           if (!ctx) {
@@ -168,19 +190,20 @@ function PdfPages({ materialPublicId, src, maxHeight = 520 }) {
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           const transform = drawScale !== 1 ? [drawScale, 0, 0, drawScale, 0, 0] : null;
           await page.render({ canvasContext: ctx, viewport, transform }).promise;
-          if (!cancelled) {
-            host.appendChild(canvas);
-            if (pageNumber === 1) {
-              setStatus('ready');
-            }
+          if (!cancelled && gen === renderGen) {
+            fragment.appendChild(canvas);
           }
         }
+
         await pdf.destroy();
-        if (!cancelled) {
-          setStatus('ready');
+        if (cancelled || gen !== renderGen) {
+          return;
         }
+        host.replaceChildren(fragment);
+        lastWidth = host.clientWidth;
+        setStatus('ready');
       } catch {
-        if (!cancelled) {
+        if (!cancelled && gen === renderGen) {
           setStatus('error');
         }
       }
@@ -191,31 +214,43 @@ function PdfPages({ materialPublicId, src, maxHeight = 520 }) {
       if (nextWidth < 40) {
         return;
       }
-      if (lastWidth > 0 && Math.abs(nextWidth - lastWidth) < 8) {
+      if (lastWidth > 0 && Math.abs(nextWidth - lastWidth) < 12) {
         return;
       }
       window.clearTimeout(timer);
       timer = window.setTimeout(() => {
         lastWidth = host.clientWidth;
         void render();
-      }, lastWidth === 0 ? 0 : 120);
+      }, lastWidth === 0 ? 0 : 160);
     };
 
     const observer = new ResizeObserver(schedule);
     observer.observe(host);
+    void render();
 
     return () => {
       cancelled = true;
+      renderGen += 1;
       window.clearTimeout(timer);
+      window.cancelAnimationFrame(frame);
       observer.disconnect();
       host.replaceChildren();
     };
   }, [materialPublicId, src]);
 
   return (
-    <Box sx={{ position: 'relative', width: 1 }}>
+    <Box sx={{ position: 'relative', width: 1, minHeight: status === 'loading' ? 160 : 0 }}>
       {status === 'loading' ? (
-        <Box sx={{ display: 'grid', placeItems: 'center', py: 6 }}>
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 1,
+            display: 'grid',
+            placeItems: 'center',
+            pointerEvents: 'none',
+          }}
+        >
           <CircularProgress aria-label="Loading PDF" size={28} />
         </Box>
       ) : null}
@@ -245,7 +280,23 @@ export function QuizPdfDocument({ materialPublicId, src, fileName, maxHeight = 5
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [open, setOpen] = useState(false);
+  const [dialogReady, setDialogReady] = useState(false);
   const id = trimId(materialPublicId);
+
+  useEffect(() => {
+    if (!open) {
+      setDialogReady(false);
+      return undefined;
+    }
+    let frame2 = 0;
+    const frame1 = window.requestAnimationFrame(() => {
+      frame2 = window.requestAnimationFrame(() => setDialogReady(true));
+    });
+    return () => {
+      window.cancelAnimationFrame(frame1);
+      window.cancelAnimationFrame(frame2);
+    };
+  }, [open]);
 
   if (!id && !src) {
     return null;
@@ -262,7 +313,7 @@ export function QuizPdfDocument({ materialPublicId, src, fileName, maxHeight = 5
           position: 'absolute',
           top: 8,
           right: 8,
-          zIndex: 1,
+          zIndex: 2,
           bgcolor: 'rgba(0, 22, 50, 0.55)',
           color: 'common.white',
           '&:hover': { bgcolor: 'rgba(0, 22, 50, 0.72)' },
@@ -270,7 +321,11 @@ export function QuizPdfDocument({ materialPublicId, src, fileName, maxHeight = 5
       >
         <Iconify icon="eva:expand-fill" width={18} />
       </IconButton>
-      <PdfPages materialPublicId={id} src={src} maxHeight={maxHeight} />
+      {open ? (
+        <Box sx={{ minHeight: 200, bgcolor: 'background.neutral', borderRadius: 1 }} />
+      ) : (
+        <PdfPages materialPublicId={id} src={src} maxHeight={maxHeight} />
+      )}
       <Dialog
         open={open}
         onClose={() => setOpen(false)}
@@ -296,13 +351,17 @@ export function QuizPdfDocument({ materialPublicId, src, fileName, maxHeight = 5
           <Iconify icon="eva:close-fill" width={22} />
         </IconButton>
         <DialogContent sx={{ pt: 0, px: { xs: 1, sm: 3 } }}>
-          {open ? (
+          {open && dialogReady ? (
             <PdfPages
               materialPublicId={id}
               src={src}
               maxHeight={isMobile ? 'calc(100dvh - 72px)' : 'calc(90vh - 88px)'}
             />
-          ) : null}
+          ) : (
+            <Box sx={{ display: 'grid', placeItems: 'center', py: 8 }}>
+              <CircularProgress aria-label="Loading PDF" size={28} />
+            </Box>
+          )}
         </DialogContent>
       </Dialog>
     </Box>

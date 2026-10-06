@@ -200,7 +200,11 @@ function EnrollmentDataRow({
       >
         <TableCell sx={{ pl: 5 }}>
           <Typography variant="caption" color="text.secondary">
-            Program application
+            {row.courseTitle
+              ? row.requestKind === 'course_access'
+                ? `Course access · ${row.courseTitle}`
+                : `Course · ${row.courseTitle}`
+              : 'Program application'}
           </Typography>
         </TableCell>
         <TableCell />
@@ -284,7 +288,7 @@ function LearnerGroupRow({
             <Box>
               <LearnerNameButton name={row.userName} onClick={() => onLearnerView?.(row)} />
               <Typography variant="caption" color="text.secondary">
-                {row.enrollmentCount} program{row.enrollmentCount === 1 ? '' : 's'}
+                {row.enrollmentCount} application{row.enrollmentCount === 1 ? '' : 's'}
               </Typography>
             </Box>
           </Stack>

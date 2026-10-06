@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 
 import Box from '@mui/material/Box';
@@ -24,10 +24,7 @@ import { resolveProgramBannerSrc } from 'src/utils/program-banner';
 
 import { CONFIG } from 'src/global-config';
 import { getLmsAxiosErrorMessage } from 'src/lib/lms-instructor-api';
-import {
-  canSubmitPartialPayment,
-  buildPartialPaymentSummary,
-} from 'src/features/enrollment/utils/enrollment-payments';
+import { canSubmitPartialPayment } from 'src/features/enrollment/utils/enrollment-payments';
 
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
@@ -81,10 +78,6 @@ export function InstructorProgramCard({
   const isActive = program.status === 'active';
   const enrollmentChip = resolveStudentEnrollmentChip(program.enrollmentKind);
   const canPayPartial = Boolean(enrollmentRecord) && canSubmitPartialPayment(enrollmentRecord);
-  const paymentSummary = useMemo(
-    () => (readOnly ? buildPartialPaymentSummary(program, enrollmentRecord) : null),
-    [enrollmentRecord, program, readOnly]
-  );
   const publishedCoursesLabel =
     program.courseCount === 1 ? 'Published course' : 'Published courses';
 
@@ -281,35 +274,6 @@ export function InstructorProgramCard({
                   sx={styles.statusChip}
                 />
               </Stack>
-
-              {readOnly && paymentSummary ? (
-                <Stack spacing={0.2}>
-                  {paymentSummary.totalFeeLabel ? (
-                    <Typography variant="caption" sx={styles.statusCaption}>
-                      Program fee:{' '}
-                      <Box component="span" sx={styles.updatedValue}>
-                        {paymentSummary.totalFeeLabel}
-                      </Box>
-                    </Typography>
-                  ) : null}
-                  <Typography variant="caption" sx={styles.statusCaption}>
-                    Amount paid:{' '}
-                    <Box component="span" sx={styles.updatedValue}>
-                      {paymentSummary.totalPaid > 0
-                        ? paymentSummary.totalPaidLabel
-                        : '—'}
-                    </Box>
-                    {paymentSummary.totalFeeLabel && paymentSummary.totalPaid > 0
-                      ? ` of ${paymentSummary.totalFeeLabel}`
-                      : ''}
-                  </Typography>
-                  {paymentSummary.remainingLabel && paymentSummary.totalPaid > 0 ? (
-                    <Typography variant="caption" color="text.secondary">
-                      Remaining: {paymentSummary.remainingLabel}
-                    </Typography>
-                  ) : null}
-                </Stack>
-              ) : null}
             </Stack>
 
             <Stack direction="row" spacing={0.75} alignItems="flex-end">

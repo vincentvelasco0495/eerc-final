@@ -260,9 +260,9 @@ export function CourseAssignmentView() {
   const attemptSubmitRef = useRef('');
   const sentProgressRef = useRef('');
 
-  const courseLinkHref = paths.dashboard.courseDetails(
+  const courseLinkHref = `${paths.dashboard.courseDetails(
     typeof course?.slug === 'string' && course.slug.trim() ? course.slug.trim() : courseLookup
-  );
+  )}#quiz`;
 
   const durationMinutes = useMemo(() => resolveAssignmentDurationMinutes(assignment), [assignment]);
   const attemptsAllowed =
@@ -287,11 +287,11 @@ export function CourseAssignmentView() {
       return;
     }
     if (isGuest && !guestCanAccessLesson(assignmentId, modules)) {
-      navigate(`${courseLinkHref}#curriculum`, { replace: true });
+      navigate(courseLinkHref, { replace: true });
       return;
     }
     if (shell && isLessonLocked(assignmentId)) {
-      navigate(`${courseLinkHref}#curriculum`, { replace: true });
+      navigate(courseLinkHref, { replace: true });
     }
   }, [
     assignmentId,

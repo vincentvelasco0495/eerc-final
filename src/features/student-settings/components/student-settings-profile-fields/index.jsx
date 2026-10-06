@@ -31,6 +31,19 @@ export function StudentSettingsProfileFields({ values, errors = {}, onChange, ma
         <Grid size={{ xs: 12, md: 6 }}>
           <TextField
             fullWidth
+            label="Alias name"
+            value={values.aliasName}
+            onChange={(event) => onChange('aliasName', event.target.value)}
+            placeholder="Nickname or preferred name"
+            slotProps={{ inputLabel: { shrink: true } }}
+          />
+        </Grid>
+      </Grid>
+
+      <Grid container spacing={3}>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <TextField
+            fullWidth
             required
             label="Phone number"
             value={values.phoneNumber}

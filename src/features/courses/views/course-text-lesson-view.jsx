@@ -137,23 +137,23 @@ export function CourseTextLessonView() {
       });
   }, [resolvedCourseId, lessonId, lessonPayload, mutateModules, runCommand, isLessonLocked, isGuest]);
 
-  const courseLinkHref = paths.dashboard.courseDetails(
+  const courseLinkHref = `${paths.dashboard.courseDetails(
     typeof course?.slug === 'string' && course.slug.trim() ? course.slug.trim() : courseLookup
-  );
+  )}#handouts`;
 
   useEffect(() => {
     if (!lessonId || courseLoading || modulesLoading) {
       return;
     }
     if (isGuest && !guestCanAccessLesson(lessonId, modules)) {
-      navigate(`${courseLinkHref}#curriculum`, { replace: true });
+      navigate(courseLinkHref, { replace: true });
       return;
     }
     if (!shell) {
       return;
     }
     if (isLessonLocked(lessonId)) {
-      navigate(`${courseLinkHref}#curriculum`, { replace: true });
+      navigate(courseLinkHref, { replace: true });
     }
   }, [
     lessonId,

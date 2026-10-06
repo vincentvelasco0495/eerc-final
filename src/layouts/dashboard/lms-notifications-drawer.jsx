@@ -3,52 +3,82 @@ import { useState, useEffect, useCallback } from 'react';
 import { usePathname } from 'src/routes/hooks';
 
 import axios from 'src/lib/axios';
-import { _notifications } from 'src/_mock';
 import { lmsEndpoints } from 'src/redux/api/lmsEndpoints';
 
 import { useAuthContext } from 'src/auth/hooks';
+import { normalizeUserRole } from 'src/auth/utils/role';
 
 import NotificationsDrawer from '../components/notifications-drawer';
 
-// ----------------------------------------------------------------------
+const STUDENT_NOTIFICATION_KINDS = new Set([
+  'announcement',
+  'enrollment_approved',
+  'enrollment_rejected',
+  'enrollment_on_hold',
+]);
+
+function isStudentFacingNotification(item) {
+  const kind = String(item?.notificationKind ?? item?.kind ?? '').trim();
+  if (STUDENT_NOTIFICATION_KINDS.has(kind)) {
+    return true;
+  }
+  return String(item?.category ?? '').trim() === 'Announcement';
+}
+
+function rowsFromResponse(res) {
+  return Array.isArray(res?.data?.data) ? res.data.data : [];
+}
+
+function filterRowsForRole(rows, role) {
+  if (normalizeUserRole(role) !== 'student') {
+    return rows;
+  }
+  return rows.filter(isStudentFacingNotification);
+}
 
 /**
- * Loads LMS in-app notifications when authenticated; falls back to demo data otherwise.
+ * In-app LMS notifications for the signed-in account. Guests see no bell.
+ * Students only receive enrollment / announcement items for their own account.
  */
 export function LmsNotificationsDrawer(props) {
-  const { authenticated } = useAuthContext();
+  const { authenticated, user } = useAuthContext();
   const pathname = usePathname();
-  const [data, setData] = useState(() => (authenticated ? [] : _notifications));
+  const [data, setData] = useState([]);
+
+  const applyRows = useCallback(
+    (rows) => {
+      setData(filterRowsForRole(Array.isArray(rows) ? rows : [], user?.role));
+    },
+    [user?.role]
+  );
 
   const fetchNotifications = useCallback(async () => {
     if (!authenticated) {
-      setData(_notifications);
+      setData([]);
       return;
     }
 
     try {
       const res = await axios.get(lmsEndpoints.notifications());
-      const rows = Array.isArray(res.data?.data) ? res.data.data : [];
-      setData(rows);
+      applyRows(rowsFromResponse(res));
     } catch {
       setData([]);
     }
-  }, [authenticated]);
+  }, [authenticated, applyRows]);
 
   useEffect(() => {
     let cancelled = false;
 
-    (async () => {
-      if (!authenticated) {
-        setData(_notifications);
-        return;
-      }
+    if (!authenticated) {
+      setData([]);
+      return undefined;
+    }
 
+    (async () => {
       try {
         const res = await axios.get(lmsEndpoints.notifications());
-        const rows = Array.isArray(res.data?.data) ? res.data.data : [];
         if (!cancelled) {
-          setData(rows);
+          applyRows(rowsFromResponse(res));
         }
       } catch {
         if (!cancelled) {
@@ -60,7 +90,7 @@ export function LmsNotificationsDrawer(props) {
     return () => {
       cancelled = true;
     };
-  }, [authenticated, pathname]);
+  }, [authenticated, applyRows, pathname]);
 
   const handleMarkAllAsRead = useCallback(async () => {
     if (!authenticated) {
@@ -73,12 +103,12 @@ export function LmsNotificationsDrawer(props) {
     } catch {
       try {
         const res = await axios.get(lmsEndpoints.notifications());
-        setData(Array.isArray(res.data?.data) ? res.data.data : []);
+        applyRows(rowsFromResponse(res));
       } catch {
         /* ignore */
       }
     }
-  }, [authenticated, fetchNotifications]);
+  }, [authenticated, applyRows, fetchNotifications]);
 
   const handleMarkNotificationRead = useCallback(
     async (publicId) => {
@@ -90,9 +120,7 @@ export function LmsNotificationsDrawer(props) {
       if (current?.removeOnRead) {
         setData((prev) => prev.filter((n) => n.id !== publicId));
       } else {
-        setData((prev) =>
-          prev.map((n) => (n.id === publicId ? { ...n, isUnRead: false } : n))
-        );
+        setData((prev) => prev.map((n) => (n.id === publicId ? { ...n, isUnRead: false } : n)));
       }
 
       try {
@@ -103,13 +131,13 @@ export function LmsNotificationsDrawer(props) {
       } catch {
         try {
           const res = await axios.get(lmsEndpoints.notifications());
-          setData(Array.isArray(res.data?.data) ? res.data.data : []);
+          applyRows(rowsFromResponse(res));
         } catch {
           /* ignore */
         }
       }
     },
-    [authenticated, data]
+    [authenticated, applyRows, data]
   );
 
   const handleMarkNotificationUnread = useCallback(
@@ -117,31 +145,33 @@ export function LmsNotificationsDrawer(props) {
       if (!authenticated) {
         return;
       }
-      setData((prev) =>
-        prev.map((n) => (n.id === publicId ? { ...n, isUnRead: true } : n))
-      );
+      setData((prev) => prev.map((n) => (n.id === publicId ? { ...n, isUnRead: true } : n)));
       try {
         await axios.patch(lmsEndpoints.notificationMarkUnread(publicId));
       } catch {
         try {
           const res = await axios.get(lmsEndpoints.notifications());
-          setData(Array.isArray(res.data?.data) ? res.data.data : []);
+          applyRows(rowsFromResponse(res));
         } catch {
           /* ignore */
         }
       }
     },
-    [authenticated]
+    [authenticated, applyRows]
   );
+
+  if (!authenticated) {
+    return null;
+  }
 
   return (
     <NotificationsDrawer
       {...props}
       data={data}
-      onDrawerOpen={authenticated ? fetchNotifications : undefined}
-      onMarkAllAsRead={authenticated ? handleMarkAllAsRead : undefined}
-      onMarkNotificationRead={authenticated ? handleMarkNotificationRead : undefined}
-      onMarkNotificationUnread={authenticated ? handleMarkNotificationUnread : undefined}
+      onDrawerOpen={fetchNotifications}
+      onMarkAllAsRead={handleMarkAllAsRead}
+      onMarkNotificationRead={handleMarkNotificationRead}
+      onMarkNotificationUnread={handleMarkNotificationUnread}
     />
   );
 }

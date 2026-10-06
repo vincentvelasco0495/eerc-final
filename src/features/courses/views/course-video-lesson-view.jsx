@@ -164,23 +164,29 @@ export function CourseVideoLessonView() {
     [isGuest, isLessonLocked, lessonId, mutateModules, mutateProgress, resolvedCourseId]
   );
 
-  const courseLinkHref = paths.dashboard.courseDetails(
+  const courseTabHash =
+    lessonPayload?.lessonKind === 'stream' ||
+    lessonPayload?.lessonKind === 'zoom' ||
+    lessonPayload?.lessonKind === 'live'
+      ? 'group-study'
+      : 'lecture-video';
+  const courseLinkHref = `${paths.dashboard.courseDetails(
     typeof course?.slug === 'string' && course.slug.trim() ? course.slug.trim() : courseLookup
-  );
+  )}#${courseTabHash}`;
 
   useEffect(() => {
     if (!lessonId || courseLoading || modulesLoading) {
       return;
     }
     if (isGuest && !guestCanAccessLesson(lessonId, modules)) {
-      navigate(`${courseLinkHref}#curriculum`, { replace: true });
+      navigate(courseLinkHref, { replace: true });
       return;
     }
     if (!shell) {
       return;
     }
     if (isLessonLocked(lessonId)) {
-      navigate(`${courseLinkHref}#curriculum`, { replace: true });
+      navigate(courseLinkHref, { replace: true });
     }
   }, [
     lessonId,

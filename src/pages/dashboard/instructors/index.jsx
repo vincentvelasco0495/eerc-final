@@ -25,6 +25,7 @@ import {
 import { resolveApiAssetUrl } from 'src/utils/resolve-api-asset-url';
 
 import { CONFIG } from 'src/global-config';
+import { downloadLmsExcelExport } from 'src/lib/lms-excel-export';
 import { getLmsAxiosErrorMessage } from 'src/lib/lms-instructor-api';
 import { normalizeProgramsPage, normalizeProgramsPerPage } from 'src/services/programService';
 import { StudentWorkspaceShell } from 'src/features/student-profile/components/student-workspace-shell';
@@ -405,12 +406,15 @@ export default function InstructorsPage() {
                   </Typography>
                   <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
                     <ExportExcelButton
-                      fileName="instructors"
-                      sheetName="Instructors"
-                      headers={['Name', 'Email', 'Status']}
-                      rows={instructors}
-                      mapRow={(row) => [row.name ?? '', row.email ?? '', row.status ?? '']}
                       disabled={listLoading}
+                      onExport={({ from, to }) =>
+                        downloadLmsExcelExport(
+                          '/api/instructors/export',
+                          { search: debouncedSearch, from, to },
+                          'instructors.xlsx'
+                        )
+                      }
+                      successMessage="Instructor list exported to Excel."
                     />
                     <ServerListPerPageControl
                       perPage={perPage}

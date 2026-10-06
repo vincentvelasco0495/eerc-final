@@ -48,6 +48,7 @@ function buildInitialValues(user) {
   return {
     firstName: nameParts.firstName,
     lastName: nameParts.lastName,
+    aliasName: user?.aliasName ?? '',
     phoneNumber: user?.phoneNumber ?? '',
     birthday: user?.birthday ?? '',
     schoolHeld: user?.schoolHeld ?? '',
@@ -149,6 +150,7 @@ export function StudentSettingsView() {
       const payload = {
         firstName: values.firstName.trim(),
         lastName: values.lastName.trim(),
+        aliasName: values.aliasName.trim() || null,
         phoneNumber: values.phoneNumber.trim() || null,
         birthday: values.birthday || null,
         schoolHeld: values.schoolHeld.trim() || null,
@@ -167,6 +169,7 @@ export function StudentSettingsView() {
         updatedUser = {
           ...user,
           displayName: `${payload.firstName} ${payload.lastName}`.trim(),
+          aliasName: payload.aliasName ?? '',
           phoneNumber: payload.phoneNumber ?? '',
           birthday: payload.birthday ?? '',
           schoolHeld: payload.schoolHeld ?? '',

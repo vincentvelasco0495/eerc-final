@@ -17,9 +17,10 @@ import { useLmsEnrollmentPaymentsPaginated } from 'src/hooks/use-lms';
 
 import { CONFIG } from 'src/global-config';
 import { verifyEnrollmentPayment } from 'src/redux/api/lmsApi';
+import { downloadLmsExcelExport } from 'src/lib/lms-excel-export';
 import { getLmsAxiosErrorMessage } from 'src/lib/lms-instructor-api';
+import { PAYMENT_VERIFICATION } from 'src/features/enrollment/utils/enrollment-payments';
 import { InstructorWorkspaceShell } from 'src/features/instructor-profile/components/instructor-workspace-shell';
-import { PAYMENT_VERIFICATION, paymentVerificationLabel } from 'src/features/enrollment/utils/enrollment-payments';
 import {
   normalizePaymentHistoryPage,
   normalizePaymentHistoryPerPage,
@@ -231,20 +232,15 @@ export default function PaymentHistoryPage() {
                   </Typography>
                   <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
                     <ExportExcelButton
-                      fileName="payment-history"
-                      sheetName="Payments"
-                      headers={['Learner', 'Email', 'Program', 'Payment', 'Amount', 'Paid on', 'Status']}
-                      rows={payments}
-                      mapRow={(row) => [
-                        row.userName ?? '',
-                        row.userEmail ?? '',
-                        row.programTitle ?? '',
-                        row.label ?? '',
-                        row.amount ?? '',
-                        row.paidAt ?? '',
-                        paymentVerificationLabel(row.verificationStatus),
-                      ]}
                       disabled={listLoading}
+                      onExport={({ from, to }) =>
+                        downloadLmsExcelExport(
+                          '/api/enrollment-payments/export',
+                          { search: debouncedSearch, verification, from, to },
+                          'payment-history.xlsx'
+                        )
+                      }
+                      successMessage="Payment history exported to Excel."
                     />
                     <ServerListPerPageControl
                       perPage={perPage}

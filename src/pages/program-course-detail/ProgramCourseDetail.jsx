@@ -26,8 +26,9 @@ import { htmlToPlainText, normalizeHtmlForDisplay } from 'src/utils/html-content
 import { brandVars } from 'src/theme';
 import { InstructorCourseCard } from 'src/features/instructor-profile/components/instructor-course-card';
 import { InstructorProfileTabs } from 'src/features/instructor-profile/components/instructor-profile-tabs';
-import { isPublishedCatalogCourse, getProgramEnrollmentKind } from 'src/features/student-profile/student-profile-data';
+import { getProgramEnrollmentKind, isPublishedCatalogCourse } from 'src/features/student-profile/student-profile-data';
 import { mapLmsCatalogCourseToInstructorCard } from 'src/features/instructor-profile/map-lms-catalog-course-to-instructor-card';
+import { getCourseAccessEnrollment, resolveStudentCourseAccessAction } from 'src/features/enrollment/utils/program-course-enrollment';
 
 import { toast } from 'src/components/snackbar';
 import { EnrollmentPaymentDialog } from 'src/components/enrollments/enrollment-payment-dialog';
@@ -302,12 +303,13 @@ export default function ProgramCourseDetail() {
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [enrollDialogOpen, setEnrollDialogOpen] = useState(false);
   const [enrollSubmitting, setEnrollSubmitting] = useState(false);
+  const [requestingCourseId, setRequestingCourseId] = useState(null);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { authenticated, loading: authLoading, user } = useAuthContext();
   const enrollments = useEnrollment(authenticated && !authLoading);
-  const { submitEnrollment } = useLmsActions();
+  const { submitEnrollment, requestCourseAccess } = useLmsActions();
   const requestedProgram = String(searchParams.get('program') ?? '').trim().toLowerCase();
   const { programs, isLoading: programsLoading, error: programsError } = useLmsPrograms();
   const { courses, isLoading: coursesLoading, error: coursesError, mutate: mutateCourses } = useLmsCourses(1, 500, requestedProgram);
@@ -479,6 +481,52 @@ export default function ProgramCourseDetail() {
     }
     return programEnrollmentKind === 'none' || programEnrollmentKind === 'rejected';
   }, [authLoading, authenticated, isStaffViewer, programEnrollmentKind]);
+
+  const showCourseAccessHint =
+    authenticated && !authLoading && !isStaffViewer && programEnrollmentKind === 'approved';
+
+  const handleRequestCourseAccess = useCallback(
+    async (course) => {
+      if (!course?.id || requestingCourseId) {
+        return;
+      }
+      setRequestingCourseId(course.id);
+      try {
+        await requestCourseAccess(course.id);
+        toast.success('Access requested. An administrator will review it.');
+      } catch (error) {
+        const message =
+          typeof error === 'string' ? error : error?.message ?? 'Could not request course access.';
+        toast.error(message);
+      } finally {
+        setRequestingCourseId(null);
+      }
+    },
+    [requestCourseAccess, requestingCourseId]
+  );
+
+  const studentActionForCard = useCallback(
+    (card) => {
+      if (isStaffViewer || !authenticated || authLoading) {
+        return null;
+      }
+      return resolveStudentCourseAccessAction({
+        programEnrollmentKind,
+        courseEnrollment: getCourseAccessEnrollment(enrollments ?? [], card.id),
+        requesting: requestingCourseId === card.id,
+        onRequestAccess: () => handleRequestCourseAccess(card),
+      });
+    },
+    [
+      authLoading,
+      authenticated,
+      enrollments,
+      handleRequestCourseAccess,
+      isStaffViewer,
+      programEnrollmentKind,
+      requestingCourseId,
+    ]
+  );
 
   const handleEnrollClick = useCallback(() => {
     if (!authenticated) {
@@ -656,6 +704,12 @@ export default function ProgramCourseDetail() {
                     onChange={setSelectedFilter}
                   />
                 ) : null}
+                {showCourseAccessHint ? (
+                  <DescRow style={{ marginBottom: 12 }}>
+                    Request access for each course. An administrator will approve or reject the
+                    request.
+                  </DescRow>
+                ) : null}
                 <Grid container spacing={{ xs: 2, sm: 2, md: 2.5 }} sx={{ mt: isStaffViewer ? 0.25 : 0 }}>
                   {visibleProgramCourseCards.map((card) => (
                     <Grid key={card.id} size={{ xs: 12, sm: 6, lg: 6, xl: 6 }}>
@@ -663,6 +717,7 @@ export default function ProgramCourseDetail() {
                         course={card}
                         onCourseUpdate={handleCourseUpdate}
                         onRemoteCoursesInvalidate={mutateCourses}
+                        studentAction={studentActionForCard(card)}
                       />
                     </Grid>
                   ))}

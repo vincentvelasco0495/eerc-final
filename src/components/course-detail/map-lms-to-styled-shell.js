@@ -35,13 +35,6 @@ function plainTextFromRichLessonFields(row) {
   return '';
 }
 
-/**
- * When `lockLessonsInOrder` is true, sets each lesson row `locked` if any earlier row
- * in global curriculum order is incomplete (the first lesson is never locked).
- *
- * @param {object[]} curriculumModules
- * @param {boolean} lockLessonsInOrder
- */
 /** Lock every lesson row (enrollment required). */
 export function applyEnrollmentLessonLocks(curriculumModules) {
   if (!Array.isArray(curriculumModules)) {
@@ -51,6 +44,21 @@ export function applyEnrollmentLessonLocks(curriculumModules) {
   return curriculumModules.map((mod) => ({
     ...mod,
     lessons: (mod.lessons ?? []).map((lesson) => ({ ...lesson, locked: true })),
+  }));
+}
+
+/** Blended learning: recorded lecture videos stay open; everything else is locked. */
+export function applyReplayOnlyLessonLocks(curriculumModules) {
+  if (!Array.isArray(curriculumModules)) {
+    return curriculumModules;
+  }
+
+  return curriculumModules.map((mod) => ({
+    ...mod,
+    lessons: (mod.lessons ?? []).map((lesson) => ({
+      ...lesson,
+      locked: lesson.type !== 'video' ? true : Boolean(lesson.locked),
+    })),
   }));
 }
 
@@ -96,6 +104,21 @@ export function isLessonLockedInCurriculum(curriculumModules, lessonId) {
   return false;
 }
 
+export function lessonTypeInCurriculum(curriculumModules, lessonId) {
+  const id = String(lessonId ?? '').trim();
+  if (!id) {
+    return null;
+  }
+  for (const mod of curriculumModules ?? []) {
+    for (const les of mod.lessons ?? []) {
+      if (String(les.id) === id) {
+        return les.type ?? null;
+      }
+    }
+  }
+  return null;
+}
+
 function reviewsToRating(reviews = []) {
   if (reviews.length === 0) {
     return {
@@ -132,7 +155,7 @@ function reviewsToRating(reviews = []) {
  * @param {object[]} [quizResults] learner attempt history (`/api/quiz-results`)
  * @param {string[]} [lessonProgressKeys] learner-completed lesson keys
  * @param {object|null} [courseStats]
- * @param {{ applyLessonLocks?: boolean, requiresEnrollment?: boolean }} [options]
+ * @param {{ applyLessonLocks?: boolean, requiresEnrollment?: boolean, lmsAccess?: string }} [options]
  */
 export function mapLmsToStyledCourseDetail(
   course,
@@ -145,6 +168,7 @@ export function mapLmsToStyledCourseDetail(
 ) {
   const applyLessonLocks = options.applyLessonLocks !== false;
   const requiresEnrollment = Boolean(options.requiresEnrollment);
+  const lmsAccess = String(options.lmsAccess ?? '').trim().toLowerCase();
   const moduleEmbeddedQuizzes = (Array.isArray(modules) ? modules : []).flatMap((m) =>
     Array.isArray(m?.quizzes) ? m.quizzes : []
   );
@@ -442,9 +466,10 @@ export function mapLmsToStyledCourseDetail(
   const courseLookup =
     typeof course.slug === 'string' && course.slug.trim() ? course.slug.trim() : (course.id ?? '');
 
+  const continueHash = lmsAccess === 'replay' ? 'lecture-video' : 'quiz';
   const continueHref = courseLookup
-    ? `${paths.dashboard.courseDetails(courseLookup)}#curriculum`
-    : '#curriculum';
+    ? `${paths.dashboard.courseDetails(courseLookup)}#${continueHash}`
+    : `#${continueHash}`;
 
   const resolvedProgramTitle =
     typeof course.programTitle === 'string' && course.programTitle.trim()
@@ -515,6 +540,10 @@ export function mapLmsToStyledCourseDetail(
 
   if (requiresEnrollment) {
     curriculumModulesWithLocks = applyEnrollmentLessonLocks(curriculumModulesWithLocks);
+  } else if (lmsAccess === 'replay') {
+    curriculumModulesWithLocks = applyReplayOnlyLessonLocks(
+      applySequentialLessonLocks(curriculumModulesWithLocks, false)
+    );
   }
 
   const enrollCtaHref =

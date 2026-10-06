@@ -22,6 +22,7 @@ import { RouterLink } from 'src/routes/components';
 import { useLmsAssignmentLeaderboardPaginated } from 'src/hooks/use-lms';
 
 import { CONFIG } from 'src/global-config';
+import { downloadLmsExcelExport } from 'src/lib/lms-excel-export';
 import { normalizeProgramsPage, normalizeProgramsPerPage } from 'src/services/programService';
 import { GradebookStudentCell } from 'src/features/instructor-gradebook/components/gradebook-student-cell';
 import { InstructorWorkspaceShell } from 'src/features/instructor-profile/components/instructor-workspace-shell';
@@ -176,20 +177,15 @@ export function InstructorAssignmentLeaderboardView() {
                 sx={styles.searchField}
               />
               <ExportExcelButton
-                fileName="assignment-leaderboard"
-                sheetName="Leaderboard"
-                headers={['Rank', 'Student', 'Email', 'Score', 'Finish time', 'Result', 'Attempted']}
-                rows={leaderboard}
-                mapRow={(row) => [
-                  row.rank ?? '',
-                  row.name ?? '',
-                  row.email ?? '',
-                  row.scoreLabel ?? `${row.score ?? ''}%`,
-                  row.durationUsed ?? '',
-                  row.detailLabel ?? (row.passed ? 'Passed' : 'Failed'),
-                  row.attemptedAt ?? row.submittedAt ?? '',
-                ]}
-                disabled={isLoading || !leaderboard.length}
+                disabled={isLoading}
+                onExport={({ from, to }) =>
+                  downloadLmsExcelExport(
+                    `/api/assignments/${encodeURIComponent(assignmentId)}/leaderboard/export`,
+                    { search: debouncedSearch, from, to },
+                    'assignment-leaderboard.xlsx'
+                  )
+                }
+                successMessage="Assignment leaderboard exported to Excel."
               />
             </Stack>
 

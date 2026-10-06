@@ -15,9 +15,8 @@ import CardContent from '@mui/material/CardContent';
 
 import { useLmsActions, useLmsBranchEnrollsPaginated } from 'src/hooks/use-lms';
 
-import { htmlToPlainText } from 'src/utils/html-content';
-
 import { CONFIG } from 'src/global-config';
+import { downloadLmsExcelExport } from 'src/lib/lms-excel-export';
 import { getLmsAxiosErrorMessage } from 'src/lib/lms-instructor-api';
 import { normalizeBranchEnrollPage, normalizeBranchEnrollPerPage } from 'src/services/branchEnrollService';
 import { InstructorWorkspaceShell } from 'src/features/instructor-profile/components/instructor-workspace-shell';
@@ -307,17 +306,15 @@ export default function BranchEnrollsPage() {
                   </Typography>
                   <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
                     <ExportExcelButton
-                      fileName="branch-enrolls"
-                      sheetName="Branches"
-                      headers={['Name', 'Status', 'Sort order', 'Description']}
-                      rows={branchEnrolls}
-                      mapRow={(row) => [
-                        row.name ?? '',
-                        row.status ?? '',
-                        row.sortOrder ?? '',
-                        htmlToPlainText(row.description),
-                      ]}
                       disabled={listLoading}
+                      onExport={({ from, to }) =>
+                        downloadLmsExcelExport(
+                          '/api/branch-enrolls/export',
+                          { search: debouncedSearch, from, to },
+                          'branch-enrolls.xlsx'
+                        )
+                      }
+                      successMessage="Branch list exported to Excel."
                     />
                     <ServerListPerPageControl
                       perPage={perPage}

@@ -170,7 +170,7 @@ export default function BranchEnrollApplicantsPage() {
     [setSearchParams]
   );
 
-  const handleExportExcel = useCallback(async () => {
+  const handleExportExcel = useCallback(async ({ from, to } = {}) => {
     const { blob, fileName } = await fetchBranchApplicantsExcelExport({
       branchId,
       search: debouncedSearch,
@@ -178,6 +178,8 @@ export default function BranchEnrollApplicantsPage() {
       program: programFilter,
       batch: batchFilter,
       learningMode: learningModeFilter,
+      from,
+      to,
     });
     downloadBlob(blob, fileName);
   }, [batchFilter, branchId, debouncedSearch, learningModeFilter, programFilter, statusFilter]);

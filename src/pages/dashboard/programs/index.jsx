@@ -23,6 +23,7 @@ import {
 import { resolveApiAssetUrl } from 'src/utils/resolve-api-asset-url';
 
 import { CONFIG } from 'src/global-config';
+import { downloadLmsExcelExport } from 'src/lib/lms-excel-export';
 import {
   getLmsAxiosErrorMessage,
 } from 'src/lib/lms-instructor-api';
@@ -425,18 +426,15 @@ export default function ProgramsPage() {
                   </Typography>
                   <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
                     <ExportExcelButton
-                      fileName="programs"
-                      sheetName="Programs"
-                      headers={['Code', 'Slug', 'Title', 'Enrollment fee', 'Status']}
-                      rows={programs}
-                      mapRow={(row) => [
-                        row.code ?? '',
-                        row.slug ?? '',
-                        row.title ?? '',
-                        row.enrollmentFee ?? row.enrollment_fee ?? '',
-                        row.status ?? '',
-                      ]}
                       disabled={listLoading}
+                      onExport={({ from, to }) =>
+                        downloadLmsExcelExport(
+                          '/api/programs/export',
+                          { search: debouncedSearch, from, to },
+                          'programs.xlsx'
+                        )
+                      }
+                      successMessage="Program list exported to Excel."
                     />
                     <ServerListPerPageControl
                       perPage={perPage}

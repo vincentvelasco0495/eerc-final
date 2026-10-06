@@ -172,7 +172,7 @@ export default function ReviewScheduleApplicantsPage() {
     [setSearchParams]
   );
 
-  const handleExportExcel = useCallback(async () => {
+  const handleExportExcel = useCallback(async ({ from, to } = {}) => {
     const { blob, fileName } = await fetchReviewScheduleApplicantsExcelExport({
       scheduleId,
       search: debouncedSearch,
@@ -180,6 +180,8 @@ export default function ReviewScheduleApplicantsPage() {
       program: programFilter,
       batch: batchFilter,
       learningMode: learningModeFilter,
+      from,
+      to,
     });
     downloadBlob(blob, fileName);
   }, [batchFilter, debouncedSearch, learningModeFilter, programFilter, scheduleId, statusFilter]);

@@ -25,7 +25,7 @@ export function LmsStyledCourseDetailView({ courseLookup }) {
 
   const quizzesForCourse = extractQuizzesFromModules(modules);
 
-  const { shell, canAccessLessons, requiresEnrollment } = useLmsCourseDetailShell(
+  const { shell, canAccessLessons, requiresEnrollment, allowedTabKeys } = useLmsCourseDetailShell(
     course,
     modules,
     quizzesForCourse,
@@ -93,6 +93,7 @@ export function LmsStyledCourseDetailView({ courseLookup }) {
         courseLookup={shell.courseLookup}
         requiresEnrollment={requiresEnrollment}
         canAccessLessons={canAccessLessons}
+        allowedTabKeys={allowedTabKeys}
         wrapMinHeightPage={false}
       />
     </>

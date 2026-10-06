@@ -15,9 +15,8 @@ import CardContent from '@mui/material/CardContent';
 
 import { useLmsActions, useLmsHonorAwardDiscountsPaginated } from 'src/hooks/use-lms';
 
-import { htmlToPlainText } from 'src/utils/html-content';
-
 import { CONFIG } from 'src/global-config';
+import { downloadLmsExcelExport } from 'src/lib/lms-excel-export';
 import { getLmsAxiosErrorMessage } from 'src/lib/lms-instructor-api';
 import { InstructorWorkspaceShell } from 'src/features/instructor-profile/components/instructor-workspace-shell';
 import {
@@ -309,17 +308,15 @@ export default function HonorAwardDiscountsPage() {
                   </Typography>
                   <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
                     <ExportExcelButton
-                      fileName="honor-award-discounts"
-                      sheetName="Discounts"
-                      headers={['Name', 'Status', 'Sort order', 'Description']}
-                      rows={honorAwardDiscounts}
-                      mapRow={(row) => [
-                        row.name ?? '',
-                        row.status ?? '',
-                        row.sortOrder ?? '',
-                        htmlToPlainText(row.description),
-                      ]}
                       disabled={listLoading}
+                      onExport={({ from, to }) =>
+                        downloadLmsExcelExport(
+                          '/api/honor-award-discounts/export',
+                          { search: debouncedSearch, from, to },
+                          'honor-award-discounts.xlsx'
+                        )
+                      }
+                      successMessage="Honors / awards / discount list exported to Excel."
                     />
                     <ServerListPerPageControl
                       perPage={perPage}

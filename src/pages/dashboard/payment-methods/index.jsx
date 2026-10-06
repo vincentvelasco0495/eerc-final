@@ -22,6 +22,7 @@ import LinearProgress from '@mui/material/LinearProgress';
 import { useLmsUser } from 'src/hooks/use-lms';
 
 import { CONFIG } from 'src/global-config';
+import { downloadLmsExcelExport } from 'src/lib/lms-excel-export';
 import { getLmsAxiosErrorMessage } from 'src/lib/lms-instructor-api';
 import { StudentWorkspaceShell } from 'src/features/student-profile/components/student-workspace-shell';
 import { InstructorWorkspaceShell } from 'src/features/instructor-profile/components/instructor-workspace-shell';
@@ -448,20 +449,17 @@ export default function PaymentMethodsPage() {
                     {listTitle}
                   </Typography>
                   <ExportExcelButton
-                    fileName={tab === 0 ? 'bank-payment-methods' : 'ewallet-payment-methods'}
-                    sheetName={tab === 0 ? 'Bank methods' : 'E-wallet methods'}
-                    headers={
-                      tab === 0
-                        ? ['Account name', 'Bank', 'Account number']
-                        : ['Mobile number', 'Account name']
-                    }
-                    rows={tab === 0 ? banks : ewallets}
-                    mapRow={(row) =>
-                      tab === 0
-                        ? [row.accountName ?? '', row.bankName ?? '', row.accountNumber ?? '']
-                        : [row.mobileNumber ?? '', row.accountName ?? '']
-                    }
                     disabled={loading}
+                    onExport={({ from, to }) =>
+                      downloadLmsExcelExport(
+                        tab === 0
+                          ? '/api/admin/bank-payment-methods/export'
+                          : '/api/admin/ewallet-payment-methods/export',
+                        { from, to },
+                        tab === 0 ? 'bank-payment-methods.xlsx' : 'ewallet-payment-methods.xlsx'
+                      )
+                    }
+                    successMessage="Payment methods exported to Excel."
                   />
                 </Stack>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>

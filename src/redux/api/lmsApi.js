@@ -1,5 +1,6 @@
 import axios from 'src/lib/axios';
 import { CONFIG } from 'src/global-config';
+import { fetchLmsExcelExport } from 'src/lib/lms-excel-export';
 import {
   uploadAdminModule as mockUploadAdminModule,
   createBatchEnroll as mockCreateBatchEnroll,
@@ -657,6 +658,11 @@ export async function submitEnrollmentApplicationForm(formData) {
   return data;
 }
 
+export async function postCourseAccessRequest({ courseId }) {
+  const { data } = await axios.post(`${apiRoot}/enrollments/course-access-requests`, { courseId });
+  return data;
+}
+
 export async function submitEnrollmentPartialPayment({ enrollmentId, amount, paymentProofFile }) {
   if (isLmsLiveApi()) {
     const fd = new FormData();
@@ -711,55 +717,13 @@ export async function fetchEnrollmentApplication(publicId) {
   return payload;
 }
 
-export async function fetchEnrollmentExcelExport({ search = '', rows = [] } = {}) {
+export async function fetchEnrollmentExcelExport({ search = '', from, to } = {}) {
   if (isLmsLiveApi()) {
-    const query = typeof search === 'string' && search.trim()
-      ? `?search=${encodeURIComponent(search.trim())}`
-      : '';
-    try {
-      const response = await axios.get(`${apiRoot}/enrollments/export${query}`, {
-        responseType: 'blob',
-      });
-      const blob = response.data;
-      if (blob instanceof Blob && blob.type && blob.type.includes('application/json')) {
-        const text = await blob.text();
-        let message = 'Could not export enrollments.';
-        try {
-          const parsed = JSON.parse(text);
-          if (typeof parsed?.message === 'string' && parsed.message.trim()) {
-            message = parsed.message.trim();
-          }
-        } catch {
-          // ignore parse errors
-        }
-        throw new Error(message);
-      }
-
-      const { parseContentDispositionFileName } = await import(
-        'src/features/enrollment/utils/enrollment-excel'
-      );
-      const fileName =
-        parseContentDispositionFileName(response.headers?.['content-disposition']) ||
-        `enrollments-${new Date().toISOString().slice(0, 10)}.xlsx`;
-
-      return { blob, fileName };
-    } catch (error) {
-      const data = error?.response?.data;
-      if (data instanceof Blob) {
-        try {
-          const text = await data.text();
-          const parsed = JSON.parse(text);
-          if (typeof parsed?.message === 'string' && parsed.message.trim()) {
-            throw new Error(parsed.message.trim());
-          }
-        } catch (inner) {
-          if (inner instanceof Error && inner.name !== 'SyntaxError') {
-            throw inner;
-          }
-        }
-      }
-      throw error instanceof Error ? error : new Error('Could not export enrollments.');
-    }
+    return fetchLmsExcelExport(
+      `${apiRoot}/enrollments/export`,
+      { search, from, to },
+      `enrollments-${new Date().toISOString().slice(0, 10)}.xlsx`
+    );
   }
 
   const {
@@ -768,7 +732,7 @@ export async function fetchEnrollmentExcelExport({ search = '', rows = [] } = {}
     enrollmentRowToExcelCells,
   } = await import('src/features/enrollment/utils/enrollment-excel');
   const { flattenEnrollmentRows } = await import('src/features/enrollment/utils/enrollment-rows');
-  const flatRows = flattenEnrollmentRows(rows);
+  const flatRows = flattenEnrollmentRows([]);
   const blob = buildSpreadsheetMlBlob(
     'Enrollments',
     ENROLLMENT_EXCEL_HEADERS,
@@ -785,61 +749,14 @@ export async function fetchBatchApplicantsExcelExport({
   batchId,
   search = '',
   status = '',
+  from,
+  to,
 } = {}) {
-  const id = encodeURIComponent(String(batchId ?? '').trim());
-  const params = new URLSearchParams();
-  if (typeof search === 'string' && search.trim()) {
-    params.set('search', search.trim());
-  }
-  if (typeof status === 'string' && status.trim()) {
-    params.set('status', status.trim());
-  }
-  const query = params.toString() ? `?${params.toString()}` : '';
-
-  try {
-    const response = await axios.get(`${apiRoot}/batch-enrolls/${id}/applicants/export${query}`, {
-      responseType: 'blob',
-    });
-    const blob = response.data;
-    if (blob instanceof Blob && blob.type && blob.type.includes('application/json')) {
-      const text = await blob.text();
-      let message = 'Could not export batch applicants.';
-      try {
-        const parsed = JSON.parse(text);
-        if (typeof parsed?.message === 'string' && parsed.message.trim()) {
-          message = parsed.message.trim();
-        }
-      } catch {
-        // ignore parse errors
-      }
-      throw new Error(message);
-    }
-
-    const { parseContentDispositionFileName } = await import(
-      'src/features/enrollment/utils/enrollment-excel'
-    );
-    const fileName =
-      parseContentDispositionFileName(response.headers?.['content-disposition']) ||
-      `batch-applicants-${new Date().toISOString().slice(0, 10)}.xlsx`;
-
-    return { blob, fileName };
-  } catch (error) {
-    const data = error?.response?.data;
-    if (data instanceof Blob) {
-      try {
-        const text = await data.text();
-        const parsed = JSON.parse(text);
-        if (typeof parsed?.message === 'string' && parsed.message.trim()) {
-          throw new Error(parsed.message.trim());
-        }
-      } catch (inner) {
-        if (inner instanceof Error && inner.name !== 'SyntaxError') {
-          throw inner;
-        }
-      }
-    }
-    throw error instanceof Error ? error : new Error('Could not export batch applicants.');
-  }
+  return fetchLmsExcelExport(
+    `${apiRoot}/batch-enrolls/${encodeURIComponent(String(batchId ?? '').trim())}/applicants/export`,
+    { search, status, from, to },
+    `batch-applicants-${new Date().toISOString().slice(0, 10)}.xlsx`
+  );
 }
 
 export async function fetchLearningModeApplicantsExcelExport({
@@ -848,67 +765,14 @@ export async function fetchLearningModeApplicantsExcelExport({
   status = '',
   program = '',
   batch = '',
+  from,
+  to,
 } = {}) {
-  const id = encodeURIComponent(String(modeId ?? '').trim());
-  const params = new URLSearchParams();
-  if (typeof search === 'string' && search.trim()) {
-    params.set('search', search.trim());
-  }
-  if (typeof status === 'string' && status.trim()) {
-    params.set('status', status.trim());
-  }
-  if (typeof program === 'string' && program.trim()) {
-    params.set('program', program.trim());
-  }
-  if (typeof batch === 'string' && batch.trim()) {
-    params.set('batch', batch.trim());
-  }
-  const query = params.toString() ? `?${params.toString()}` : '';
-
-  try {
-    const response = await axios.get(`${apiRoot}/learning-modes/${id}/applicants/export${query}`, {
-      responseType: 'blob',
-    });
-    const blob = response.data;
-    if (blob instanceof Blob && blob.type && blob.type.includes('application/json')) {
-      const text = await blob.text();
-      let message = 'Could not export learning mode applicants.';
-      try {
-        const parsed = JSON.parse(text);
-        if (typeof parsed?.message === 'string' && parsed.message.trim()) {
-          message = parsed.message.trim();
-        }
-      } catch {
-        // ignore parse errors
-      }
-      throw new Error(message);
-    }
-
-    const { parseContentDispositionFileName } = await import(
-      'src/features/enrollment/utils/enrollment-excel'
-    );
-    const fileName =
-      parseContentDispositionFileName(response.headers?.['content-disposition']) ||
-      `learning-mode-applicants-${new Date().toISOString().slice(0, 10)}.xlsx`;
-
-    return { blob, fileName };
-  } catch (error) {
-    const data = error?.response?.data;
-    if (data instanceof Blob) {
-      try {
-        const text = await data.text();
-        const parsed = JSON.parse(text);
-        if (typeof parsed?.message === 'string' && parsed.message.trim()) {
-          throw new Error(parsed.message.trim());
-        }
-      } catch (inner) {
-        if (inner instanceof Error && inner.name !== 'SyntaxError') {
-          throw inner;
-        }
-      }
-    }
-    throw error instanceof Error ? error : new Error('Could not export learning mode applicants.');
-  }
+  return fetchLmsExcelExport(
+    `${apiRoot}/learning-modes/${encodeURIComponent(String(modeId ?? '').trim())}/applicants/export`,
+    { search, status, program, batch, from, to },
+    `learning-mode-applicants-${new Date().toISOString().slice(0, 10)}.xlsx`
+  );
 }
 
 export async function fetchBranchApplicantsExcelExport({
@@ -918,70 +782,14 @@ export async function fetchBranchApplicantsExcelExport({
   program = '',
   batch = '',
   learningMode = '',
+  from,
+  to,
 } = {}) {
-  const id = encodeURIComponent(String(branchId ?? '').trim());
-  const params = new URLSearchParams();
-  if (typeof search === 'string' && search.trim()) {
-    params.set('search', search.trim());
-  }
-  if (typeof status === 'string' && status.trim()) {
-    params.set('status', status.trim());
-  }
-  if (typeof program === 'string' && program.trim()) {
-    params.set('program', program.trim());
-  }
-  if (typeof batch === 'string' && batch.trim()) {
-    params.set('batch', batch.trim());
-  }
-  if (typeof learningMode === 'string' && learningMode.trim()) {
-    params.set('learningMode', learningMode.trim());
-  }
-  const query = params.toString() ? `?${params.toString()}` : '';
-
-  try {
-    const response = await axios.get(`${apiRoot}/branch-enrolls/${id}/applicants/export${query}`, {
-      responseType: 'blob',
-    });
-    const blob = response.data;
-    if (blob instanceof Blob && blob.type && blob.type.includes('application/json')) {
-      const text = await blob.text();
-      let message = 'Could not export branch applicants.';
-      try {
-        const parsed = JSON.parse(text);
-        if (typeof parsed?.message === 'string' && parsed.message.trim()) {
-          message = parsed.message.trim();
-        }
-      } catch {
-        // ignore parse errors
-      }
-      throw new Error(message);
-    }
-
-    const { parseContentDispositionFileName } = await import(
-      'src/features/enrollment/utils/enrollment-excel'
-    );
-    const fileName =
-      parseContentDispositionFileName(response.headers?.['content-disposition']) ||
-      `branch-applicants-${new Date().toISOString().slice(0, 10)}.xlsx`;
-
-    return { blob, fileName };
-  } catch (error) {
-    const data = error?.response?.data;
-    if (data instanceof Blob) {
-      try {
-        const text = await data.text();
-        const parsed = JSON.parse(text);
-        if (typeof parsed?.message === 'string' && parsed.message.trim()) {
-          throw new Error(parsed.message.trim());
-        }
-      } catch (inner) {
-        if (inner instanceof Error && inner.name !== 'SyntaxError') {
-          throw inner;
-        }
-      }
-    }
-    throw error instanceof Error ? error : new Error('Could not export branch applicants.');
-  }
+  return fetchLmsExcelExport(
+    `${apiRoot}/branch-enrolls/${encodeURIComponent(String(branchId ?? '').trim())}/applicants/export`,
+    { search, status, program, batch, learningMode, from, to },
+    `branch-applicants-${new Date().toISOString().slice(0, 10)}.xlsx`
+  );
 }
 
 export async function fetchReviewScheduleApplicantsExcelExport({
@@ -991,70 +799,14 @@ export async function fetchReviewScheduleApplicantsExcelExport({
   program = '',
   batch = '',
   learningMode = '',
+  from,
+  to,
 } = {}) {
-  const id = encodeURIComponent(String(scheduleId ?? '').trim());
-  const params = new URLSearchParams();
-  if (typeof search === 'string' && search.trim()) {
-    params.set('search', search.trim());
-  }
-  if (typeof status === 'string' && status.trim()) {
-    params.set('status', status.trim());
-  }
-  if (typeof program === 'string' && program.trim()) {
-    params.set('program', program.trim());
-  }
-  if (typeof batch === 'string' && batch.trim()) {
-    params.set('batch', batch.trim());
-  }
-  if (typeof learningMode === 'string' && learningMode.trim()) {
-    params.set('learningMode', learningMode.trim());
-  }
-  const query = params.toString() ? `?${params.toString()}` : '';
-
-  try {
-    const response = await axios.get(`${apiRoot}/review-schedules/${id}/applicants/export${query}`, {
-      responseType: 'blob',
-    });
-    const blob = response.data;
-    if (blob instanceof Blob && blob.type && blob.type.includes('application/json')) {
-      const text = await blob.text();
-      let message = 'Could not export review schedule applicants.';
-      try {
-        const parsed = JSON.parse(text);
-        if (typeof parsed?.message === 'string' && parsed.message.trim()) {
-          message = parsed.message.trim();
-        }
-      } catch {
-        // ignore parse errors
-      }
-      throw new Error(message);
-    }
-
-    const { parseContentDispositionFileName } = await import(
-      'src/features/enrollment/utils/enrollment-excel'
-    );
-    const fileName =
-      parseContentDispositionFileName(response.headers?.['content-disposition']) ||
-      `review-schedule-applicants-${new Date().toISOString().slice(0, 10)}.xlsx`;
-
-    return { blob, fileName };
-  } catch (error) {
-    const data = error?.response?.data;
-    if (data instanceof Blob) {
-      try {
-        const text = await data.text();
-        const parsed = JSON.parse(text);
-        if (typeof parsed?.message === 'string' && parsed.message.trim()) {
-          throw new Error(parsed.message.trim());
-        }
-      } catch (inner) {
-        if (inner instanceof Error && inner.name !== 'SyntaxError') {
-          throw inner;
-        }
-      }
-    }
-    throw error instanceof Error ? error : new Error('Could not export review schedule applicants.');
-  }
+  return fetchLmsExcelExport(
+    `${apiRoot}/review-schedules/${encodeURIComponent(String(scheduleId ?? '').trim())}/applicants/export`,
+    { search, status, program, batch, learningMode, from, to },
+    `review-schedule-applicants-${new Date().toISOString().slice(0, 10)}.xlsx`
+  );
 }
 
 export async function fetchHonorAwardDiscountApplicantsExcelExport({
@@ -1064,72 +816,14 @@ export async function fetchHonorAwardDiscountApplicantsExcelExport({
   program = '',
   batch = '',
   branch = '',
+  from,
+  to,
 } = {}) {
-  const id = encodeURIComponent(String(optionId ?? '').trim());
-  const params = new URLSearchParams();
-  if (typeof search === 'string' && search.trim()) {
-    params.set('search', search.trim());
-  }
-  if (typeof status === 'string' && status.trim()) {
-    params.set('status', status.trim());
-  }
-  if (typeof program === 'string' && program.trim()) {
-    params.set('program', program.trim());
-  }
-  if (typeof batch === 'string' && batch.trim()) {
-    params.set('batch', batch.trim());
-  }
-  if (typeof branch === 'string' && branch.trim()) {
-    params.set('branch', branch.trim());
-  }
-  const query = params.toString() ? `?${params.toString()}` : '';
-
-  try {
-    const response = await axios.get(`${apiRoot}/honor-award-discounts/${id}/applicants/export${query}`, {
-      responseType: 'blob',
-    });
-    const blob = response.data;
-    if (blob instanceof Blob && blob.type && blob.type.includes('application/json')) {
-      const text = await blob.text();
-      let message = 'Could not export honors / awards / discount applicants.';
-      try {
-        const parsed = JSON.parse(text);
-        if (typeof parsed?.message === 'string' && parsed.message.trim()) {
-          message = parsed.message.trim();
-        }
-      } catch {
-        // ignore parse errors
-      }
-      throw new Error(message);
-    }
-
-    const { parseContentDispositionFileName } = await import(
-      'src/features/enrollment/utils/enrollment-excel'
-    );
-    const fileName =
-      parseContentDispositionFileName(response.headers?.['content-disposition']) ||
-      `honor-award-discount-applicants-${new Date().toISOString().slice(0, 10)}.xlsx`;
-
-    return { blob, fileName };
-  } catch (error) {
-    const data = error?.response?.data;
-    if (data instanceof Blob) {
-      try {
-        const text = await data.text();
-        const parsed = JSON.parse(text);
-        if (typeof parsed?.message === 'string' && parsed.message.trim()) {
-          throw new Error(parsed.message.trim());
-        }
-      } catch (inner) {
-        if (inner instanceof Error && inner.name !== 'SyntaxError') {
-          throw inner;
-        }
-      }
-    }
-    throw error instanceof Error
-      ? error
-      : new Error('Could not export honors / awards / discount applicants.');
-  }
+  return fetchLmsExcelExport(
+    `${apiRoot}/honor-award-discounts/${encodeURIComponent(String(optionId ?? '').trim())}/applicants/export`,
+    { search, status, program, batch, branch, from, to },
+    `honor-award-discount-applicants-${new Date().toISOString().slice(0, 10)}.xlsx`
+  );
 }
 
 export async function fetchPackageEnrollApplicantsExcelExport({
@@ -1139,72 +833,14 @@ export async function fetchPackageEnrollApplicantsExcelExport({
   program = '',
   batch = '',
   branch = '',
+  from,
+  to,
 } = {}) {
-  const id = encodeURIComponent(String(packageId ?? '').trim());
-  const params = new URLSearchParams();
-  if (typeof search === 'string' && search.trim()) {
-    params.set('search', search.trim());
-  }
-  if (typeof status === 'string' && status.trim()) {
-    params.set('status', status.trim());
-  }
-  if (typeof program === 'string' && program.trim()) {
-    params.set('program', program.trim());
-  }
-  if (typeof batch === 'string' && batch.trim()) {
-    params.set('batch', batch.trim());
-  }
-  if (typeof branch === 'string' && branch.trim()) {
-    params.set('branch', branch.trim());
-  }
-  const query = params.toString() ? `?${params.toString()}` : '';
-
-  try {
-    const response = await axios.get(`${apiRoot}/package-enrolls/${id}/applicants/export${query}`, {
-      responseType: 'blob',
-    });
-    const blob = response.data;
-    if (blob instanceof Blob && blob.type && blob.type.includes('application/json')) {
-      const text = await blob.text();
-      let message = 'Could not export package enroll applicants.';
-      try {
-        const parsed = JSON.parse(text);
-        if (typeof parsed?.message === 'string' && parsed.message.trim()) {
-          message = parsed.message.trim();
-        }
-      } catch {
-        // ignore parse errors
-      }
-      throw new Error(message);
-    }
-
-    const { parseContentDispositionFileName } = await import(
-      'src/features/enrollment/utils/enrollment-excel'
-    );
-    const fileName =
-      parseContentDispositionFileName(response.headers?.['content-disposition']) ||
-      `package-enroll-applicants-${new Date().toISOString().slice(0, 10)}.xlsx`;
-
-    return { blob, fileName };
-  } catch (error) {
-    const data = error?.response?.data;
-    if (data instanceof Blob) {
-      try {
-        const text = await data.text();
-        const parsed = JSON.parse(text);
-        if (typeof parsed?.message === 'string' && parsed.message.trim()) {
-          throw new Error(parsed.message.trim());
-        }
-      } catch (inner) {
-        if (inner instanceof Error && inner.name !== 'SyntaxError') {
-          throw inner;
-        }
-      }
-    }
-    throw error instanceof Error
-      ? error
-      : new Error('Could not export package enroll applicants.');
-  }
+  return fetchLmsExcelExport(
+    `${apiRoot}/package-enrolls/${encodeURIComponent(String(packageId ?? '').trim())}/applicants/export`,
+    { search, status, program, batch, branch, from, to },
+    `package-enroll-applicants-${new Date().toISOString().slice(0, 10)}.xlsx`
+  );
 }
 
 export const lmsApi = {
@@ -1214,6 +850,11 @@ export const lmsApi = {
         ? submitEnrollmentApplicationForm(payload.formData)
         : submitEnrollmentWithPaymentProof(payload)
       : mockSubmitEnrollment(payload),
+
+  requestCourseAccess: (payload) =>
+    isLmsLiveApi()
+      ? postCourseAccessRequest(payload)
+      : mockSubmitEnrollment({ ...payload, accessRequest: true }),
 
   simulateQuizAttempt: (quizId) =>
     isLmsLiveApi()

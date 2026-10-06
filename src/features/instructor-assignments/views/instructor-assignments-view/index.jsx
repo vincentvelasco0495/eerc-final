@@ -11,6 +11,7 @@ import { paths } from 'src/routes/paths';
 import { useLmsAssignmentSummaries } from 'src/hooks/use-lms';
 
 import { CONFIG } from 'src/global-config';
+import { downloadLmsExcelExport } from 'src/lib/lms-excel-export';
 import { InstructorWorkspaceShell } from 'src/features/instructor-profile/components/instructor-workspace-shell';
 
 import { ExportExcelButton } from 'src/components/export-excel-button';
@@ -129,19 +130,15 @@ export function InstructorAssignmentsView() {
 
         <Stack direction="row" justifyContent="flex-end">
           <ExportExcelButton
-            fileName="assignments"
-            sheetName="Assignments"
-            headers={['Assignment', 'Course', 'Total', 'Passed', 'Non passed', 'Pending']}
-            rows={sortedRows}
-            mapRow={(row) => [
-              row.title ?? '',
-              row.course ?? '',
-              row.total ?? '',
-              row.passed ?? '',
-              row.nonPassed ?? '',
-              row.pending ?? '',
-            ]}
-            disabled={!sortedRows.length}
+            disabled={isLoading}
+            onExport={({ from, to }) =>
+              downloadLmsExcelExport(
+                '/api/assignment-summaries/export',
+                { search: query, courseId: course, status, from, to },
+                'assignments.xlsx'
+              )
+            }
+            successMessage="Assignment summaries exported to Excel."
           />
         </Stack>
 

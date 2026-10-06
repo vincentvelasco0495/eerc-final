@@ -24,6 +24,7 @@ import { RouterLink } from 'src/routes/components';
 import { useLmsQuizStudentsPaginated } from 'src/hooks/use-lms';
 
 import { CONFIG } from 'src/global-config';
+import { downloadLmsExcelExport } from 'src/lib/lms-excel-export';
 import { normalizeProgramsPage, normalizeProgramsPerPage } from 'src/services/programService';
 import { GradebookStudentCell } from 'src/features/instructor-gradebook/components/gradebook-student-cell';
 import { InstructorWorkspaceShell } from 'src/features/instructor-profile/components/instructor-workspace-shell';
@@ -230,18 +231,15 @@ export function InstructorQuizStudentsView() {
 
             <Stack direction="row" justifyContent="flex-end" sx={{ mb: 2 }}>
               <ExportExcelButton
-                fileName="quiz-students"
-                sheetName="Students"
-                headers={['Student', 'Email', 'Score', 'Attempted', 'Result']}
-                rows={students}
-                mapRow={(row) => [
-                  row.name ?? '',
-                  row.email ?? '',
-                  formatScoreLabel(row),
-                  formatSubmissionLabel(row),
-                  formatDetailLabel(row),
-                ]}
-                disabled={isLoading || !students.length}
+                disabled={isLoading}
+                onExport={({ from, to }) =>
+                  downloadLmsExcelExport(
+                    `/api/quizzes/${encodeURIComponent(quizId)}/students/export`,
+                    { status, search: debouncedSearch, from, to },
+                    'quiz-students.xlsx'
+                  )
+                }
+                successMessage="Quiz students exported to Excel."
               />
             </Stack>
 

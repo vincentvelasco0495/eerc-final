@@ -20,7 +20,9 @@ export function InstructorTable({
   onDelete,
   busyId = null,
   emptyMessage = 'No instructors found',
+  showAliasName = false,
 }) {
+  const colCount = showAliasName ? 6 : 5;
   const showSkeleton = loading && (!Array.isArray(rows) || rows.length === 0);
 
   return (
@@ -47,6 +49,7 @@ export function InstructorTable({
         <TableHead>
           <TableRow>
             <TableCell>Name</TableCell>
+            {showAliasName ? <TableCell>Alias name</TableCell> : null}
             <TableCell>Email</TableCell>
             <TableCell>Profile</TableCell>
             <TableCell>Status</TableCell>
@@ -57,7 +60,7 @@ export function InstructorTable({
           {showSkeleton
             ? Array.from({ length: SKELETON_ROWS }).map((_, i) => (
                 <TableRow key={`sk-${i}`}>
-                  <TableCell colSpan={5} sx={{ py: 1.5 }}>
+                  <TableCell colSpan={colCount} sx={{ py: 1.5 }}>
                     <Skeleton variant="rounded" height={40} animation="wave" />
                   </TableCell>
                 </TableRow>
@@ -66,7 +69,7 @@ export function InstructorTable({
 
           {!showSkeleton && !loading && rows.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} align="center" sx={{ py: 6 }}>
+              <TableCell colSpan={colCount} align="center" sx={{ py: 6 }}>
                 <Typography variant="body2" color="text.secondary">
                   {emptyMessage}
                 </Typography>
@@ -78,6 +81,9 @@ export function InstructorTable({
             ? rows.map((row) => (
                 <TableRow key={row.id} hover>
                   <TableCell>{row.name}</TableCell>
+                  {showAliasName ? (
+                    <TableCell>{row.aliasName?.trim() ? row.aliasName : '—'}</TableCell>
+                  ) : null}
                   <TableCell>{row.email ?? '—'}</TableCell>
                   <TableCell>
                     {row.profileUrl || row.profilePath ? (

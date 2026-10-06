@@ -20,9 +20,8 @@ import {
   useLmsBatchEnrollsPaginated,
 } from 'src/hooks/use-lms';
 
-import { htmlToPlainText } from 'src/utils/html-content';
-
 import { CONFIG } from 'src/global-config';
+import { downloadLmsExcelExport } from 'src/lib/lms-excel-export';
 import { getLmsAxiosErrorMessage } from 'src/lib/lms-instructor-api';
 import { StudentWorkspaceShell } from 'src/features/student-profile/components/student-workspace-shell';
 import {
@@ -379,18 +378,15 @@ export default function BatchEnrollsPage() {
                   </Typography>
                   <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
                     <ExportExcelButton
-                      fileName="batch-enrolls"
-                      sheetName="Batch enrolls"
-                      headers={['Program', 'Name', 'Tentative start', 'Status', 'Description']}
-                      rows={batchEnrolls}
-                      mapRow={(row) => [
-                        resolveProgramTitle(row.programId),
-                        row.name ?? '',
-                        row.tentativeStart ?? '',
-                        row.status ?? '',
-                        htmlToPlainText(row.description),
-                      ]}
                       disabled={listLoading}
+                      onExport={({ from, to }) =>
+                        downloadLmsExcelExport(
+                          '/api/batch-enrolls/export',
+                          { search: debouncedSearch, from, to },
+                          'batch-enrolls.xlsx'
+                        )
+                      }
+                      successMessage="Batch enroll list exported to Excel."
                     />
                     <ServerListPerPageControl
                       perPage={perPage}

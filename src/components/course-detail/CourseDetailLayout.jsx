@@ -185,14 +185,13 @@ export function CourseDetailLayout({
   completion,
   detailRows,
   curriculumModules,
-  noticeContent,
-  faqItems,
-  /** LMS course slug or `public_id` — links curriculum text rows to the text-lesson page */
+  /** LMS course slug or `public_id` — links lesson rows to the matching lesson page */
   courseLookup,
   /** Primary CTA (first/next module player) */
   continueHref,
   requiresEnrollment = false,
   canAccessLessons = true,
+  allowedTabKeys,
   /** When set with `requiresEnrollment`, ENROLL opens this handler instead of navigating away. */
   onEnrollClick,
   /** Optional CTA below Course details rows — guests only (sign-in redirect). */
@@ -254,14 +253,12 @@ export function CourseDetailLayout({
 
             <MainColumn aria-label="Lesson content">
               <CourseContent
-                data={data}
                 heroImageUrl={heroImageUrl}
-                noticeContent={noticeContent}
                 curriculumModules={curriculumModules}
-                faqItems={faqItems}
                 courseLookup={courseLookup}
                 requiresEnrollment={requiresEnrollment}
                 canAccessLessons={canAccessLessons}
+                allowedTabKeys={allowedTabKeys}
               />
             </MainColumn>
           </TwoColGrid>

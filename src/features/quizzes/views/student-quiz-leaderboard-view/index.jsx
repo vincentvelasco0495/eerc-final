@@ -25,7 +25,6 @@ import { getInstructorNameInitials } from 'src/features/instructor-profile/instr
 import { StudentWorkspaceShell } from 'src/features/student-profile/components/student-workspace-shell';
 
 import { Iconify } from 'src/components/iconify';
-import { ExportExcelButton } from 'src/components/export-excel-button';
 
 import { styles } from './styles';
 
@@ -42,6 +41,14 @@ function rankColor(rank) {
     return 'info.main';
   }
   return 'text.secondary';
+}
+
+function leaderboardStudentName(row) {
+  const alias = typeof row?.aliasName === 'string' ? row.aliasName.trim() : '';
+  if (alias) {
+    return alias;
+  }
+  return typeof row?.name === 'string' ? row.name : '';
 }
 
 function LeaderboardNameCell({ name }) {
@@ -64,7 +71,7 @@ function LeaderboardRow({ row }) {
         </Typography>
       </TableCell>
       <TableCell>
-        <LeaderboardNameCell name={row.name} />
+        <LeaderboardNameCell name={leaderboardStudentName(row)} />
       </TableCell>
       <TableCell>
         <Typography variant="body2" sx={styles.score}>
@@ -96,7 +103,7 @@ function LeaderboardRow({ row }) {
 export function StudentQuizLeaderboardView() {
   const { quizId = '' } = useParams();
   const apiEnabled = Boolean(CONFIG.serverUrl?.trim());
-  const { quiz, leaderboard, myRank, meta, isLoading } = useLmsQuizLeaderboardPaginated(
+  const { quiz, leaderboard, myRank, meta, isLoading, error } = useLmsQuizLeaderboardPaginated(
     quizId,
     1,
     TOP_LIMIT,
@@ -107,6 +114,7 @@ export function StudentQuizLeaderboardView() {
   const title = quiz?.title ?? 'Quiz';
   const courseName = quiz?.course ?? '';
   const totalRanked = meta?.total ?? leaderboard.length;
+  const errorMessage = typeof error === 'string' ? error : error?.message;
 
   return (
     <StudentWorkspaceShell>
@@ -149,7 +157,7 @@ export function StudentQuizLeaderboardView() {
                   #{myRank.rank}
                 </Typography>
                 <Stack spacing={0.5} sx={{ flex: 1 }}>
-                  <LeaderboardNameCell name={myRank.name} />
+                  <LeaderboardNameCell name={leaderboardStudentName(myRank)} />
                   <Typography variant="body2" color="text.secondary">
                     {myRank.scoreLabel ?? `${myRank.score}%`} · {myRank.durationUsed ?? '—'} ·{' '}
                     {myRank.detailLabel ?? '—'}
@@ -164,6 +172,12 @@ export function StudentQuizLeaderboardView() {
               </Stack>
             </Stack>
           </Card>
+        ) : errorMessage ? (
+          <Card variant="outlined" sx={styles.myRankCard}>
+            <Typography variant="body2" color="error">
+              {errorMessage}
+            </Typography>
+          </Card>
         ) : !isLoading ? (
           <Card variant="outlined" sx={styles.myRankCard}>
             <Typography variant="body2" color="text.secondary">
@@ -176,27 +190,11 @@ export function StudentQuizLeaderboardView() {
           <Stack spacing={2.5} sx={styles.panelBody}>
             <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
               <Typography variant="h6">Top {TOP_LIMIT}</Typography>
-              <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
-                {totalRanked > 0 ? (
-                  <Typography variant="body2" color="text.secondary">
-                    {totalRanked} student{totalRanked === 1 ? '' : 's'} ranked
-                  </Typography>
-                ) : null}
-                <ExportExcelButton
-                  fileName="quiz-leaderboard"
-                  sheetName="Leaderboard"
-                  headers={['Rank', 'Student', 'Score', 'Finish time', 'Result']}
-                  rows={leaderboard}
-                  mapRow={(row) => [
-                    row.rank ?? '',
-                    row.name ?? '',
-                    row.scoreLabel ?? `${row.score ?? ''}%`,
-                    row.durationUsed ?? '',
-                    row.passed ? 'Passed' : 'Failed',
-                  ]}
-                  disabled={isLoading || !leaderboard.length}
-                />
-              </Stack>
+              {totalRanked > 0 ? (
+                <Typography variant="body2" color="text.secondary">
+                  {totalRanked} student{totalRanked === 1 ? '' : 's'} ranked
+                </Typography>
+              ) : null}
             </Stack>
 
             {apiEnabled && isLoading && !leaderboard.length ? (
@@ -224,8 +222,9 @@ export function StudentQuizLeaderboardView() {
               </TableContainer>
             ) : (
               <Box sx={styles.emptyState}>
-                <Typography variant="body2" color="text.secondary">
-                  No submitted attempts yet. Rankings appear after students complete this quiz.
+                <Typography variant="body2" color={errorMessage ? 'error' : 'text.secondary'}>
+                  {errorMessage ||
+                    'No submitted attempts yet. Rankings appear after students complete this quiz.'}
                 </Typography>
               </Box>
             )}
