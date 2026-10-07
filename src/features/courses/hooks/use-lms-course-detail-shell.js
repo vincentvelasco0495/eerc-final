@@ -5,16 +5,16 @@ import { useEnrollment, useLmsQuizResults, useLmsLessonProgress } from 'src/hook
 import {
   LMS_ACCESS_NONE,
   LMS_ACCESS_REPLAY,
-  allowedCourseTabKeysForAccess,
-  learnerCanAccessCourseLessons,
-  learnerCanAccessLessonType,
   learnerLmsAccessLevel,
   learnerRequiresEnrollment,
+  learnerCanAccessLessonType,
+  allowedCourseTabKeysForAccess,
+  learnerCanAccessCourseLessons,
 } from 'src/features/courses/utils/learner-course-access';
 
 import {
-  isLessonLockedInCurriculum,
   lessonTypeInCurriculum,
+  isLessonLockedInCurriculum,
   mapLmsToStyledCourseDetail,
 } from 'src/components/course-detail/map-lms-to-styled-shell';
 

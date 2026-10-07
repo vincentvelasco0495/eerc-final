@@ -8,12 +8,12 @@ import { goldAlpha, brandVars } from 'src/theme';
 
 import { CourseTabs } from './CourseTabs';
 import { CourseCurriculum } from './CourseCurriculum';
-import { colors, radii, shadow, space } from './course-detail-tokens';
+import { radii, space, colors, shadow } from './course-detail-tokens';
 import {
-  filterCurriculumModulesForTab,
-  resolveCourseDetailTabKey,
-  tabEmptyMessages,
   tabKeys,
+  tabEmptyMessages,
+  resolveCourseDetailTabKey,
+  filterCurriculumModulesForTab,
 } from './course-detail-data';
 
 const HeroFigure = styled.figure`
