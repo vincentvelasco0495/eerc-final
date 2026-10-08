@@ -2,6 +2,7 @@ import { paths } from 'src/routes/paths';
 
 import { resolveCourseMarketingBannerUrl } from 'src/utils/course-hero-image';
 
+import { isSoftDeletedRecord } from 'src/features/student-profile/student-profile-data';
 import { isLessonPreviewEnabled } from 'src/features/courses/utils/lesson-preview-access';
 import { mergeTabsContentFromCourseApi } from 'src/features/courses/utils/merge-course-tabs-from-api';
 import {
@@ -169,11 +170,15 @@ export function mapLmsToStyledCourseDetail(
   const applyLessonLocks = options.applyLessonLocks !== false;
   const requiresEnrollment = Boolean(options.requiresEnrollment);
   const lmsAccess = String(options.lmsAccess ?? '').trim().toLowerCase();
-  const moduleEmbeddedQuizzes = (Array.isArray(modules) ? modules : []).flatMap((m) =>
-    Array.isArray(m?.quizzes) ? m.quizzes : []
+  const liveModules = (Array.isArray(modules) ? modules : []).filter(
+    (m) => m && !isSoftDeletedRecord(m)
   );
-  const effectiveQuizzes =
-    Array.isArray(quizzesForCourse) && quizzesForCourse.length > 0 ? quizzesForCourse : moduleEmbeddedQuizzes;
+  const moduleEmbeddedQuizzes = liveModules.flatMap((m) =>
+    (Array.isArray(m?.quizzes) ? m.quizzes : []).filter((quiz) => !isSoftDeletedRecord(quiz))
+  );
+  const effectiveQuizzes = (
+    Array.isArray(quizzesForCourse) && quizzesForCourse.length > 0 ? quizzesForCourse : moduleEmbeddedQuizzes
+  ).filter((quiz) => !isSoftDeletedRecord(quiz));
 
   const tabs = mergeTabsContentFromCourseApi(course);
   const attemptedQuizIds = new Set(
@@ -194,7 +199,7 @@ export function mapLmsToStyledCourseDetail(
       .map((id) => id.trim())
   );
 
-  const sortedModules = (Array.isArray(modules) ? [...modules] : []).filter((m) => m && m.visible !== false);
+  const sortedModules = [...liveModules].filter((m) => m.visible !== false);
 
   const visibleIds = new Set(sortedModules.map((m) => m.id));
   const quizzesForCourseVisible = effectiveQuizzes.filter(
@@ -228,7 +233,12 @@ export function mapLmsToStyledCourseDetail(
 
           const standaloneSource = Array.isArray(m.standaloneLessons) ? m.standaloneLessons : [];
           const standaloneRows = standaloneSource.filter(
-            (row) => row && typeof row.id === 'string' && row.kind && row.kind !== 'quiz'
+            (row) =>
+              row &&
+              typeof row.id === 'string' &&
+              row.kind &&
+              row.kind !== 'quiz' &&
+              !isSoftDeletedRecord(row)
           );
 
           const standaloneLessons = standaloneRows.map((sl, si) => {
@@ -263,7 +273,9 @@ export function mapLmsToStyledCourseDetail(
             locked: typeof q.locked === 'boolean' ? q.locked : undefined,
             expandable: false,
           }));
-          const assignments = Array.isArray(m.assignments) ? m.assignments : [];
+          const assignments = (Array.isArray(m.assignments) ? m.assignments : []).filter(
+            (row) => !isSoftDeletedRecord(row)
+          );
           const assignmentLessons = assignments.map((a) => {
             const peekText = plainTextFromRichLessonFields({
               excerptHtml: a.lessonContentHtml,

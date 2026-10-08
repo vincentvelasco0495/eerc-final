@@ -155,8 +155,46 @@ export function buildStudentProfileCourses(courses, programs, enrollments = []) 
     });
 }
 
+/** True when a catalog/curriculum row was soft-deleted. */
+export function isSoftDeletedRecord(row) {
+  if (!row || typeof row !== 'object') {
+    return false;
+  }
+  if (row.deleted === true) {
+    return true;
+  }
+  const stamp = row.deletedAt ?? row.deleted_at ?? null;
+  return stamp != null && String(stamp).trim() !== '';
+}
+
+/** Drop soft-deleted rows from any list payload. */
+export function withoutSoftDeleted(list) {
+  return (Array.isArray(list) ? list : []).filter((row) => !isSoftDeletedRecord(row));
+}
+
+function omitSoftDeletedCurriculumChildren(moduleRow) {
+  if (!moduleRow || typeof moduleRow !== 'object') {
+    return moduleRow;
+  }
+  return {
+    ...moduleRow,
+    standaloneLessons: withoutSoftDeleted(moduleRow.standaloneLessons),
+    quizzes: withoutSoftDeleted(moduleRow.quizzes),
+    assignments: withoutSoftDeleted(moduleRow.assignments),
+    resourceRows: withoutSoftDeleted(moduleRow.resourceRows),
+  };
+}
+
+/** Modules plus nested lessons/quizzes/assignments, excluding soft-deleted rows. */
+export function withoutSoftDeletedModules(list) {
+  return withoutSoftDeleted(list).map(omitSoftDeletedCurriculumChildren);
+}
+
 /** Matches LMS catalog rules used for learner-facing program aggregates. */
 export function isPublishedCatalogCourse(course) {
+  if (isSoftDeletedRecord(course)) {
+    return false;
+  }
   if (course?.isPublished === false) {
     return false;
   }

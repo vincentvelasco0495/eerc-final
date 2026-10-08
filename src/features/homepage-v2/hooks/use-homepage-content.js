@@ -10,7 +10,16 @@ export function useHomepageContent({ preview = false } = {}) {
 
   return useQuery({
     queryKey: ['homepage-v2', preview ? 'preview' : 'public'],
-    queryFn: () => (hasApi ? fetchHomepageV2Public(preview) : Promise.resolve(HOMEPAGE_V2_DEFAULTS)),
+    queryFn: async () => {
+      if (!hasApi) {
+        return HOMEPAGE_V2_DEFAULTS;
+      }
+      try {
+        return await fetchHomepageV2Public(preview);
+      } catch {
+        return HOMEPAGE_V2_DEFAULTS;
+      }
+    },
     placeholderData: (prev) => prev ?? HOMEPAGE_V2_DEFAULTS,
     staleTime: 300_000,
   });

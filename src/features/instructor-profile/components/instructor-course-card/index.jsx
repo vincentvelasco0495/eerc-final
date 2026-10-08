@@ -20,10 +20,11 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { paths } from 'src/routes/paths';
 
 import { CONFIG } from 'src/global-config';
-import { patchLmsCourse, getLmsAxiosErrorMessage } from 'src/lib/lms-instructor-api';
+import { patchLmsCourse, deleteLmsCourse, getLmsAxiosErrorMessage } from 'src/lib/lms-instructor-api';
 
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
+import { ConfirmDialog } from 'src/components/custom-dialog';
 
 import { useAuthContext } from 'src/auth/hooks';
 
@@ -59,6 +60,7 @@ export function InstructorCourseCard({
 
   const [menuAnchorEl, setMenuAnchorEl] = useState(null);
   const [statusBusy, setStatusBusy] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const menuOpen = Boolean(menuAnchorEl);
 
   const applyCourseStatus = (nextStatus) => {
@@ -130,6 +132,42 @@ export function InstructorCourseCard({
       return;
     }
     toast.success(`"${course.title}" is published (demo).`);
+  };
+
+  const handleAskDeleteCourse = (event) => {
+    event?.stopPropagation?.();
+    handleCloseMenu();
+    if (statusBusy) {
+      return;
+    }
+    setConfirmDeleteOpen(true);
+  };
+
+  const handleDeleteCourse = async () => {
+    if (statusBusy) {
+      return;
+    }
+    setConfirmDeleteOpen(false);
+    if (onCourseUpdate) {
+      onCourseUpdate(course.id, (current) => ({ ...current, deleted: true }));
+    }
+    if (CONFIG.serverUrl?.trim()) {
+      setStatusBusy(true);
+      try {
+        await deleteLmsCourse(course.id);
+        onRemoteCoursesInvalidate?.();
+        toast.success(`"${course.title}" was removed from the list.`);
+      } catch (e) {
+        if (onCourseUpdate) {
+          onCourseUpdate(course.id, (current) => ({ ...current, deleted: false }));
+        }
+        toast.error(getLmsAxiosErrorMessage(e, 'Could not remove this course.'));
+      } finally {
+        setStatusBusy(false);
+      }
+      return;
+    }
+    toast.success(`"${course.title}" was removed from the list (demo).`);
   };
 
   const handleManageCourse = (event) => {
@@ -386,6 +424,16 @@ export function InstructorCourseCard({
                         slotProps={{ primary: { typography: 'body2' } }}
                       />
                     </MenuItem>
+
+                    <MenuItem dense onClick={handleAskDeleteCourse} sx={styles.menuItemDanger}>
+                      <ListItemIcon sx={{ minWidth: 36 }}>
+                        <Iconify icon="solar:trash-bin-trash-bold-duotone" width={20} />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary="Remove course"
+                        slotProps={{ primary: { typography: 'body2' } }}
+                      />
+                    </MenuItem>
                   </Menu>
                 </Stack>
               </Stack>
@@ -393,6 +441,27 @@ export function InstructorCourseCard({
           ) : null}
         </Stack>
       </CardContent>
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        onClose={() => setConfirmDeleteOpen(false)}
+        title="Remove course"
+        content={
+          <>
+            Remove <strong>{course.title}</strong> from this list? This performs a soft delete only.
+            The course will no longer appear in program, catalog, or learner course lists.
+          </>
+        }
+        action={
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleDeleteCourse}
+            disabled={statusBusy}
+          >
+            Remove
+          </Button>
+        }
+      />
     </Card>
   );
 }

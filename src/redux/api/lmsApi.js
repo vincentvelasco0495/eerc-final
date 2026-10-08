@@ -78,6 +78,10 @@ export async function patchLmsCourse(publicId, payload) {
   const { data } = await axios.patch(endpoint, body);
   return data;
 }
+export async function deleteLmsCourse(publicId) {
+  const { data } = await axios.delete(`/api/courses/${encodeURIComponent(publicId)}`);
+  return data;
+}
 export async function postLmsProgram(payload = {}) {
   const { data } = await axios.post('/api/programs', payload ?? {});
   return data;
@@ -355,6 +359,10 @@ export async function getLmsQuizQuestions(publicId) {
 }
 export async function patchLmsQuiz(publicId, payload) {
   const { data } = await axios.patch(`/api/quizzes/${encodeURIComponent(publicId)}`, payload ?? {});
+  return data;
+}
+export async function deleteLmsQuiz(publicId) {
+  const { data } = await axios.delete(`/api/quizzes/${encodeURIComponent(publicId)}`);
   return data;
 }
 export async function postLmsAssignmentForModule(modulePublicId, payload) {
@@ -962,6 +970,8 @@ export const lmsApi = {
         return postLmsCourse(payload.body ?? {});
       case 'course.update':
         return patchLmsCourse(payload.publicId, payload.body ?? {});
+      case 'course.delete':
+        return deleteLmsCourse(payload.publicId);
       case 'module.create':
         return postLmsModuleForCourse(payload.coursePublicId, payload.body ?? {});
       case 'module.update':
@@ -982,6 +992,8 @@ export const lmsApi = {
         return postLmsQuizForModule(payload.modulePublicId, payload.body ?? {});
       case 'quiz.update':
         return patchLmsQuiz(payload.publicId, payload.body ?? {});
+      case 'quiz.delete':
+        return deleteLmsQuiz(payload.publicId);
       case 'quiz.questions':
         return getLmsQuizQuestions(payload.publicId);
       case 'assignment.create':

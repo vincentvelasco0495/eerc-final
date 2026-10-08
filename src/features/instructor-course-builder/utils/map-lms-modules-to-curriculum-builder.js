@@ -1,3 +1,5 @@
+import { isSoftDeletedRecord } from 'src/features/student-profile/student-profile-data';
+
 /**
  * Sidebar / mapper title for the primary (-core) lesson row.
  * Persisted as `lessonMeta.coreLessonTitle`; falls back to module title for legacy rows.
@@ -44,11 +46,13 @@ export function deriveLessonType(m) {
  * @param {object[]} quizzesForCourse quizzes with `courseId` / `moduleId`
  */
 export function mapLmsModulesToCurriculumBuilder(modules, quizzesForCourse = []) {
-  const sorted = [...(modules ?? [])].filter((m) => m && m.visible !== false);
+  const sorted = [...(modules ?? [])].filter(
+    (m) => m && m.visible !== false && !isSoftDeletedRecord(m)
+  );
 
   const quizzesByModule = new Map();
   (Array.isArray(quizzesForCourse) ? quizzesForCourse : []).forEach((q) => {
-    if (!q?.moduleId) {
+    if (!q?.moduleId || isSoftDeletedRecord(q)) {
       return;
     }
     const list = quizzesByModule.get(q.moduleId) ?? [];
@@ -63,7 +67,15 @@ export function mapLmsModulesToCurriculumBuilder(modules, quizzesForCourse = [])
       ? m.standaloneLessons.slice()
       : [];
     const standaloneRows = standalone
-      .filter((row) => row && typeof row.id === 'string' && row.kind && row.kind !== 'quiz' && row.kind !== 'assignment')
+      .filter(
+        (row) =>
+          row &&
+          typeof row.id === 'string' &&
+          row.kind &&
+          row.kind !== 'quiz' &&
+          row.kind !== 'assignment' &&
+          !isSoftDeletedRecord(row)
+      )
       .map((sl) => ({
         id: sl.id,
         draft: false,
@@ -80,7 +92,9 @@ export function mapLmsModulesToCurriculumBuilder(modules, quizzesForCourse = [])
       meta: `${q.questionCount ?? 0} questions`,
       sortOrder: typeof q.sortOrder === 'number' ? q.sortOrder : Number.MAX_SAFE_INTEGER,
     }));
-    const assignments = Array.isArray(m.assignments) ? m.assignments : [];
+    const assignments = (Array.isArray(m.assignments) ? m.assignments : []).filter(
+      (row) => !isSoftDeletedRecord(row)
+    );
     const assignmentRows = assignments.map((a) => ({
       id: a.id,
       draft: false,

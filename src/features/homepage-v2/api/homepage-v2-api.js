@@ -2,6 +2,7 @@ import axios from 'src/lib/axios';
 
 export async function fetchHomepageV2Public(preview = false) {
   const { data } = await axios.get('/api/homepage-v2', {
+    timeout: 8_000,
     params: preview ? { preview: 1 } : undefined,
   });
   return data;

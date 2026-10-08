@@ -7,8 +7,6 @@ import { authDemoRoutes } from 'src/routes/sections/auth-demo';
 
 import { MainLayout } from 'src/layouts/main';
 
-import { SplashScreen } from 'src/components/loading-screen';
-
 import { dashboardRoutes } from './dashboard';
 
 const HomePage = lazy(() => import('src/pages/home'));
@@ -18,11 +16,11 @@ export const routesSection = [
   {
     path: '/',
     element: (
-      <Suspense fallback={<SplashScreen />}>
-        <MainLayout>
+      <MainLayout>
+        <Suspense fallback={null}>
           <HomePage />
-        </MainLayout>
-      </Suspense>
+        </Suspense>
+      </MainLayout>
     ),
     errorElement: <ErrorBoundary />,
   },

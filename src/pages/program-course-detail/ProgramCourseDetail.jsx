@@ -18,6 +18,7 @@ import {
   useLmsPrograms,
   useLmsProgramStats,
   useLmsModulesByCourse,
+  useRefreshLmsCoursesCatalog,
 } from 'src/hooks/use-lms';
 
 import { resolveProgramBannerSrc } from 'src/utils/program-banner';
@@ -313,6 +314,7 @@ export default function ProgramCourseDetail() {
   const requestedProgram = String(searchParams.get('program') ?? '').trim().toLowerCase();
   const { programs, isLoading: programsLoading, error: programsError } = useLmsPrograms();
   const { courses, isLoading: coursesLoading, error: coursesError, mutate: mutateCourses } = useLmsCourses(1, 500, requestedProgram);
+  const refreshCoursesCatalog = useRefreshLmsCoursesCatalog();
   const { quizzes } = useLmsQuizzes();
 
   const normalize = (v) =>
@@ -340,7 +342,7 @@ export default function ProgramCourseDetail() {
       ) ?? p[0] ?? null
     );
   }, [programs, requestedProgram]);
-  const { stats: programStats } = useLmsProgramStats(selectedProgram?.id ?? null);
+  const { stats: programStats, mutate: mutateProgramStats } = useLmsProgramStats(selectedProgram?.id ?? null);
 
   const programCourses = useMemo(() => {
     const source = courses ?? [];
@@ -372,13 +374,13 @@ export default function ProgramCourseDetail() {
   const [localCourseCardPatches, setLocalCourseCardPatches] = useState({});
 
   useEffect(() => {
-    setLocalCourseCardPatches({});
+    setLocalCourseCardPatches((prev) => (Object.keys(prev).length ? {} : prev));
   }, [courses]);
 
-  const catalogCourses = useMemo(
-    () => (isStaffViewer ? programCourses : programCourses.filter(isPublishedCatalogCourse)),
-    [programCourses, isStaffViewer]
-  );
+  const catalogCourses = useMemo(() => {
+    const active = programCourses.filter((course) => !course?.deleted && !course?.deletedAt);
+    return isStaffViewer ? active : active.filter(isPublishedCatalogCourse);
+  }, [programCourses, isStaffViewer]);
 
   const handleCourseUpdate = useCallback(
     (courseId, updater) => {
@@ -401,25 +403,27 @@ export default function ProgramCourseDetail() {
     if (Object.keys(localCourseCardPatches).length === 0) {
       return mapped;
     }
-    return mapped.map((card) => {
-      const patch = localCourseCardPatches[card.id];
-      return patch ? { ...card, ...patch } : card;
-    });
+    return mapped
+      .map((card) => {
+        const patch = localCourseCardPatches[card.id];
+        return patch ? { ...card, ...patch } : card;
+      })
+      .filter((card) => !card.deleted);
   }, [catalogCourses, localCourseCardPatches]);
 
   const catalogSidebarStats = useMemo(() => {
     const publishedCourses = programCourseCards.filter((course) => course.status === 'published');
     const totalPublishedCourses = publishedCourses.length;
-    const totalDurationHours = catalogCourses.reduce(
-      (sum, course) => sum + (Number(course.hours) || 0),
+    const totalDurationHours = programCourseCards.reduce(
+      (sum, course) => sum + (Number(course.durationHours) || 0),
       0
     );
-    const totalLectures = catalogCourses.reduce(
-      (sum, course) => sum + (Number(course.totalModules) || 0),
+    const totalLectures = programCourseCards.reduce(
+      (sum, course) => sum + (Number(course.lessons) || 0),
       0
     );
     return { totalPublishedCourses, totalDurationHours, totalLectures };
-  }, [catalogCourses, programCourseCards]);
+  }, [programCourseCards]);
 
   const visibleProgramCourseCards = useMemo(() => {
     if (selectedFilter === 'all') {
@@ -716,7 +720,13 @@ export default function ProgramCourseDetail() {
                       <InstructorCourseCard
                         course={card}
                         onCourseUpdate={handleCourseUpdate}
-                        onRemoteCoursesInvalidate={mutateCourses}
+                        onRemoteCoursesInvalidate={async () => {
+                          await Promise.all([
+                            mutateCourses(),
+                            refreshCoursesCatalog(),
+                            mutateProgramStats(),
+                          ]);
+                        }}
                         studentAction={studentActionForCard(card)}
                       />
                     </Grid>

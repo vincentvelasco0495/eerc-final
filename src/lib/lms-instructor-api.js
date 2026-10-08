@@ -4,6 +4,7 @@ export {
   patchLmsCourse,
   postLmsProgram,
   patchLmsModule,
+  deleteLmsCourse,
   patchLmsProgram,
   deleteLmsModule,
   deleteLmsProgram,

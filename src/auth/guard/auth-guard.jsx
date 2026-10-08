@@ -69,7 +69,6 @@ export function AuthGuard({ children }) {
 
         if (current !== target) {
           router.replace(home);
-          return;
         }
       }
     }

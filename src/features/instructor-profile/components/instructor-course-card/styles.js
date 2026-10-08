@@ -76,4 +76,17 @@ export const styles = {
       '& .MuiTypography-root': { color: 'brand.accentText' },
     },
   },
+  menuItemDanger: {
+    py: 1,
+    minHeight: { xs: 48, sm: 44 },
+    borderRadius: 1,
+    mx: 0.5,
+    color: 'error.main',
+    '& .MuiListItemIcon-root': { color: 'error.main' },
+    '&:hover': {
+      bgcolor: 'error.lighter',
+      '& .MuiListItemIcon-root': { color: 'error.main' },
+      '& .MuiTypography-root': { color: 'error.main' },
+    },
+  },
 };

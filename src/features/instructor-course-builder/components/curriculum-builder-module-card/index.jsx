@@ -205,8 +205,7 @@ export function CurriculumBuilderModuleCard({
           <Divider />
           <Box sx={styles.lessons}>
             {mod.lessons.map((lesson) => {
-              const showTrash =
-                typeof onDeleteLesson === 'function' && !(liveMode && lesson.type === 'quiz');
+              const showTrash = typeof onDeleteLesson === 'function';
 
               return (
                 <CurriculumLessonRow

@@ -77,6 +77,32 @@ function lessonExistsInModules(lessonId, mods) {
   return mods.some((m) => m.lessons.some((l) => l.id === lessonId));
 }
 
+function curriculumDeleteConfirmCopy(lesson) {
+  if (lesson?.type === 'video') {
+    return {
+      title: 'Delete video lesson?',
+      content:
+        'This removes the lesson from the course and deletes the video file from storage.',
+    };
+  }
+  if (lesson?.type === 'quiz') {
+    return {
+      title: 'Delete quiz?',
+      content: 'This removes the quiz from the course.',
+    };
+  }
+  if (lesson?.type === 'assignment') {
+    return {
+      title: 'Delete assignment?',
+      content: 'This removes the assignment from the course.',
+    };
+  }
+  return {
+    title: 'Delete lesson?',
+    content: 'This removes the lesson from the course.',
+  };
+}
+
 function reorderModuleList(modules, fromId, toId, edge = 'bottom') {
   const list = Array.isArray(modules) ? [...modules] : [];
   const fromIndex = list.findIndex((m) => m.id === fromId);
@@ -321,6 +347,10 @@ export function InstructorCourseCurriculumView({ courseLookup = null, isNewCours
     (publicId, body) => runCommand('quiz.update', { publicId, body }),
     [runCommand]
   );
+  const deleteLmsQuiz = useCallback(
+    (publicId) => runCommand('quiz.delete', { publicId }),
+    [runCommand]
+  );
   const getLmsQuizQuestions = useCallback(
     (publicId) => runCommand('quiz.questions', { publicId }),
     [runCommand]
@@ -404,6 +434,7 @@ export function InstructorCourseCurriculumView({ courseLookup = null, isNewCours
   const [selectedLiveLessonId, setSelectedLiveLessonId] = useState(null);
   const [addingLiveModule, setAddingLiveModule] = useState(false);
   const [pendingDeleteModuleId, setPendingDeleteModuleId] = useState(null);
+  const [pendingDeleteLesson, setPendingDeleteLesson] = useState(null);
 
   useEffect(() => {
     if (!isLive) {
@@ -411,7 +442,7 @@ export function InstructorCourseCurriculumView({ courseLookup = null, isNewCours
     }
 
     if (!liveBuilderModules.length) {
-      setSelectedLiveLessonId(null);
+      setSelectedLiveLessonId((prev) => (prev == null ? prev : null));
       return;
     }
 
@@ -955,31 +986,56 @@ export function InstructorCourseCurriculumView({ courseLookup = null, isNewCours
     });
   }, []);
 
+  const dropDeletedLessonFromCache = useCallback(
+    (modulePublicId, lessonPublicId) => {
+      setLiveLessonTitles((prev) => {
+        const next = { ...prev };
+        delete next[lessonPublicId];
+        return next;
+      });
+      setSelectedLiveLessonId((sid) =>
+        sid === lessonPublicId ? `${modulePublicId}-core` : sid
+      );
+      if (!modulesCacheKey) {
+        return mutateLmsModules();
+      }
+      const current = Array.isArray(lmsModules) ? lmsModules : [];
+      const next = current.map((m) => {
+        if (m.id !== modulePublicId) {
+          return m;
+        }
+        return {
+          ...m,
+          standaloneLessons: (m.standaloneLessons ?? []).filter((row) => row.id !== lessonPublicId),
+          quizzes: (m.quizzes ?? []).filter((row) => row.id !== lessonPublicId),
+          assignments: (m.assignments ?? []).filter((row) => row.id !== lessonPublicId),
+        };
+      });
+      dispatch(
+        lmsResourceFetchSuccess({
+          key: modulesCacheKey,
+          data: { data: next },
+        })
+      );
+      return Promise.resolve();
+    },
+    [dispatch, lmsModules, modulesCacheKey, mutateLmsModules]
+  );
+
   const handleDeleteStandaloneLesson = useCallback(
     async (modulePublicId, lessonPublicId) => {
       if (!lessonPublicId || typeof lessonPublicId !== 'string') {
         return;
       }
-      if (!window.confirm('Remove this lesson from the module?')) {
-        return;
-      }
       try {
         await deleteLmsStandaloneLesson(lessonPublicId);
-        setLiveLessonTitles((prev) => {
-          const next = { ...prev };
-          delete next[lessonPublicId];
-          return next;
-        });
-        await mutateLmsModules();
-        setSelectedLiveLessonId((sid) =>
-          sid === lessonPublicId ? `${modulePublicId}-core` : sid
-        );
+        await dropDeletedLessonFromCache(modulePublicId, lessonPublicId);
         toast.success('Lesson removed.');
       } catch (e) {
         toast.error(getLmsAxiosErrorMessage(e, 'Could not remove lesson.'));
       }
     },
-    [deleteLmsStandaloneLesson, mutateLmsModules]
+    [deleteLmsStandaloneLesson, dropDeletedLessonFromCache]
   );
 
   const handleDeleteAssignment = useCallback(
@@ -987,26 +1043,31 @@ export function InstructorCourseCurriculumView({ courseLookup = null, isNewCours
       if (!assignmentPublicId || typeof assignmentPublicId !== 'string') {
         return;
       }
-      if (!window.confirm('Remove this assignment from the module?')) {
-        return;
-      }
       try {
         await deleteLmsAssignment(assignmentPublicId);
-        setLiveLessonTitles((prev) => {
-          const next = { ...prev };
-          delete next[assignmentPublicId];
-          return next;
-        });
-        await mutateLmsModules();
-        setSelectedLiveLessonId((sid) =>
-          sid === assignmentPublicId ? `${modulePublicId}-core` : sid
-        );
+        await dropDeletedLessonFromCache(modulePublicId, assignmentPublicId);
         toast.success('Assignment removed.');
       } catch (e) {
         toast.error(getLmsAxiosErrorMessage(e, 'Could not remove assignment.'));
       }
     },
-    [deleteLmsAssignment, mutateLmsModules]
+    [deleteLmsAssignment, dropDeletedLessonFromCache]
+  );
+
+  const handleDeleteQuiz = useCallback(
+    async (modulePublicId, quizPublicId) => {
+      if (!quizPublicId || typeof quizPublicId !== 'string') {
+        return;
+      }
+      try {
+        await deleteLmsQuiz(quizPublicId);
+        await dropDeletedLessonFromCache(modulePublicId, quizPublicId);
+        toast.success('Quiz removed.');
+      } catch (e) {
+        toast.error(getLmsAxiosErrorMessage(e, 'Could not remove quiz.'));
+      }
+    },
+    [deleteLmsQuiz, dropDeletedLessonFromCache]
   );
 
   const handleDeleteLiveModule = useCallback(
@@ -1073,26 +1134,31 @@ export function InstructorCourseCurriculumView({ courseLookup = null, isNewCours
           void handleDeleteLiveModule(moduleId);
           return;
         }
-        if (lesson.type === 'quiz') {
-          return;
-        }
-        if (lesson.type === 'assignment') {
-          void handleDeleteAssignment(moduleId, lid);
-          return;
-        }
-        void handleDeleteStandaloneLesson(moduleId, lid);
+        setPendingDeleteLesson({ moduleId, lesson });
         return;
       }
       handleDemoDeleteLessonByModule(moduleId, lesson);
     },
-    [
-      handleDeleteAssignment,
-      handleDeleteLiveModule,
-      handleDeleteStandaloneLesson,
-      handleDemoDeleteLessonByModule,
-      isLive,
-    ]
+    [handleDeleteLiveModule, handleDemoDeleteLessonByModule, isLive]
   );
+
+  const handleConfirmDeleteLesson = useCallback(async () => {
+    const moduleId = pendingDeleteLesson?.moduleId;
+    const lesson = pendingDeleteLesson?.lesson;
+    const lid = lesson?.id;
+    if (!moduleId || !lid || typeof lid !== 'string') {
+      setPendingDeleteLesson(null);
+      return;
+    }
+    if (lesson.type === 'quiz') {
+      await handleDeleteQuiz(moduleId, lid);
+    } else if (lesson.type === 'assignment') {
+      await handleDeleteAssignment(moduleId, lid);
+    } else {
+      await handleDeleteStandaloneLesson(moduleId, lid);
+    }
+    setPendingDeleteLesson(null);
+  }, [handleDeleteAssignment, handleDeleteQuiz, handleDeleteStandaloneLesson, pendingDeleteLesson]);
 
   const handleLessonSave = useCallback(
     (lessonId) => {
@@ -1621,9 +1687,20 @@ export function InstructorCourseCurriculumView({ courseLookup = null, isNewCours
         open={Boolean(pendingDeleteModuleId)}
         onClose={() => setPendingDeleteModuleId(null)}
         title="Delete module?"
-        content="Delete this module from the course? Quizzes attached to this module will be deleted."
+        content="This removes the module from the course. Attached quizzes and assignments will be removed. Video files in this module will be deleted from storage."
         action={
           <Button color="error" variant="contained" onClick={handleConfirmDeleteLiveModule}>
+            Delete
+          </Button>
+        }
+      />
+      <ConfirmDialog
+        open={Boolean(pendingDeleteLesson)}
+        onClose={() => setPendingDeleteLesson(null)}
+        title={curriculumDeleteConfirmCopy(pendingDeleteLesson?.lesson).title}
+        content={curriculumDeleteConfirmCopy(pendingDeleteLesson?.lesson).content}
+        action={
+          <Button color="error" variant="contained" onClick={handleConfirmDeleteLesson}>
             Delete
           </Button>
         }

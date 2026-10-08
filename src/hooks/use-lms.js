@@ -1,14 +1,20 @@
 import { useDispatch, useSelector } from 'react-redux';
-import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useRef, useMemo, useState, useEffect, useCallback } from 'react';
 
 import axios from 'src/lib/axios';
 import { lmsEndpoints } from 'src/redux/api/lmsEndpoints';
 import { LMS_REDUX_FLAGS, shouldUseReduxRead } from 'src/features/lms/redux-flags';
-import { getLearnerEnrollmentAccessSets } from 'src/features/student-profile/student-profile-data';
+import {
+  getLearnerEnrollmentAccessSets,
+  isSoftDeletedRecord,
+  withoutSoftDeleted,
+  withoutSoftDeletedModules,
+} from 'src/features/student-profile/student-profile-data';
 import {
   selectAppState,
   selectLmsLoading,
   selectQuizzesState,
+  selectLmsResources,
   selectIsBootstrapping,
   selectLmsResourceByKey,
   selectIsAnyLmsMutationPending,
@@ -27,6 +33,17 @@ import {
 import { useAuthContext } from 'src/auth/hooks';
 
 const inFlightReduxResourceRequests = new Set();
+const EMPTY_LMS_LIST = [];
+
+function useLiveLmsRows(list) {
+  const source = Array.isArray(list) ? list : EMPTY_LMS_LIST;
+  return useMemo(() => withoutSoftDeleted(source), [source]);
+}
+
+function useLiveLmsModules(list) {
+  const source = Array.isArray(list) ? list : EMPTY_LMS_LIST;
+  return useMemo(() => withoutSoftDeletedModules(source), [source]);
+}
 
 /** Normalize catalog list/detail API payloads into course rows. */
 function extractCatalogCoursesFromPayload(payload) {
@@ -616,6 +633,42 @@ export function useRefreshLmsProgramsCatalog() {
   }, [dispatch]);
 }
 
+export function useRefreshLmsCoursesCatalog() {
+  const dispatch = useDispatch();
+  const resources = useSelector(selectLmsResources);
+  const resourcesRef = useRef(resources);
+  resourcesRef.current = resources;
+  return useCallback(() => {
+    const fromStore = Object.keys(resourcesRef.current ?? {}).filter(
+      (key) =>
+        key.startsWith('/api/courses') ||
+        key.startsWith('/api/modules') ||
+        key.startsWith('/api/quizzes') ||
+        key.startsWith('/api/quiz-summaries') ||
+        key.startsWith('/api/assignment-summaries') ||
+        key.startsWith('/api/my-quizzes') ||
+        key.startsWith('/api/my-assignments') ||
+        key.startsWith('/api/quiz-results') ||
+        key.startsWith('/api/gradebook')
+    );
+    const endpoints = [...new Set([
+      lmsEndpoints.courses({ page: 1, limit: 200 }),
+      lmsEndpoints.courses({ page: 1, limit: 500 }),
+      ...fromStore,
+    ])];
+    return Promise.all(
+      endpoints.map((endpoint) => {
+        if (!shouldUseReduxRead(endpoint)) {
+          return Promise.resolve();
+        }
+        return new Promise((resolve, reject) => {
+          dispatch(lmsResourceFetchRequest({ key: endpoint, endpoint, resolve, reject }));
+        });
+      })
+    );
+  }, [dispatch]);
+}
+
 /** Full instructor roster (`GET /api/instructors` without pagination). */
 export function useLmsInstructors() {
   const redux = useReduxLmsResource(lmsEndpoints.instructors(), true, { ttlMs: 60_000 });
@@ -726,15 +779,17 @@ export function useLmsProgramStats(programPublicId) {
     stats: redux.data?.data ?? null,
     isLoading: redux.isLoading,
     error: redux.error,
+    mutate: redux.mutate,
   };
 }
 
 export function useLmsCourses(page = 1, limit = 100, program = '', status = '') {
   const key = lmsEndpoints.courses({ page, limit, program, status });
   const redux = useReduxLmsResource(key, true, { ttlMs: 30_000 });
-  const payload = redux.data ?? {};
+  const payload = redux.data;
+  const courses = useLiveLmsRows(payload?.data);
   return {
-    courses: payload?.data ?? [],
+    courses,
     meta: payload?.meta,
     isLoading: redux.isLoading,
     error: redux.error,
@@ -785,7 +840,7 @@ export function useLmsEnrolledProgramCourses(enrollments = []) {
             return;
           }
           extractCatalogCoursesFromPayload(result.value).forEach((course) => {
-            if (course?.id) {
+            if (course?.id && !isSoftDeletedRecord(course)) {
               byId.set(course.id, course);
             }
           });
@@ -817,8 +872,9 @@ export function useLmsCourseByLookup(courseLookup) {
   const normalized = String(courseLookup ?? '').trim();
   const key = normalized ? lmsEndpoints.courseDetail(normalized) : null;
   const redux = useReduxLmsResource(key, Boolean(key), { ttlMs: 30_000 });
+  const course = redux.data?.data ?? null;
   return {
-    course: redux.data?.data ?? null,
+    course: isSoftDeletedRecord(course) ? null : course,
     isLoading: redux.isLoading,
     error: redux.error,
     mutate: redux.mutate,
@@ -884,8 +940,9 @@ export function useLmsModulesByCourse(courseId, swrOptions = {}) {
   const key = courseId ? lmsEndpoints.modulesByCourse(courseId) : null;
   const redux = useReduxLmsResource(key, Boolean(key), { ttlMs: 30_000 });
   void swrOptions;
+  const modules = useLiveLmsModules(redux.data?.data);
   return {
-    modules: redux.data?.data ?? [],
+    modules,
     isLoading: redux.isLoading,
     mutate: redux.mutate,
   };
@@ -901,22 +958,23 @@ export function useLmsModule(moduleId) {
 export function useLmsQuizzes(moduleId) {
   const key = lmsEndpoints.quizzes(moduleId);
   const redux = useReduxLmsResource(key, true, { ttlMs: 30_000 });
+  const quizzes = useLiveLmsRows(redux.data?.data);
   return {
-    quizzes: redux.data?.data ?? [],
+    quizzes,
     isLoading: redux.isLoading,
     mutate: redux.mutate,
   };
 }
 
 export function extractQuizzesFromModules(modules) {
-  return (Array.isArray(modules) ? modules : []).flatMap((moduleItem) =>
-    Array.isArray(moduleItem?.quizzes) ? moduleItem.quizzes : []
+  return withoutSoftDeleted(modules).flatMap((moduleItem) =>
+    withoutSoftDeleted(Array.isArray(moduleItem?.quizzes) ? moduleItem.quizzes : [])
   );
 }
 
 export function extractAssignmentsFromModules(modules) {
-  return (Array.isArray(modules) ? modules : []).flatMap((moduleItem) =>
-    Array.isArray(moduleItem?.assignments) ? moduleItem.assignments : []
+  return withoutSoftDeleted(modules).flatMap((moduleItem) =>
+    withoutSoftDeleted(Array.isArray(moduleItem?.assignments) ? moduleItem.assignments : [])
   );
 }
 
@@ -949,8 +1007,9 @@ export function useLmsQuizResults(enabled = true) {
 export function useLmsAssignmentSummaries(enabled = true) {
   const key = enabled ? lmsEndpoints.assignmentSummaries() : null;
   const redux = useReduxLmsResource(key, Boolean(key), { ttlMs: 30_000 });
+  const summaries = useLiveLmsRows(redux.data?.data);
   return {
-    summaries: redux.data?.data ?? [],
+    summaries,
     isLoading: redux.isLoading,
     mutate: redux.mutate,
   };
@@ -959,8 +1018,9 @@ export function useLmsAssignmentSummaries(enabled = true) {
 export function useLmsQuizSummaries(enabled = true) {
   const key = enabled ? lmsEndpoints.quizSummaries() : null;
   const redux = useReduxLmsResource(key, Boolean(key), { ttlMs: 30_000 });
+  const summaries = useLiveLmsRows(redux.data?.data);
   return {
-    summaries: redux.data?.data ?? [],
+    summaries,
     isLoading: redux.isLoading,
     mutate: redux.mutate,
   };
@@ -969,8 +1029,9 @@ export function useLmsQuizSummaries(enabled = true) {
 export function useLmsGradebookCourses(enabled = true) {
   const key = enabled ? lmsEndpoints.gradebookCourses() : null;
   const redux = useReduxLmsResource(key, Boolean(key), { ttlMs: 30_000 });
+  const courses = useLiveLmsRows(redux.data?.data);
   return {
-    courses: redux.data?.data ?? [],
+    courses,
     isLoading: redux.isLoading,
     error: redux.error,
     mutate: redux.mutate,
@@ -1167,10 +1228,11 @@ export function useLmsMyAssignmentsPaginated(
     [enabled, page, perPage, search, statusParam]
   );
   const redux = useReduxLmsResource(endpoint, enabled, { ttlMs: 30_000 });
-  const payload = redux.data ?? {};
+  const payload = redux.data;
+  const assignments = useLiveLmsRows(payload?.data);
   return {
-    assignments: payload.data ?? [],
-    meta: payload.meta ?? null,
+    assignments,
+    meta: payload?.meta ?? null,
     isLoading: redux.isLoading,
     error: redux.error,
     mutate: redux.mutate,
@@ -1205,10 +1267,11 @@ export function useLmsMyQuizzesPaginated(
     [enabled, page, perPage, search, statusParam]
   );
   const redux = useReduxLmsResource(endpoint, enabled, { ttlMs: 30_000 });
-  const payload = redux.data ?? {};
+  const payload = redux.data;
+  const quizzes = useLiveLmsRows(payload?.data);
   return {
-    quizzes: payload.data ?? [],
-    meta: payload.meta ?? null,
+    quizzes,
+    meta: payload?.meta ?? null,
     isLoading: redux.isLoading,
     error: redux.error,
     mutate: redux.mutate,
