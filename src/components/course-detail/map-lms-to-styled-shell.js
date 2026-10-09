@@ -63,6 +63,21 @@ export function applyReplayOnlyLessonLocks(curriculumModules) {
   }));
 }
 
+/** Face to face: recorded lecture videos stay locked; other LMS items stay as they were. */
+export function applyClassroomLessonLocks(curriculumModules) {
+  if (!Array.isArray(curriculumModules)) {
+    return curriculumModules;
+  }
+
+  return curriculumModules.map((mod) => ({
+    ...mod,
+    lessons: (mod.lessons ?? []).map((lesson) => ({
+      ...lesson,
+      locked: lesson.type === 'video' ? true : Boolean(lesson.locked),
+    })),
+  }));
+}
+
 export function applySequentialLessonLocks(curriculumModules, lockLessonsInOrder) {
   if (!Array.isArray(curriculumModules)) {
     return curriculumModules;
@@ -554,6 +569,10 @@ export function mapLmsToStyledCourseDetail(
     curriculumModulesWithLocks = applyEnrollmentLessonLocks(curriculumModulesWithLocks);
   } else if (lmsAccess === 'replay') {
     curriculumModulesWithLocks = applyReplayOnlyLessonLocks(
+      applySequentialLessonLocks(curriculumModulesWithLocks, false)
+    );
+  } else if (lmsAccess === 'classroom') {
+    curriculumModulesWithLocks = applyClassroomLessonLocks(
       applySequentialLessonLocks(curriculumModulesWithLocks, false)
     );
   }

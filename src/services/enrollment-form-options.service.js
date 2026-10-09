@@ -27,7 +27,7 @@ const MOCK_OPTIONS = {
   ),
   learningModes: [
     { id: 'learning-mode-online', name: 'PURE ONLINE CLASS', sortOrder: 1 },
-    { id: 'learning-mode-face', name: 'FACE TO FACE CLASS', sortOrder: 2 },
+    { id: 'learning-mode-face-to-face', name: 'FACE TO FACE CLASS', sortOrder: 2 },
     {
       id: 'learning-mode-blended',
       name: 'BLENDED LEARNING (ACCESS TO ONLINE AND FACE TO FACE CLASS)',

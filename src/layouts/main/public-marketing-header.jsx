@@ -6,6 +6,8 @@ import Box from '@mui/material/Box';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 
+import { RouterLink } from 'src/routes/components';
+
 import { useLmsPrograms } from 'src/hooks/use-lms';
 
 import { goldAlpha, brandPalette } from 'src/theme/brand-tokens';
@@ -25,6 +27,27 @@ import { buildMainNavData, navData as mainNavData } from '../nav-config-main';
 
 const NAVY = brandPalette.deepNavy;
 
+const headerAuthCtaSx = {
+  display: 'inline-flex',
+  px: { xs: 2, md: 2.75 },
+  py: 1,
+  minHeight: 38,
+  minWidth: 'fit-content',
+  alignItems: 'center',
+  whiteSpace: 'nowrap',
+  lineHeight: 1,
+  borderRadius: 999,
+  fontWeight: 700,
+  letterSpacing: '0.04em',
+  bgcolor: brandPalette.gold,
+  color: NAVY,
+  boxShadow: 'none',
+  '&:hover': {
+    bgcolor: brandPalette.goldLight,
+    boxShadow: 'none',
+  },
+};
+
 /**
  * Public site header (logo, main nav, optional Login CTA) used on marketing pages and
  * on selected guest-only catalog routes.
@@ -40,7 +63,11 @@ export function PublicMarketingHeader({
 }) {
   const { authenticated } = useAuthContext();
   const { value: open, onFalse: onClose, onTrue: onOpen } = useBoolean();
-  const { goToDashboardOrSignIn, loading: authLoadingForDashboard } = useDashboardEntry();
+  const {
+    goToDashboardOrSignIn,
+    dashboardHref,
+    loading: authLoadingForDashboard,
+  } = useDashboardEntry();
   const { programs } = useLmsPrograms();
 
   const navData = useMemo(() => {
@@ -102,33 +129,25 @@ export function PublicMarketingHeader({
     ),
     rightArea: (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 } }}>
-        {!authenticated && showLoginCta ? (
+        {authenticated ? (
+          <Button
+            component={RouterLink}
+            href={dashboardHref}
+            variant="contained"
+            color="inherit"
+            disabled={authLoadingForDashboard}
+            sx={headerAuthCtaSx}
+          >
+            Dashboard
+          </Button>
+        ) : showLoginCta ? (
           <Button
             type="button"
             variant="contained"
             color="inherit"
             disabled={authLoadingForDashboard}
             onClick={goToDashboardOrSignIn}
-            sx={{
-              display: 'inline-flex',
-              px: { xs: 2, md: 2.75 },
-              py: 1,
-              minHeight: 38,
-              minWidth: 'fit-content',
-              alignItems: 'center',
-              whiteSpace: 'nowrap',
-              lineHeight: 1,
-              borderRadius: 999,
-              fontWeight: 700,
-              letterSpacing: '0.04em',
-              bgcolor: brandPalette.gold,
-              color: NAVY,
-              boxShadow: 'none',
-              '&:hover': {
-                bgcolor: brandPalette.goldLight,
-                boxShadow: 'none',
-              },
-            }}
+            sx={headerAuthCtaSx}
           >
             Login
           </Button>

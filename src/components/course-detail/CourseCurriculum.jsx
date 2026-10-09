@@ -413,8 +413,8 @@ export function CourseCurriculum({
   if (!listAllowed) {
     return (
       <GateNotice role="status">
-        Quiz, handouts, and group study are available to Pure online class. Blended learning can
-        replay lecture videos only. Face to face enrollments cannot access these tabs.
+        Quiz, handouts, lecture video, and group study are available to Pure online class and
+        Blended learning. Face to face enrollments cannot access lecture videos.
       </GateNotice>
     );
   }

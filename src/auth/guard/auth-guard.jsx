@@ -25,11 +25,6 @@ function normalizeGuardPath(pathname) {
   return withSlash.replace(/\/$/, '') || '/';
 }
 
-function createRedirectPath(signInPath, returnToPath) {
-  const queryString = new URLSearchParams({ returnTo: returnToPath }).toString();
-  return `${signInPath}?${queryString}`;
-}
-
 export function AuthGuard({ children }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -54,7 +49,7 @@ export function AuthGuard({ children }) {
     }
 
     if (!authenticated) {
-      router.replace(createRedirectPath(getAuthSignInPath(), pathname));
+      router.replace(getAuthSignInPath());
       setIsChecking(false);
       return;
     }

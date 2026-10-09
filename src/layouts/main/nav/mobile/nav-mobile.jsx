@@ -5,6 +5,7 @@ import Button from '@mui/material/Button';
 import Drawer from '@mui/material/Drawer';
 
 import { usePathname } from 'src/routes/hooks';
+import { RouterLink } from 'src/routes/components';
 
 import { goldAlpha, brandPalette } from 'src/theme/brand-tokens';
 
@@ -24,7 +25,11 @@ const NAVY = brandPalette.deepNavy;
 export function NavMobile({ data, open, onClose, slots, sx }) {
   const pathname = usePathname();
   const { authenticated } = useAuthContext();
-  const { goToDashboardOrSignIn, loading: authLoadingForDashboard } = useDashboardEntry();
+  const {
+    goToDashboardOrSignIn,
+    dashboardHref,
+    loading: authLoadingForDashboard,
+  } = useDashboardEntry();
 
   useEffect(() => {
     if (open) {
@@ -98,7 +103,28 @@ export function NavMobile({ data, open, onClose, slots, sx }) {
             borderTop: `1px solid ${goldAlpha(0.18)}`,
           }}
         >
-          {!authenticated ? (
+          {authenticated ? (
+            <Button
+              fullWidth
+              component={RouterLink}
+              href={dashboardHref}
+              variant="contained"
+              color="inherit"
+              disabled={authLoadingForDashboard}
+              sx={{
+                py: 1.25,
+                fontWeight: 700,
+                letterSpacing: '0.04em',
+                borderRadius: 999,
+                bgcolor: brandPalette.gold,
+                color: NAVY,
+                boxShadow: 'none',
+                '&:hover': { bgcolor: brandPalette.goldLight, boxShadow: 'none' },
+              }}
+            >
+              Dashboard
+            </Button>
+          ) : (
             <Button
               fullWidth
               type="button"
@@ -119,7 +145,7 @@ export function NavMobile({ data, open, onClose, slots, sx }) {
             >
               Login
             </Button>
-          ) : null}
+          )}
         </Box>
       )}
     </Drawer>

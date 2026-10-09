@@ -28,6 +28,7 @@ import { resolveCourseMarketingBannerUrl } from 'src/utils/course-hero-image';
 
 import { CONFIG } from 'src/global-config';
 import { DashboardContent } from 'src/layouts/dashboard';
+import { LMS_ACCESS_CLASSROOM } from 'src/features/courses/utils/learner-course-access';
 import { guestCanAccessLesson } from 'src/features/courses/utils/lesson-preview-access';
 import { SecureLessonVideo } from 'src/features/courses/components/secure-lesson-video';
 import { patchLmsLessonProgress, getLessonMaterialPlaybackUrl } from 'src/redux/api/lmsApi';
@@ -123,7 +124,11 @@ export function CourseVideoLessonView() {
     [modules]
   );
 
-  const { shell, isLessonLocked } = useLmsCourseDetailShell(course, modules, quizzesForCourse);
+  const { shell, isLessonLocked, lmsAccess } = useLmsCourseDetailShell(
+    course,
+    modules,
+    quizzesForCourse
+  );
 
   const lessonPayload = useMemo(
     () => resolveVideoLessonFromModules(lessonId, modules),
@@ -165,11 +170,13 @@ export function CourseVideoLessonView() {
   );
 
   const courseTabHash =
-    lessonPayload?.lessonKind === 'stream' ||
-    lessonPayload?.lessonKind === 'zoom' ||
-    lessonPayload?.lessonKind === 'live'
-      ? 'group-study'
-      : 'lecture-video';
+    lmsAccess === LMS_ACCESS_CLASSROOM
+      ? 'quiz'
+      : lessonPayload?.lessonKind === 'stream' ||
+          lessonPayload?.lessonKind === 'zoom' ||
+          lessonPayload?.lessonKind === 'live'
+        ? 'group-study'
+        : 'lecture-video';
   const courseLinkHref = `${paths.dashboard.courseDetails(
     typeof course?.slug === 'string' && course.slug.trim() ? course.slug.trim() : courseLookup
   )}#${courseTabHash}`;

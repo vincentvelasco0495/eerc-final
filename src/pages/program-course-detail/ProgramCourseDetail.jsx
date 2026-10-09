@@ -534,16 +534,14 @@ export default function ProgramCourseDetail() {
 
   const handleEnrollClick = useCallback(() => {
     if (!authenticated) {
-      const returnTo = `${location.pathname}${location.search}`;
-      const query = new URLSearchParams({ returnTo }).toString();
-      navigate(`${getAuthSignInPath()}?${query}`);
+      navigate(getAuthSignInPath());
       return;
     }
     if (!selectedProgram?.id) {
       return;
     }
     navigate(`${paths.dashboard.enrollmentApply}?programId=${encodeURIComponent(selectedProgram.id)}`);
-  }, [authenticated, location.pathname, location.search, navigate, selectedProgram?.id]);
+  }, [authenticated, navigate, selectedProgram?.id]);
 
   const handleEnrollSubmit = useCallback(
     async (paymentProofFile) => {

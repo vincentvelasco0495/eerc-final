@@ -10,6 +10,7 @@ import { getAuthSignInPath, getPostLoginRedirectPath } from 'src/auth/utils';
 export function useDashboardEntry() {
   const router = useRouter();
   const { authenticated, loading, user } = useAuthContext();
+  const dashboardHref = getPostLoginRedirectPath(user?.role);
 
   const goToDashboardOrSignIn = useCallback(() => {
     if (loading) {
@@ -17,12 +18,12 @@ export function useDashboardEntry() {
     }
 
     if (authenticated) {
-      router.push(getPostLoginRedirectPath(user?.role));
+      router.push(dashboardHref);
       return;
     }
 
     router.push(getAuthSignInPath());
-  }, [authenticated, loading, router, user?.role]);
+  }, [authenticated, dashboardHref, loading, router]);
 
-  return { goToDashboardOrSignIn, loading };
+  return { goToDashboardOrSignIn, dashboardHref, loading };
 }

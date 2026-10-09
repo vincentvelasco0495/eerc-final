@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react';
 
-import { useSearchParams } from 'src/routes/hooks';
-
 import { SplashScreen } from 'src/components/loading-screen';
 
 import { useAuthContext } from '../hooks';
-import { resolvePostLoginUrl } from '../utils';
+import { getPostLoginRedirectPath } from '../utils';
 
 // ----------------------------------------------------------------------
 
@@ -14,12 +12,7 @@ export function GuestGuard({ children }) {
 
   const [isChecking, setIsChecking] = useState(true);
 
-  const searchParams = useSearchParams();
-  const redirectUrl = resolvePostLoginUrl(
-    user?.role ?? 'admin',
-    searchParams.get('returnTo'),
-    user
-  );
+  const redirectUrl = getPostLoginRedirectPath(user?.role ?? 'admin');
 
   const checkPermissions = async () => {
     if (loading) {
@@ -27,7 +20,6 @@ export function GuestGuard({ children }) {
     }
 
     if (authenticated) {
-      // Redirect authenticated users to the returnTo path
       // Using `window.location.href` instead of `router.replace` to avoid unnecessary re-rendering
       // that might be caused by the AuthGuard component
       window.location.href = redirectUrl;

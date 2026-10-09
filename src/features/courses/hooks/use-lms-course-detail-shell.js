@@ -5,6 +5,7 @@ import { useEnrollment, useLmsQuizResults, useLmsLessonProgress } from 'src/hook
 import {
   LMS_ACCESS_NONE,
   LMS_ACCESS_REPLAY,
+  LMS_ACCESS_CLASSROOM,
   learnerLmsAccessLevel,
   learnerRequiresEnrollment,
   learnerCanAccessLessonType,
@@ -119,7 +120,7 @@ export function useLmsCourseDetailShell(
       if (requiresEnrollment || lmsAccess === LMS_ACCESS_NONE) {
         return true;
       }
-      if (lmsAccess === LMS_ACCESS_REPLAY) {
+      if (lmsAccess === LMS_ACCESS_REPLAY || lmsAccess === LMS_ACCESS_CLASSROOM) {
         const type = lessonTypeInCurriculum(shell?.curriculumModules, lessonId);
         if (!learnerCanAccessLessonType(lmsAccess, type)) {
           return true;
