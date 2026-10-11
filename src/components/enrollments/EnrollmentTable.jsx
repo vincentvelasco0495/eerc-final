@@ -5,7 +5,6 @@ import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
 import Button from '@mui/material/Button';
-import Collapse from '@mui/material/Collapse';
 import TableRow from '@mui/material/TableRow';
 import Skeleton from '@mui/material/Skeleton';
 import TableBody from '@mui/material/TableBody';
@@ -18,6 +17,10 @@ import LinearProgress from '@mui/material/LinearProgress';
 
 import { learnerDetailsFromRow } from 'src/features/enrollment/utils/enrollment-rows';
 import { enrollmentHasUnreviewedPayments } from 'src/features/enrollment/utils/enrollment-payments';
+import {
+  shortLearningModeLabel,
+  learnerGroupLearningModeLabel,
+} from 'src/features/enrollment/utils/enrollment-learning-mode';
 
 import { Iconify } from 'src/components/iconify';
 
@@ -25,6 +28,7 @@ import { EnrollmentRejectDialog } from './enrollment-reject-dialog';
 import { EnrollmentApplicationDialog } from './enrollment-application-dialog';
 import { EnrollmentLearnerDetailsDialog } from './enrollment-learner-details-dialog';
 import { EnrollmentPaymentHistoryDialog } from './enrollment-payment-history-dialog';
+import { EnrollmentSwitchLearningModeDialog } from './enrollment-switch-learning-mode-dialog';
 
 const SKELETON_ROWS = 5;
 
@@ -96,6 +100,30 @@ function LearnerNameButton({ name, onClick }) {
     >
       {name || '—'}
     </Button>
+  );
+}
+
+function EnrollmentLearningModeCell({ row, canManage, isBusy, onSwitchLearningMode }) {
+  const shortLabel = shortLearningModeLabel(row?.learningModeId, row?.learningModeName);
+  const fullName = String(row?.learningModeName ?? '').trim();
+
+  return (
+    <Stack spacing={0.25} alignItems="flex-start" sx={{ minWidth: 0 }}>
+      <Typography variant="body2" title={fullName || undefined} noWrap>
+        {shortLabel}
+      </Typography>
+      {canManage ? (
+        <Button
+          size="small"
+          variant="text"
+          disabled={isBusy}
+          onClick={() => onSwitchLearningMode?.(row)}
+          sx={{ px: 0.5, minWidth: 0, textTransform: 'none', whiteSpace: 'nowrap' }}
+        >
+          Switch
+        </Button>
+      ) : null}
+    </Stack>
   );
 }
 
@@ -185,6 +213,7 @@ function EnrollmentDataRow({
   onReject,
   onPaymentHistory,
   onLearnerView,
+  onSwitchLearningMode,
   isChild = false,
 }) {
   const isBusy = busyId === row.id;
@@ -207,8 +236,22 @@ function EnrollmentDataRow({
               : 'Program application'}
           </Typography>
         </TableCell>
-        <TableCell />
-        <TableCell>{row.programTitle || row.programId || '—'}</TableCell>
+        <TableCell>
+          <Typography variant="body2" color="text.secondary">
+            —
+          </Typography>
+        </TableCell>
+        <TableCell>
+          <Typography variant="body2">{row.programTitle || row.programId || '—'}</Typography>
+        </TableCell>
+        <TableCell>
+          <EnrollmentLearningModeCell
+            row={row}
+            canManage={canManage}
+            isBusy={isBusy}
+            onSwitchLearningMode={onSwitchLearningMode}
+          />
+        </TableCell>
         <TableCell>{row.submittedAt || '—'}</TableCell>
         <TableCell>
           <StatusChips row={row} />
@@ -237,6 +280,14 @@ function EnrollmentDataRow({
       </TableCell>
       <TableCell>{row.userEmail || '—'}</TableCell>
       <TableCell>{row.programTitle || row.programId || '—'}</TableCell>
+      <TableCell>
+        <EnrollmentLearningModeCell
+          row={row}
+          canManage={canManage}
+          isBusy={isBusy}
+          onSwitchLearningMode={onSwitchLearningMode}
+        />
+      </TableCell>
       <TableCell>{row.submittedAt || '—'}</TableCell>
       <TableCell>
         <StatusChips row={row} />
@@ -270,7 +321,7 @@ function LearnerGroupRow({
   onReject,
   onPaymentHistory,
   onLearnerView,
-  colSpan,
+  onSwitchLearningMode,
 }) {
   const childEnrollments = Array.isArray(row.enrollments) ? row.enrollments : [];
 
@@ -295,6 +346,7 @@ function LearnerGroupRow({
         </TableCell>
         <TableCell>{row.userEmail || '—'}</TableCell>
         <TableCell>{row.programTitle || '—'}</TableCell>
+        <TableCell>{learnerGroupLearningModeLabel(row)}</TableCell>
         <TableCell>{row.submittedAt || '—'}</TableCell>
         <TableCell>
           <StatusChips row={row} />
@@ -307,32 +359,23 @@ function LearnerGroupRow({
           </TableCell>
         ) : null}
       </TableRow>
-      <TableRow>
-        <TableCell colSpan={colSpan} sx={{ py: 0, borderBottom: expanded ? undefined : 0 }}>
-          <Collapse in={expanded} timeout="auto" unmountOnExit>
-            <Box sx={{ py: 1 }}>
-              <Table size="small">
-                <TableBody>
-                  {childEnrollments.map((child) => (
-                    <EnrollmentDataRow
-                      key={child.id}
-                      row={child}
-                      showActions={showActions}
-                      canManage={canManage}
-                      busyId={busyId}
-                      onStatusChange={onStatusChange}
-                      onView={onView}
-                      onReject={onReject}
-                      onPaymentHistory={onPaymentHistory}
-                      isChild
-                    />
-                  ))}
-                </TableBody>
-              </Table>
-            </Box>
-          </Collapse>
-        </TableCell>
-      </TableRow>
+      {expanded
+        ? childEnrollments.map((child) => (
+            <EnrollmentDataRow
+              key={child.id}
+              row={child}
+              showActions={showActions}
+              canManage={canManage}
+              busyId={busyId}
+              onStatusChange={onStatusChange}
+              onView={onView}
+              onReject={onReject}
+              onPaymentHistory={onPaymentHistory}
+              onSwitchLearningMode={onSwitchLearningMode}
+              isChild
+            />
+          ))
+        : null}
     </>
   );
 }
@@ -343,6 +386,7 @@ export function EnrollmentTable({
   canManage = false,
   showActionsColumn = false,
   onStatusChange,
+  onLearningModeChange,
   busyId = null,
   emptyMessage = 'No enrollments found',
   onPaymentVerified,
@@ -351,6 +395,7 @@ export function EnrollmentTable({
   const [viewTargetId, setViewTargetId] = useState(null);
   const [historyTarget, setHistoryTarget] = useState(null);
   const [learnerTarget, setLearnerTarget] = useState(null);
+  const [learningModeTarget, setLearningModeTarget] = useState(null);
   const [expandedGroups, setExpandedGroups] = useState({});
 
   useEffect(() => {
@@ -395,6 +440,10 @@ export function EnrollmentTable({
     setLearnerTarget(learnerDetailsFromRow(row));
   }, []);
 
+  const handleSwitchLearningMode = useCallback((row) => {
+    setLearningModeTarget(row);
+  }, []);
+
   const toggleGroup = useCallback((groupId) => {
     setExpandedGroups((prev) => ({
       ...prev,
@@ -404,7 +453,7 @@ export function EnrollmentTable({
 
   const showSkeleton = loading && (!Array.isArray(rows) || rows.length === 0);
   const showActions = showActionsColumn || canManage;
-  const colSpan = showActions ? 6 : 5;
+  const colSpan = showActions ? 7 : 6;
 
   return (
     <Box sx={{ position: 'relative' }}>
@@ -424,19 +473,23 @@ export function EnrollmentTable({
         <Table
           size="small"
           sx={{
-            minWidth: showActions ? 920 : 680,
+            tableLayout: 'fixed',
+            minWidth: showActions ? 1180 : 860,
             opacity: loading && rows.length > 0 ? 0.72 : 1,
             transition: (theme) => theme.transitions.create('opacity', { duration: 160 }),
+            '& th, & td': { verticalAlign: 'middle' },
+            '& td:not(:last-of-type)': { overflowWrap: 'anywhere' },
           }}
         >
           <TableHead>
             <TableRow>
-              <TableCell>Learner</TableCell>
-              <TableCell>Email</TableCell>
-              <TableCell>Program</TableCell>
-              <TableCell>Submitted</TableCell>
-              <TableCell>Status</TableCell>
-              {showActions ? <TableCell align="right">Actions</TableCell> : null}
+              <TableCell sx={{ width: 220 }}>Learner</TableCell>
+              <TableCell sx={{ width: 180 }}>Email</TableCell>
+              <TableCell sx={{ width: 180 }}>Program</TableCell>
+              <TableCell sx={{ width: 150 }}>Mode of learning</TableCell>
+              <TableCell sx={{ width: 110 }}>Submitted</TableCell>
+              <TableCell sx={{ width: 110 }}>Status</TableCell>
+              {showActions ? <TableCell align="right" sx={{ width: 230 }}>Actions</TableCell> : null}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -477,7 +530,7 @@ export function EnrollmentTable({
                         onReject={handleReject}
                         onPaymentHistory={handlePaymentHistory}
                         onLearnerView={handleLearnerView}
-                        colSpan={colSpan}
+                        onSwitchLearningMode={handleSwitchLearningMode}
                       />
                     );
                   }
@@ -499,6 +552,7 @@ export function EnrollmentTable({
                       onReject={handleReject}
                       onPaymentHistory={handlePaymentHistory}
                       onLearnerView={handleLearnerView}
+                      onSwitchLearningMode={handleSwitchLearningMode}
                     />
                   );
                 })
@@ -541,6 +595,25 @@ export function EnrollmentTable({
         onReject={handleReject}
         onPaymentHistory={handlePaymentHistory}
         onStatusChange={onStatusChange}
+        onSwitchLearningMode={handleSwitchLearningMode}
+      />
+
+      <EnrollmentSwitchLearningModeDialog
+        open={Boolean(learningModeTarget)}
+        row={learningModeTarget}
+        submitting={busyId === learningModeTarget?.id}
+        onClose={() => {
+          if (busyId !== learningModeTarget?.id) {
+            setLearningModeTarget(null);
+          }
+        }}
+        onConfirm={(learningMode) => {
+          if (!learningModeTarget || !learningMode) {
+            return;
+          }
+          onLearningModeChange?.(learningModeTarget, learningMode);
+          setLearningModeTarget(null);
+        }}
       />
 
       <EnrollmentPaymentHistoryDialog

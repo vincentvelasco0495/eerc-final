@@ -18,6 +18,7 @@ export function InstructorTable({
   resolveProfileSrc,
   onEdit,
   onDelete,
+  onResetPassword,
   busyId = null,
   emptyMessage = 'No instructors found',
   showAliasName = false,
@@ -99,10 +100,20 @@ export function InstructorTable({
                   </TableCell>
                   <TableCell>{row.status ?? 'active'}</TableCell>
                   <TableCell>
-                    <Stack direction="row" spacing={1}>
+                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                       <Button size="small" variant="text" onClick={() => onEdit(row)}>
                         Edit
                       </Button>
+                      {typeof onResetPassword === 'function' ? (
+                        <Button
+                          size="small"
+                          variant="text"
+                          disabled={busyId === row.id}
+                          onClick={() => onResetPassword(row)}
+                        >
+                          Reset password
+                        </Button>
+                      ) : null}
                       <Button
                         size="small"
                         color="error"

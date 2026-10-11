@@ -1,16 +1,18 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
-import Dialog from '@mui/material/Dialog';
 import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
 import Tooltip from '@mui/material/Tooltip';
+import Checkbox from '@mui/material/Checkbox';
 import TableRow from '@mui/material/TableRow';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
+import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -18,42 +20,37 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import CircularProgress from '@mui/material/CircularProgress';
 
-import axios from 'src/lib/axios';
 import { lmsApi } from 'src/redux/api/lmsApi';
-import { lmsEndpoints } from 'src/redux/api/lmsEndpoints';
 import { getLmsAxiosErrorMessage } from 'src/lib/lms-instructor-api';
+import { shortLearningModeLabel } from 'src/features/enrollment/utils/enrollment-learning-mode';
 
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
+import { ConfirmDialog } from 'src/components/custom-dialog';
 
-import { EnrollmentRejectDialog } from './enrollment-reject-dialog';
+const STATUS_COLOR = {
+  approved: 'success',
+  pending: 'warning',
+  hold: 'info',
+  rejected: 'error',
+};
 
-// ----------------------------------------------------------------------
-
-function enrollmentScopeLabel(row) {
-  return row?.courseId ? 'This course' : 'Entire program';
+function matchesSearch(row, search) {
+  if (!search) {
+    return true;
+  }
+  const haystack = `${row.userName ?? ''} ${row.userEmail ?? ''} ${row.status ?? ''}`.toLowerCase();
+  return haystack.includes(search);
 }
 
-async function fetchApprovedRows(courseId) {
-  const res = await axios.get(
-    lmsEndpoints.enrollmentsPaginated({
-      page: 1,
-      perPage: 100,
-      course: courseId,
-      status: 'approved',
-    })
-  );
-  return Array.isArray(res.data?.data) ? res.data.data : [];
-}
-
-export function CourseApprovedEnrollmentsDialog({ open, courseId, courseTitle, onClose }) {
+export function CourseEnrollmentsDialog({ open, courseId, courseTitle, onClose }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [busyId, setBusyId] = useState(null);
-  const [removingAll, setRemovingAll] = useState(false);
-  const [pendingRemove, setPendingRemove] = useState(null);
-  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [searchDraft, setSearchDraft] = useState('');
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   const loadRows = useCallback(async () => {
     if (!courseId) {
@@ -63,8 +60,9 @@ export function CourseApprovedEnrollmentsDialog({ open, courseId, courseTitle, o
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchApprovedRows(courseId);
-      setRows(data);
+      const payload = await lmsApi.fetchCourseEnrollments(courseId);
+      setRows(Array.isArray(payload?.data) ? payload.data : []);
+      setSelectedIds([]);
     } catch (err) {
       setError(getLmsAxiosErrorMessage(err, 'Could not load enrolled students.'));
       setRows([]);
@@ -75,8 +73,9 @@ export function CourseApprovedEnrollmentsDialog({ open, courseId, courseTitle, o
 
   useEffect(() => {
     if (!open) {
-      setPendingRemove(null);
-      setRejectDialogOpen(false);
+      setSearchDraft('');
+      setSelectedIds([]);
+      setPendingDelete(null);
       return;
     }
     if (!courseId) {
@@ -85,195 +84,251 @@ export function CourseApprovedEnrollmentsDialog({ open, courseId, courseTitle, o
     void loadRows();
   }, [open, courseId, loadRows]);
 
-  const openRemoveOneConfirm = useCallback(
-    (row) => {
-      if (!row?.id || busyId || removingAll) {
-        return;
-      }
-      setPendingRemove(row);
-      setRejectDialogOpen(true);
-    },
-    [busyId, removingAll]
+  const search = searchDraft.trim().toLowerCase();
+  const visibleRows = useMemo(
+    () => rows.filter((row) => matchesSearch(row, search)),
+    [rows, search]
   );
+  const visibleIds = visibleRows.map((row) => row.id);
+  const selectedVisibleCount = visibleIds.filter((id) => selectedIds.includes(id)).length;
+  const allVisibleSelected =
+    visibleRows.length > 0 && selectedVisibleCount === visibleRows.length;
 
-  const openRemoveAllConfirm = useCallback(() => {
-    if (rows.length === 0 || busyId || removingAll) {
+  const toggleAllVisible = () => {
+    if (allVisibleSelected) {
+      setSelectedIds((prev) => prev.filter((id) => !visibleIds.includes(id)));
       return;
     }
-    setPendingRemove(null);
-    setRejectDialogOpen(true);
-  }, [rows.length, busyId, removingAll]);
+    setSelectedIds((prev) => [...new Set([...prev, ...visibleIds])]);
+  };
 
-  const handleConfirmReject = useCallback(
-    async (rejectionReason) => {
-      if (busyId || removingAll) {
-        return;
+  const toggleRow = (rowId) => {
+    setSelectedIds((prev) =>
+      prev.includes(rowId) ? prev.filter((id) => id !== rowId) : [...prev, rowId]
+    );
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete || busy) {
+      return;
+    }
+    const ids =
+      pendingDelete.kind === 'one'
+        ? [pendingDelete.row.id]
+        : pendingDelete.kind === 'selected'
+          ? selectedIds
+          : rows.map((row) => row.id);
+    if (ids.length === 0) {
+      setPendingDelete(null);
+      return;
+    }
+    setBusy(true);
+    try {
+      if (ids.length === 1) {
+        await lmsApi.deleteEnrollment(ids[0]);
+      } else {
+        await lmsApi.deleteEnrollments(ids);
       }
+      setRows((prev) => prev.filter((row) => !ids.includes(row.id)));
+      setSelectedIds((prev) => prev.filter((id) => !ids.includes(id)));
+      toast.success(
+        ids.length === 1
+          ? `${pendingDelete.row?.userName || 'Learner'} was removed from this course.`
+          : `Removed ${ids.length} course enrollments.`
+      );
+      setPendingDelete(null);
+    } catch (err) {
+      toast.error(getLmsAxiosErrorMessage(err, 'Could not delete enrollment.'));
+    } finally {
+      setBusy(false);
+    }
+  };
 
-      if (pendingRemove?.id) {
-        const row = pendingRemove;
-        setBusyId(row.id);
-        try {
-          await lmsApi.updateEnrollmentStatus({
-            enrollmentId: row.id,
-            status: 'rejected',
-            rejectionReason,
-          });
-          setRows((prev) => prev.filter((item) => item.id !== row.id));
-          toast.success(`${row.userName || 'Learner'} removed from approved enrollments.`);
-          setRejectDialogOpen(false);
-          setPendingRemove(null);
-        } catch (err) {
-          toast.error(getLmsAxiosErrorMessage(err, 'Could not remove enrollment.'));
-        } finally {
-          setBusyId(null);
-        }
-        return;
-      }
-
-      setRemovingAll(true);
-      const count = rows.length;
-      try {
-        await Promise.all(
-          rows.map((row) =>
-            lmsApi.updateEnrollmentStatus({
-              enrollmentId: row.id,
-              status: 'rejected',
-              rejectionReason,
-            })
-          )
-        );
-        setRows([]);
-        toast.success(
-          count === 1 ? 'Removed 1 approved enrollment.' : `Removed ${count} approved enrollments.`
-        );
-        setRejectDialogOpen(false);
-        setPendingRemove(null);
-      } catch (err) {
-        toast.error(getLmsAxiosErrorMessage(err, 'Could not remove all enrollments.'));
-        await loadRows();
-      } finally {
-        setRemovingAll(false);
-      }
-    },
-    [busyId, removingAll, pendingRemove, rows, loadRows]
-  );
-
-  const title = courseTitle ? `Approved enrollments — ${courseTitle}` : 'Approved enrollments';
-  const actionsBusy = Boolean(busyId) || removingAll;
+  const title = courseTitle ? `Enrolled students — ${courseTitle}` : 'Enrolled students';
+  const confirmCount =
+    pendingDelete?.kind === 'one'
+      ? 1
+      : pendingDelete?.kind === 'selected'
+        ? selectedIds.length
+        : rows.length;
 
   return (
-    <Dialog open={open} onClose={actionsBusy ? undefined : onClose} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ pb: 1 }}>{title}</DialogTitle>
-      <DialogContent dividers>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Learners with an approved access request for this course. Use Remove to revoke access
-          (enrollment status becomes rejected).
-        </Typography>
-
-        {loading ? (
-          <Stack alignItems="center" py={4}>
-            <CircularProgress size={32} />
-          </Stack>
-        ) : null}
-
-        {!loading && error ? (
-          <Typography variant="body2" color="error">
-            {error}
+    <>
+      <Dialog open={open} onClose={busy ? undefined : onClose} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ pb: 1 }}>{title}</DialogTitle>
+        <DialogContent dividers>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Students with a pending, on-hold, or approved access request for this course. Deleting a
+            row removes that course access only; the program enrollment stays.
           </Typography>
-        ) : null}
 
-        {!loading && !error && rows.length === 0 ? (
-          <Typography variant="body2" color="text.secondary">
-            No approved enrollments for this course yet.
-          </Typography>
-        ) : null}
+          <TextField
+            size="small"
+            label="Search"
+            placeholder="Name, email, or status…"
+            value={searchDraft}
+            onChange={(event) => setSearchDraft(event.target.value)}
+            sx={{ mb: 2, maxWidth: 360 }}
+          />
 
-        {!loading && !error && rows.length > 0 ? (
-          <Box sx={{ overflowX: 'auto' }}>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Learner</TableCell>
-                  <TableCell>Email</TableCell>
-                  <TableCell>Submitted</TableCell>
-                  <TableCell>Scope</TableCell>
-                  <TableCell align="right" sx={{ width: 88 }}>
-                    Actions
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {rows.map((row) => {
-                  const rowBusy = busyId === row.id;
-                  return (
-                    <TableRow key={row.id}>
-                      <TableCell>{row.userName || '—'}</TableCell>
-                      <TableCell>{row.userEmail || '—'}</TableCell>
-                      <TableCell>{row.submittedAt || '—'}</TableCell>
-                      <TableCell>
-                        <Chip size="small" label={enrollmentScopeLabel(row)} variant="outlined" />
-                      </TableCell>
-                      <TableCell align="right">
-                        <Tooltip title="Remove enrollment">
-                          <span>
-                            <IconButton
-                              size="small"
-                              color="error"
-                              disabled={actionsBusy}
-                              aria-label={`Remove ${row.userName || 'learner'}`}
-                              onClick={() => openRemoveOneConfirm(row)}
-                            >
-                              {rowBusy ? (
-                                <CircularProgress size={18} color="inherit" />
-                              ) : (
+          {loading ? (
+            <Stack alignItems="center" py={4}>
+              <CircularProgress size={32} />
+            </Stack>
+          ) : null}
+
+          {!loading && error ? (
+            <Typography variant="body2" color="error">
+              {error}
+            </Typography>
+          ) : null}
+
+          {!loading && !error && visibleRows.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">
+              {rows.length === 0
+                ? 'No students have enrolled or been approved for this course yet.'
+                : 'No students match your search.'}
+            </Typography>
+          ) : null}
+
+          {!loading && !error && visibleRows.length > 0 ? (
+            <Box sx={{ overflowX: 'auto' }}>
+              <Table size="small" sx={{ minWidth: 720 }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell padding="checkbox" sx={{ width: 48 }}>
+                      <Checkbox
+                        size="small"
+                        checked={allVisibleSelected}
+                        indeterminate={selectedVisibleCount > 0 && !allVisibleSelected}
+                        onChange={toggleAllVisible}
+                        inputProps={{ 'aria-label': 'Select all enrolled students' }}
+                      />
+                    </TableCell>
+                    <TableCell>Learner</TableCell>
+                    <TableCell>Email</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Mode of learning</TableCell>
+                    <TableCell>Submitted</TableCell>
+                    <TableCell align="right" sx={{ width: 88 }}>
+                      Actions
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {visibleRows.map((row) => {
+                    const checked = selectedIds.includes(row.id);
+                    return (
+                      <TableRow key={row.id} hover selected={checked}>
+                        <TableCell padding="checkbox">
+                          <Checkbox
+                            size="small"
+                            checked={checked}
+                            onChange={() => toggleRow(row.id)}
+                            inputProps={{ 'aria-label': `Select ${row.userName || 'learner'}` }}
+                          />
+                        </TableCell>
+                        <TableCell>{row.userName || '—'}</TableCell>
+                        <TableCell>{row.userEmail || '—'}</TableCell>
+                        <TableCell>
+                          <Chip
+                            size="small"
+                            label={row.status}
+                            color={STATUS_COLOR[row.status] ?? 'default'}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          {shortLearningModeLabel(row.learningModeId, row.learningModeName)}
+                        </TableCell>
+                        <TableCell>{row.submittedAt || '—'}</TableCell>
+                        <TableCell align="right">
+                          <Tooltip title="Delete enrollment">
+                            <span>
+                              <IconButton
+                                size="small"
+                                color="error"
+                                disabled={busy}
+                                aria-label={`Delete ${row.userName || 'learner'}`}
+                                onClick={() => setPendingDelete({ kind: 'one', row })}
+                              >
                                 <Iconify icon="solar:trash-bin-trash-bold" width={18} />
-                              )}
-                            </IconButton>
-                          </span>
-                        </Tooltip>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </Box>
-        ) : null}
-      </DialogContent>
-      <DialogActions sx={{ flexWrap: 'wrap', gap: 1 }}>
-        {!loading && !error && rows.length > 0 ? (
-          <Button
-            color="error"
-            variant="outlined"
-            disabled={actionsBusy}
-            onClick={openRemoveAllConfirm}
-            startIcon={removingAll ? <CircularProgress size={16} color="inherit" /> : null}
-          >
-            {removingAll ? 'Removing…' : 'Remove all'}
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </Box>
+          ) : null}
+        </DialogContent>
+        <DialogActions sx={{ flexWrap: 'wrap', gap: 1 }}>
+          {!loading && !error && rows.length > 0 ? (
+            <>
+              <Button
+                color="error"
+                variant="outlined"
+                disabled={busy || selectedIds.length === 0}
+                onClick={() => setPendingDelete({ kind: 'selected' })}
+              >
+                Delete selected ({selectedIds.length})
+              </Button>
+              <Button
+                color="error"
+                variant="contained"
+                disabled={busy}
+                onClick={() => setPendingDelete({ kind: 'all' })}
+              >
+                Delete all ({rows.length})
+              </Button>
+            </>
+          ) : null}
+          <Box sx={{ flex: 1 }} />
+          <Button onClick={onClose} disabled={busy}>
+            Close
           </Button>
-        ) : null}
-        <Box sx={{ flex: 1 }} />
-        <Button onClick={onClose} disabled={actionsBusy}>
-          Close
-        </Button>
-      </DialogActions>
+        </DialogActions>
+      </Dialog>
 
-      <EnrollmentRejectDialog
-        open={rejectDialogOpen}
-        learnerName={
-          pendingRemove?.userName ??
-          (rows.length > 1 ? `all ${rows.length} learners` : rows[0]?.userName ?? '')
-        }
-        submitting={actionsBusy}
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
         onClose={() => {
-          if (!actionsBusy) {
-            setRejectDialogOpen(false);
-            setPendingRemove(null);
+          if (!busy) {
+            setPendingDelete(null);
           }
         }}
-        onConfirm={(rejectionReason) => void handleConfirmReject(rejectionReason)}
+        title={confirmCount === 1 ? 'Delete enrollment' : 'Delete enrollments'}
+        content={
+          pendingDelete?.kind === 'one' ? (
+            <>
+              Delete <strong>{pendingDelete.row?.userName || 'this learner'}</strong> from this
+              course? They will lose course access and can request it again.
+            </>
+          ) : pendingDelete?.kind === 'selected' ? (
+            <>
+              Delete <strong>{selectedIds.length}</strong> selected course enrollment
+              {selectedIds.length === 1 ? '' : 's'}? Those learners will lose access to this course.
+            </>
+          ) : (
+            <>
+              Delete all <strong>{rows.length}</strong> course enrollment
+              {rows.length === 1 ? '' : 's'} for this course? Learners will lose access and can
+              request it again.
+            </>
+          )
+        }
+        action={
+          <Button variant="contained" color="error" onClick={handleConfirmDelete} disabled={busy}>
+            {busy ? 'Deleting…' : 'Delete'}
+          </Button>
+        }
       />
-    </Dialog>
+    </>
   );
+}
+
+export function CourseApprovedEnrollmentsDialog(props) {
+  return <CourseEnrollmentsDialog {...props} />;
 }

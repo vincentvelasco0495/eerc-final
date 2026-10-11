@@ -14,6 +14,7 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import TableContainer from '@mui/material/TableContainer';
 
+import { shortLearningModeLabel } from 'src/features/enrollment/utils/enrollment-learning-mode';
 import { enrollmentHasUnreviewedPayments } from 'src/features/enrollment/utils/enrollment-payments';
 
 const STATUS_COLOR = {
@@ -46,6 +47,7 @@ export function EnrollmentLearnerDetailsDialog({
   onReject,
   onPaymentHistory,
   onStatusChange,
+  onSwitchLearningMode,
 }) {
   const enrollments = Array.isArray(learner?.enrollments) ? learner.enrollments : [];
 
@@ -72,10 +74,11 @@ export function EnrollmentLearnerDetailsDialog({
                 Program applications
               </Typography>
               <TableContainer sx={{ overflowX: 'auto' }}>
-                <Table size="small" sx={{ minWidth: 640 }}>
+                <Table size="small" sx={{ minWidth: 760 }}>
                   <TableHead>
                     <TableRow>
                       <TableCell>Program</TableCell>
+                      <TableCell>Mode of learning</TableCell>
                       <TableCell>Submitted</TableCell>
                       <TableCell>Status</TableCell>
                       <TableCell align="right">Actions</TableCell>
@@ -84,7 +87,7 @@ export function EnrollmentLearnerDetailsDialog({
                   <TableBody>
                     {enrollments.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
+                        <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
                           <Typography variant="body2" color="text.secondary">
                             No program applications found for this learner.
                           </Typography>
@@ -97,6 +100,10 @@ export function EnrollmentLearnerDetailsDialog({
                         const isRejected = row.status === 'rejected';
                         const isHold = row.status === 'hold';
                         const highlight = enrollmentHasUnreviewedPayments(row);
+                        const modeLabel = shortLearningModeLabel(
+                          row.learningModeId,
+                          row.learningModeName
+                        );
 
                         return (
                           <TableRow
@@ -120,6 +127,29 @@ export function EnrollmentLearnerDetailsDialog({
                                   {row.courseTitle}
                                 </Typography>
                               ) : null}
+                            </TableCell>
+                            <TableCell>
+                              <Stack spacing={0.25} alignItems="flex-start">
+                                <Typography
+                                  variant="body2"
+                                  title={row.learningModeName || undefined}
+                                  noWrap
+                                  sx={{ maxWidth: 180 }}
+                                >
+                                  {modeLabel}
+                                </Typography>
+                                {canManage ? (
+                                  <Button
+                                    size="small"
+                                    variant="text"
+                                    disabled={isBusy}
+                                    onClick={() => onSwitchLearningMode?.(row)}
+                                    sx={{ px: 0.5, minWidth: 0, textTransform: 'none' }}
+                                  >
+                                    Switch
+                                  </Button>
+                                ) : null}
+                              </Stack>
                             </TableCell>
                             <TableCell>{row.submittedAt || '—'}</TableCell>
                             <TableCell>

@@ -26,6 +26,10 @@ import {
   createHonorAwardDiscount as mockCreateHonorAwardDiscount,
   updateHonorAwardDiscount as mockUpdateHonorAwardDiscount,
   deleteHonorAwardDiscount as mockDeleteHonorAwardDiscount,
+  updateEnrollmentLearningMode as mockUpdateEnrollmentLearningMode,
+  fetchCourseEnrollments as mockFetchCourseEnrollments,
+  deleteEnrollment as mockDeleteEnrollment,
+  deleteEnrollments as mockDeleteEnrollments,
 } from 'src/services/lms.service';
 
 const apiRoot = '/api';
@@ -281,6 +285,13 @@ export async function patchLmsStudent(publicId, payload = {}) {
 }
 export async function deleteLmsStudent(publicId) {
   const { data } = await axios.delete(`/api/students/${encodeURIComponent(publicId)}`);
+  return data;
+}
+export async function resetLmsStudentPassword(publicId, payload = {}) {
+  const { data } = await axios.post(
+    `/api/students/${encodeURIComponent(publicId)}/reset-password`,
+    payload ?? {}
+  );
   return data;
 }
 export async function patchLmsUser(payload = {}) {
@@ -897,6 +908,31 @@ export const lmsApi = {
         })
       : mockUpdateEnrollmentStatus(payload),
 
+  updateEnrollmentLearningMode: (payload) =>
+    isLmsLiveApi()
+      ? patchJson(
+          `${apiRoot}/enrollments/${encodeURIComponent(payload.enrollmentId)}/learning-mode`,
+          { learningMode: payload.learningMode }
+        )
+      : mockUpdateEnrollmentLearningMode(payload),
+
+  fetchCourseEnrollments: (courseId) =>
+    isLmsLiveApi()
+      ? getJson(`${apiRoot}/courses/${encodeURIComponent(courseId)}/enrollments`)
+      : mockFetchCourseEnrollments(courseId),
+
+  deleteEnrollment: (enrollmentId) =>
+    isLmsLiveApi()
+      ? axios
+          .delete(`${apiRoot}/enrollments/${encodeURIComponent(enrollmentId)}`)
+          .then((res) => res.data)
+      : mockDeleteEnrollment(enrollmentId),
+
+  deleteEnrollments: (ids) =>
+    isLmsLiveApi()
+      ? postJson(`${apiRoot}/enrollments/batch-delete`, { ids })
+      : mockDeleteEnrollments(ids),
+
   fetchResource: ({ endpoint, params = null }) => {
     if (!endpoint) return Promise.resolve(null);
     const query =
@@ -966,6 +1002,8 @@ export const lmsApi = {
         return patchLmsStudent(payload.publicId, payload.body ?? {});
       case 'student.delete':
         return deleteLmsStudent(payload.publicId);
+      case 'student.resetPassword':
+        return resetLmsStudentPassword(payload.publicId, payload.body ?? {});
       case 'course.create':
         return postLmsCourse(payload.body ?? {});
       case 'course.update':

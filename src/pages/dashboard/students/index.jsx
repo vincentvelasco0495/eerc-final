@@ -1,4 +1,5 @@
 import { useSearchParams } from 'react-router';
+import { useBoolean } from 'minimal-shared/hooks';
 import { useRef, useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
@@ -10,10 +11,12 @@ import Button from '@mui/material/Button';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
+import IconButton from '@mui/material/IconButton';
 import InputLabel from '@mui/material/InputLabel';
 import Typography from '@mui/material/Typography';
 import FormControl from '@mui/material/FormControl';
 import CardContent from '@mui/material/CardContent';
+import InputAdornment from '@mui/material/InputAdornment';
 
 import {
   useLmsUser,
@@ -33,6 +36,7 @@ import { InstructorWorkspaceShell } from 'src/features/instructor-profile/compon
 
 import { Editor } from 'src/components/editor';
 import { toast } from 'src/components/snackbar';
+import { Iconify } from 'src/components/iconify';
 import { ConfirmDialog } from 'src/components/custom-dialog';
 import { ExportExcelButton } from 'src/components/export-excel-button';
 import { ServerListPagination, ServerListPerPageControl } from 'src/components/server-pagination';
@@ -94,6 +98,10 @@ export default function StudentsPage() {
   const [busyId, setBusyId] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingDeleteRow, setPendingDeleteRow] = useState(null);
+  const [pendingResetRow, setPendingResetRow] = useState(null);
+  const [resetPassword, setResetPassword] = useState('');
+  const [resetPasswordConfirm, setResetPasswordConfirm] = useState('');
+  const showResetPassword = useBoolean();
 
   const currentPage = meta?.current_page ?? page;
   const lastPage = meta?.last_page ?? 1;
@@ -230,6 +238,46 @@ export default function StudentsPage() {
       profileImageFile: null,
       profilePreviewUrl: resolveProfileSrc(row.profileUrl ?? row.profilePath ?? ''),
     });
+  };
+
+  const closeResetDialog = () => {
+    setPendingResetRow(null);
+    setResetPassword('');
+    setResetPasswordConfirm('');
+    showResetPassword.onFalse();
+  };
+
+  const handleResetPassword = async () => {
+    const studentId = pendingResetRow?.id;
+    if (!studentId) {
+      return;
+    }
+    const nextPassword = resetPassword.trim();
+    const nextConfirm = resetPasswordConfirm.trim();
+    if (nextPassword.length < 8) {
+      toast.error('Password must be at least 8 characters.');
+      return;
+    }
+    if (nextPassword !== nextConfirm) {
+      toast.error('Passwords do not match.');
+      return;
+    }
+    setBusyId(studentId);
+    try {
+      await runCommand('student.resetPassword', {
+        publicId: studentId,
+        body: {
+          password: nextPassword,
+          password_confirmation: nextConfirm,
+        },
+      });
+      toast.success(`Password reset for ${pendingResetRow?.name ?? 'student'}.`);
+      closeResetDialog();
+    } catch (err) {
+      toast.error(getLmsAxiosErrorMessage(err, 'Could not reset password.'));
+    } finally {
+      setBusyId(null);
+    }
   };
 
   const handleDelete = async () => {
@@ -455,6 +503,12 @@ export default function StudentsPage() {
                   resolveProfileSrc={resolveProfileSrc}
                   showAliasName
                   onEdit={handleEdit}
+                  onResetPassword={(row) => {
+                    setPendingResetRow(row);
+                    setResetPassword('');
+                    setResetPasswordConfirm('');
+                    showResetPassword.onFalse();
+                  }}
                   onDelete={(row) => {
                     setPendingDeleteRow(row);
                     setConfirmOpen(true);
@@ -478,6 +532,58 @@ export default function StudentsPage() {
           </Card>
         </Stack>
       </WorkspaceShell>
+      <ConfirmDialog
+        open={Boolean(pendingResetRow)}
+        onClose={closeResetDialog}
+        title="Reset password"
+        content={
+          <Stack spacing={2} sx={{ pt: 0.5 }}>
+            <Typography variant="body2">
+              Set a new password for <strong>{pendingResetRow?.name ?? ''}</strong>
+              {pendingResetRow?.email ? ` (${pendingResetRow.email})` : ''}.
+            </Typography>
+            <TextField
+              label="New password"
+              type={showResetPassword.value ? 'text' : 'password'}
+              value={resetPassword}
+              onChange={(event) => setResetPassword(event.target.value)}
+              fullWidth
+              autoComplete="new-password"
+              helperText="Minimum 8 characters."
+              slotProps={{
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={showResetPassword.onToggle} edge="end">
+                        <Iconify
+                          icon={showResetPassword.value ? 'solar:eye-bold' : 'solar:eye-closed-bold'}
+                        />
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
+              }}
+            />
+            <TextField
+              label="Confirm new password"
+              type={showResetPassword.value ? 'text' : 'password'}
+              value={resetPasswordConfirm}
+              onChange={(event) => setResetPasswordConfirm(event.target.value)}
+              fullWidth
+              autoComplete="new-password"
+            />
+          </Stack>
+        }
+        action={
+          <Button
+            variant="contained"
+            onClick={handleResetPassword}
+            disabled={!!busyId || !resetPassword || !resetPasswordConfirm}
+          >
+            Reset password
+          </Button>
+        }
+      />
       <ConfirmDialog
         open={confirmOpen}
         onClose={() => {

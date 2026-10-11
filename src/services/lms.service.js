@@ -820,6 +820,8 @@ const enrollments = [
     schoolHeld: 'Metro State University',
     submittedAt: '2026-04-10',
     status: ENROLLMENT_STATUSES[1],
+    learningModeId: 'learning-mode-face-to-face',
+    learningModeName: 'FACE TO FACE CLASS',
   },
   {
     id: 'enrollment-002',
@@ -833,6 +835,8 @@ const enrollments = [
     schoolHeld: 'Metro State University',
     submittedAt: '2026-04-21',
     status: ENROLLMENT_STATUSES[0],
+    learningModeId: 'learning-mode-blended',
+    learningModeName: 'BLENDED LEARNING (ACCESS TO ONLINE AND FACE TO FACE CLASS)',
     formData: {
       fullName: 'Alex E. Rivera',
       aliasName: 'Alex',
@@ -1798,6 +1802,126 @@ export async function updateEnrollmentStatus({ enrollmentId, status, rejectionRe
   }
 
   return { enrollmentId, status };
+}
+
+export async function updateEnrollmentLearningMode({ enrollmentId, learningMode }) {
+  await delay(150);
+
+  const row = enrollments.find((item) => item.id === enrollmentId);
+  if (!row) {
+    throw new Error('Enrollment not found.');
+  }
+
+  const currentId = String(row.learningModeId ?? row.formData?.learningModeId ?? '');
+  const currentName = String(row.learningModeName ?? row.formData?.labels?.learningMode ?? '');
+  const currentKey = `${currentId} ${currentName}`.toLowerCase();
+  const isBlended = currentKey.includes('blended');
+  const isFaceToFace =
+    !isBlended &&
+    (/face[\s-]*to[\s-]*face/.test(currentKey) ||
+      /\bf2f\b/.test(currentKey) ||
+      currentId === 'learning-mode-face' ||
+      currentId.endsWith('-face'));
+  const isOnline =
+    !isBlended &&
+    !isFaceToFace &&
+    (currentKey.includes('online') || currentId.includes('online'));
+
+  if (learningMode === 'blended' && isBlended) {
+    throw new Error('This enrollment is already set to that mode of learning.');
+  }
+  if (learningMode === 'face-to-face' && isFaceToFace) {
+    throw new Error('This enrollment is already set to that mode of learning.');
+  }
+  if (learningMode === 'online' && isOnline) {
+    throw new Error('This enrollment is already set to that mode of learning.');
+  }
+
+  const target = learningModes.find((mode) => {
+    const key = `${mode.id} ${mode.name}`.toLowerCase();
+    if (learningMode === 'blended') {
+      return key.includes('blended');
+    }
+    if (learningMode === 'online') {
+      return key.includes('online') && !key.includes('blended');
+    }
+    return (
+      /face[\s-]*to[\s-]*face/.test(key) ||
+      /\bf2f\b/.test(key) ||
+      mode.id === 'learning-mode-face' ||
+      String(mode.id).endsWith('-face')
+    );
+  });
+
+  if (!target) {
+    throw new Error(
+      learningMode === 'blended'
+        ? 'No blended learning mode is configured.'
+        : learningMode === 'online'
+          ? 'No pure online learning mode is configured.'
+          : 'No face to face learning mode is configured.'
+    );
+  }
+
+  const related = enrollments.filter(
+    (item) =>
+      item.id === row.id ||
+      (item.userEmail === row.userEmail && item.programId && item.programId === row.programId)
+  );
+
+  related.forEach((item) => {
+    item.learningModeId = target.id;
+    item.learningModeName = target.name;
+    item.formData = item.formData && typeof item.formData === 'object' ? item.formData : {};
+    item.formData.learningModeId = target.id;
+    item.formData.labels = {
+      ...(item.formData.labels ?? {}),
+      learningMode: target.name,
+    };
+  });
+
+  return {
+    enrollmentId,
+    learningModeId: target.id,
+    learningModeName: target.name,
+    updatedCount: related.length,
+  };
+}
+
+export async function fetchCourseEnrollments(courseId) {
+  await delay(150);
+  const data = enrollments.filter(
+    (item) =>
+      item.courseId === courseId && ['pending', 'approved', 'hold'].includes(String(item.status ?? ''))
+  );
+  return { data };
+}
+
+export async function deleteEnrollment(enrollmentId) {
+  await delay(150);
+  const index = enrollments.findIndex((item) => item.id === enrollmentId);
+  if (index < 0) {
+    throw new Error('Enrollment not found.');
+  }
+  if (!enrollments[index].courseId) {
+    throw new Error('Program enrollments cannot be deleted from a course roster.');
+  }
+  enrollments.splice(index, 1);
+  return { enrollmentId, deleted: true };
+}
+
+export async function deleteEnrollments(ids = []) {
+  await delay(150);
+  const idSet = new Set((Array.isArray(ids) ? ids : []).map((id) => String(id)));
+  let deletedCount = 0;
+  for (let i = enrollments.length - 1; i >= 0; i -= 1) {
+    const row = enrollments[i];
+    if (idSet.has(String(row.id)) && row.courseId) {
+      enrollments.splice(i, 1);
+      deletedCount += 1;
+    }
+  }
+  return { deletedCount };
 }
 
 export async function submitEnrollmentPartialPayment({ enrollmentId, amount, paymentProofFile }) {

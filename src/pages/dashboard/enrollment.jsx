@@ -12,6 +12,7 @@ import CardContent from '@mui/material/CardContent';
 import { useLmsUser, useLmsEnrollmentsPaginated } from 'src/hooks/use-lms';
 
 import { CONFIG } from 'src/global-config';
+import { getLmsAxiosErrorMessage } from 'src/lib/lms-instructor-api';
 import { lmsApi, fetchEnrollmentExcelExport } from 'src/redux/api/lmsApi';
 import { downloadBlob } from 'src/features/enrollment/utils/enrollment-excel';
 import { normalizeProgramsPage, normalizeProgramsPerPage } from 'src/services/programService';
@@ -161,6 +162,34 @@ export default function EnrollmentPage() {
     [mutateEnrollmentsPage]
   );
 
+  const handleLearningModeChange = useCallback(
+    async (row, learningMode) => {
+      if (!row?.id || !learningMode) {
+        return;
+      }
+      setBusyId(row.id);
+      try {
+        await lmsApi.updateEnrollmentLearningMode({
+          enrollmentId: row.id,
+          learningMode,
+        });
+        await mutateEnrollmentsPage();
+        const nextLabel =
+          learningMode === 'online'
+            ? 'Pure online'
+            : learningMode === 'blended'
+              ? 'Blended'
+              : 'Face to face';
+        toast.success(`Mode of learning switched to ${nextLabel}.`);
+      } catch (error) {
+        toast.error(getLmsAxiosErrorMessage(error, 'Could not switch mode of learning.'));
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [mutateEnrollmentsPage]
+  );
+
   const handleExportExcel = useCallback(async ({ from, to } = {}) => {
     const { blob, fileName } = await fetchEnrollmentExcelExport({
       search: debouncedSearch,
@@ -236,6 +265,7 @@ export default function EnrollmentPage() {
                   showActionsColumn
                   canManage={isInstructorLike}
                   onStatusChange={handleStatusChange}
+                  onLearningModeChange={handleLearningModeChange}
                   busyId={busyId}
                   onPaymentVerified={mutateEnrollmentsPage}
                   emptyMessage={

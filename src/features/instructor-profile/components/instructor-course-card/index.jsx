@@ -25,6 +25,7 @@ import { patchLmsCourse, deleteLmsCourse, getLmsAxiosErrorMessage } from 'src/li
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 import { ConfirmDialog } from 'src/components/custom-dialog';
+import { CourseEnrollmentsDialog } from 'src/components/enrollments/course-approved-enrollments-dialog';
 
 import { useAuthContext } from 'src/auth/hooks';
 
@@ -61,6 +62,7 @@ export function InstructorCourseCard({
   const [menuAnchorEl, setMenuAnchorEl] = useState(null);
   const [statusBusy, setStatusBusy] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [enrollmentsOpen, setEnrollmentsOpen] = useState(false);
   const menuOpen = Boolean(menuAnchorEl);
 
   const applyCourseStatus = (nextStatus) => {
@@ -132,6 +134,12 @@ export function InstructorCourseCard({
       return;
     }
     toast.success(`"${course.title}" is published (demo).`);
+  };
+
+  const handleOpenEnrollments = (event) => {
+    event?.stopPropagation?.();
+    handleCloseMenu();
+    setEnrollmentsOpen(true);
   };
 
   const handleAskDeleteCourse = (event) => {
@@ -425,6 +433,16 @@ export function InstructorCourseCard({
                       />
                     </MenuItem>
 
+                    <MenuItem dense onClick={handleOpenEnrollments} sx={styles.menuItem}>
+                      <ListItemIcon sx={{ minWidth: 36 }}>
+                        <Iconify icon="solar:users-group-rounded-bold-duotone" width={20} />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary="Enrolled students"
+                        slotProps={{ primary: { typography: 'body2' } }}
+                      />
+                    </MenuItem>
+
                     <MenuItem dense onClick={handleAskDeleteCourse} sx={styles.menuItemDanger}>
                       <ListItemIcon sx={{ minWidth: 36 }}>
                         <Iconify icon="solar:trash-bin-trash-bold-duotone" width={20} />
@@ -441,6 +459,12 @@ export function InstructorCourseCard({
           ) : null}
         </Stack>
       </CardContent>
+      <CourseEnrollmentsDialog
+        open={enrollmentsOpen}
+        courseId={course.id}
+        courseTitle={course.title}
+        onClose={() => setEnrollmentsOpen(false)}
+      />
       <ConfirmDialog
         open={confirmDeleteOpen}
         onClose={() => setConfirmDeleteOpen(false)}
