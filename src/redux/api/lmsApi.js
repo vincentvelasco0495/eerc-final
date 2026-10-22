@@ -294,6 +294,29 @@ export async function resetLmsStudentPassword(publicId, payload = {}) {
   );
   return data;
 }
+export async function fetchLmsAdmins(params = {}) {
+  const { data } = await axios.get('/api/admins', { params });
+  return data;
+}
+export async function postLmsAdmin(payload = {}) {
+  const { data } = await axios.post('/api/admins', payload ?? {});
+  return data;
+}
+export async function patchLmsAdmin(publicId, payload = {}) {
+  const { data } = await axios.patch(`/api/admins/${encodeURIComponent(publicId)}`, payload ?? {});
+  return data;
+}
+export async function deleteLmsAdmin(publicId) {
+  const { data } = await axios.delete(`/api/admins/${encodeURIComponent(publicId)}`);
+  return data;
+}
+export async function resetLmsAdminPassword(publicId, payload = {}) {
+  const { data } = await axios.post(
+    `/api/admins/${encodeURIComponent(publicId)}/reset-password`,
+    payload ?? {}
+  );
+  return data;
+}
 export async function patchLmsUser(payload = {}) {
   const body = payload ?? {};
   if (typeof FormData !== 'undefined' && body instanceof FormData) {

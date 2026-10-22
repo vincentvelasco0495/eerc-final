@@ -1,0 +1,208 @@
+import * as z from 'zod';
+import { useForm } from 'react-hook-form';
+import { useState, useEffect } from 'react';
+import { useBoolean } from 'minimal-shared/hooks';
+import { zodResolver } from '@hookform/resolvers/zod';
+
+import Box from '@mui/material/Box';
+import Link from '@mui/material/Link';
+import Alert from '@mui/material/Alert';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
+
+import { paths } from 'src/routes/paths';
+import { useRouter } from 'src/routes/hooks';
+import { RouterLink } from 'src/routes/components';
+
+import axios from 'src/lib/axios';
+import { getLmsAxiosErrorMessage } from 'src/lib/lms-instructor-api';
+
+import { Iconify } from 'src/components/iconify';
+import { Form, Field, schemaUtils } from 'src/components/hook-form';
+
+import { useAuthContext } from '../../hooks';
+import { signUpAdmin } from '../../context/jwt';
+import { FormHead } from '../../components/form-head';
+import { getPostLoginRedirectPath } from '../../utils';
+
+export const AdminSignUpSchema = z
+  .object({
+    firstName: z.string().min(1, { error: 'First name is required!' }),
+    lastName: z.string().min(1, { error: 'Last name is required!' }),
+    email: schemaUtils.email(),
+    password: z.string().min(8, { error: 'Password must be at least 8 characters!' }),
+    confirmPassword: z.string().min(1, { error: 'Confirm your password!' }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Passwords must match',
+    path: ['confirmPassword'],
+  });
+
+export function JwtAdminSignUpView() {
+  const router = useRouter();
+  const showPassword = useBoolean();
+  const { checkUserSession } = useAuthContext();
+  const [errorMessage, setErrorMessage] = useState(null);
+  const [registrationOpen, setRegistrationOpen] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    axios
+      .get('/api/register-admin/status')
+      .then((res) => {
+        if (!cancelled) {
+          setRegistrationOpen(Boolean(res.data?.open));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setRegistrationOpen(true);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const methods = useForm({
+    resolver: zodResolver(AdminSignUpSchema),
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+    },
+  });
+
+  const {
+    handleSubmit,
+    formState: { isSubmitting },
+  } = methods;
+
+  const onSubmit = handleSubmit(async (data) => {
+    try {
+      setErrorMessage(null);
+      await signUpAdmin({
+        email: data.email,
+        password: data.password,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        confirmPassword: data.confirmPassword,
+      });
+      const sessionUser = await checkUserSession?.();
+      const role = sessionUser?.role ?? 'admin';
+      router.replace(getPostLoginRedirectPath(role));
+    } catch (error) {
+      setErrorMessage(getLmsAxiosErrorMessage(error, 'Could not create the admin account.'));
+    }
+  });
+
+  const renderForm = () => (
+    <Box sx={{ gap: 3, display: 'flex', flexDirection: 'column' }}>
+      <Box
+        sx={{ display: 'flex', gap: { xs: 3, sm: 2 }, flexDirection: { xs: 'column', sm: 'row' } }}
+      >
+        <Field.Text
+          name="firstName"
+          label="First name"
+          slotProps={{ inputLabel: { shrink: true } }}
+        />
+        <Field.Text
+          name="lastName"
+          label="Last name"
+          slotProps={{ inputLabel: { shrink: true } }}
+        />
+      </Box>
+
+      <Field.Text name="email" label="Email address" slotProps={{ inputLabel: { shrink: true } }} />
+
+      <Field.Text
+        name="password"
+        label="Password"
+        placeholder="Password"
+        type={showPassword.value ? 'text' : 'password'}
+        slotProps={{
+          inputLabel: { shrink: true },
+          input: {
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton onClick={showPassword.onToggle} edge="end">
+                  <Iconify icon={showPassword.value ? 'solar:eye-bold' : 'solar:eye-closed-bold'} />
+                </IconButton>
+              </InputAdornment>
+            ),
+          },
+        }}
+      />
+
+      <Field.Text
+        name="confirmPassword"
+        label="Confirm password"
+        placeholder="Password"
+        type={showPassword.value ? 'text' : 'password'}
+        slotProps={{
+          inputLabel: { shrink: true },
+          input: {
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton onClick={showPassword.onToggle} edge="end">
+                  <Iconify icon={showPassword.value ? 'solar:eye-bold' : 'solar:eye-closed-bold'} />
+                </IconButton>
+              </InputAdornment>
+            ),
+          },
+        }}
+      />
+
+      <Button
+        fullWidth
+        color="inherit"
+        size="large"
+        type="submit"
+        variant="contained"
+        loading={isSubmitting}
+        loadingIndicator="Creating admin..."
+      >
+        Create admin account
+      </Button>
+    </Box>
+  );
+
+  return (
+    <>
+      <FormHead
+        title="Register an admin"
+        description={
+          <>
+            {`Already have an account? `}
+            <Link component={RouterLink} href={paths.auth.jwt.signIn} variant="subtitle2">
+              Sign in
+            </Link>
+          </>
+        }
+        sx={{ textAlign: { xs: 'center', md: 'left' } }}
+      />
+
+      {registrationOpen === false ? (
+        <Alert severity="info">
+          Admin registration is closed because an administrator already exists. Sign in, then open
+          System Setting → Admins to create another account.
+        </Alert>
+      ) : (
+        <>
+          {!!errorMessage && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {errorMessage}
+            </Alert>
+          )}
+
+          <Form methods={methods} onSubmit={onSubmit}>
+            {renderForm()}
+          </Form>
+        </>
+      )}
+    </>
+  );
+}

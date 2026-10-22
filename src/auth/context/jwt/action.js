@@ -100,6 +100,38 @@ export const signUp = async ({ email, password, firstName, lastName, confirmPass
 };
 
 /** **************************************
+ * Admin sign up (first administrator only)
+ *************************************** */
+export const signUpAdmin = async ({ email, password, firstName, lastName, confirmPassword }) => {
+  try {
+    if (isLaravelLmsApiEnabled()) {
+      const name = `${firstName} ${lastName}`.trim();
+      const res = await axios.post('/api/register-admin', {
+        name,
+        email,
+        password,
+        password_confirmation: confirmPassword ?? password,
+      });
+
+      const { token } = res.data;
+
+      if (!token) {
+        throw new Error('Token not returned from API');
+      }
+
+      await setSession(null);
+      setLmsSanctumSession(token);
+      return;
+    }
+
+    throw new Error('Admin registration requires the LMS API.');
+  } catch (error) {
+    console.error('Error during admin sign up:', error);
+    throw error;
+  }
+};
+
+/** **************************************
  * Sign out
  *************************************** */
 export const signOut = async () => {

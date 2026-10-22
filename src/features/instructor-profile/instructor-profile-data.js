@@ -141,6 +141,11 @@ const sidebarGroups = [
         ],
       },
       {
+        label: 'Admins',
+        icon: 'solar:shield-user-bold-duotone',
+        path: paths.dashboard.settingAdmin,
+      },
+      {
         label: 'Students',
         icon: 'solar:user-rounded-bold-duotone',
         path: paths.dashboard.settingStudent,

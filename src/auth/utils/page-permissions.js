@@ -19,6 +19,7 @@ const FALLBACK_RULES = {
     { path: '/setting-honors-awards-discount', matchType: 'prefix', query: null },
     { path: '/setting-package-enroll', matchType: 'prefix', query: null },
     { path: '/setting-instructor', matchType: 'prefix', query: null },
+    { path: '/setting-admin', matchType: 'prefix', query: null },
     { path: '/setting-student', matchType: 'prefix', query: null },
     { path: '/setting-payment', matchType: 'prefix', query: null },
     { path: '/setting-profile', matchType: 'exact', query: null },

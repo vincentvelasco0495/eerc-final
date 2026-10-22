@@ -42,6 +42,7 @@ const DASHBOARD_LAYOUT_FIRST_SEGMENTS = new Set([
   'setting-instructor',
   'instructors',
   'setting-student',
+  'setting-admin',
   'students',
   'setting-payment',
   'modules',
@@ -141,6 +142,7 @@ export const paths = {
     jwt: {
       signIn: '/login',
       signUp: `${ROOTS.AUTH}/jwt/sign-up`,
+      adminSignUp: '/register-admin',
     },
     firebase: {
       signIn: `${ROOTS.AUTH}/firebase/sign-in`,
@@ -278,6 +280,7 @@ export const paths = {
     settingStudent: `/setting-student`,
     /** @deprecated Use `settingStudent` — legacy `/students` admin URL. */
     students: `/setting-student`,
+    settingAdmin: `/setting-admin`,
     settingPayment: `/setting-payment`,
     studentAssignments: `/assignments`,
     studentAssignmentLeaderboard: (assignmentId) =>

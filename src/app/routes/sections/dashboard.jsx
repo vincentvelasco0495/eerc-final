@@ -9,7 +9,7 @@ import { DashboardLayout } from 'src/layouts/dashboard';
 
 import { LoadingScreen } from 'src/components/loading-screen';
 
-import { AuthGuard, StaffGuard, PermissionGuard } from 'src/auth/guard';
+import { AuthGuard, AdminGuard, StaffGuard, PermissionGuard } from 'src/auth/guard';
 
 const CourseListPage = lazy(() => import('src/pages/course/list'));
 const CourseDetailsPage = lazy(() => import('src/pages/course/details'));
@@ -68,6 +68,7 @@ const PackageEnrollsPage = lazy(() => import('src/pages/dashboard/package-enroll
 const PackageEnrollApplicantsPage = lazy(() => import('src/pages/dashboard/package-enrolls/applicants'));
 const InstructorsPage = lazy(() => import('src/pages/dashboard/instructors'));
 const StudentsPage = lazy(() => import('src/pages/dashboard/students'));
+const AdminsPage = lazy(() => import('src/pages/dashboard/admins'));
 const PaymentMethodsPage = lazy(() => import('src/pages/dashboard/payment-methods'));
 const SettingsPage = lazy(() => import('src/pages/dashboard/settings'));
 const ContentManagementHomepageV2Page = lazy(
@@ -111,6 +112,16 @@ function withStaffGuard(Page) {
   };
 }
 
+function withAdminGuard(Page) {
+  return function AdminProtectedPage() {
+    return (
+      <AdminGuard>
+        <Page />
+      </AdminGuard>
+    );
+  };
+}
+
 const AdminDashboardPage = withPermissionGuard(InstructorProfilePage);
 const InstructorHomePage = withPermissionGuard(InstructorProfilePage);
 const ProtectedCourseCurriculumPage = withPermissionGuard(InstructorCourseCurriculumPage);
@@ -127,6 +138,7 @@ const ProtectedHonorAwardDiscountsPage = withStaffGuard(HonorAwardDiscountsPage)
 const ProtectedHonorAwardDiscountApplicantsPage = withStaffGuard(HonorAwardDiscountApplicantsPage);
 const ProtectedPackageEnrollsPage = withStaffGuard(PackageEnrollsPage);
 const ProtectedPackageEnrollApplicantsPage = withStaffGuard(PackageEnrollApplicantsPage);
+const ProtectedAdminsPage = withAdminGuard(AdminsPage);
 
 
 const dashboardLayout = () => (
@@ -274,6 +286,7 @@ export const dashboardRoutes = [
       { path: 'setting-instructor', element: <InstructorsPage /> },
       { path: 'instructors', element: <LegacyInstructorsRedirect /> },
       { path: 'instructors/*', element: <LegacyInstructorsRedirect /> },
+      { path: 'setting-admin', element: <ProtectedAdminsPage /> },
       { path: 'setting-student', element: <StudentsPage /> },
       { path: 'setting-payment', element: <PaymentMethodsPage /> },
       { path: 'students', element: <LegacyStudentsRedirect /> },

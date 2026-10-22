@@ -22,6 +22,7 @@ function JwtSignInLegacyRedirect() {
 const Jwt = {
   SignInPage: lazy(() => import('src/pages/auth/jwt/sign-in')),
   SignUpPage: lazy(() => import('src/pages/auth/jwt/sign-up')),
+  AdminSignUpPage: lazy(() => import('src/pages/auth/jwt/admin-sign-up')),
 };
 
 const authJwt = {
@@ -280,6 +281,22 @@ export const authRoutes = [
             }}
           >
             <Jwt.SignInPage />
+          </AuthSplitLayout>
+        </GuestGuard>
+      </Suspense>
+    ),
+  },
+  {
+    path: 'register-admin',
+    element: (
+      <Suspense fallback={<SplashScreen />}>
+        <GuestGuard>
+          <AuthSplitLayout
+            slotProps={{
+              section: { title: 'Register an admin' },
+            }}
+          >
+            <Jwt.AdminSignUpPage />
           </AuthSplitLayout>
         </GuestGuard>
       </Suspense>

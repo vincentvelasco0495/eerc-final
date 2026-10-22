@@ -130,6 +130,10 @@ export function JwtSignInView() {
             <Link component={RouterLink} href={paths.auth.jwt.signUp} variant="subtitle2">
               Get started
             </Link>
+            {` · `}
+            <Link component={RouterLink} href={paths.auth.jwt.adminSignUp} variant="subtitle2">
+              Register admin
+            </Link>
           </>
         }
         sx={{ textAlign: { xs: 'center', md: 'left' } }}
