@@ -18,6 +18,8 @@ import {
   enrollmentLearningModeFamily,
 } from 'src/features/enrollment/utils/enrollment-learning-mode';
 
+import { useFullScreenDialog, stackedDialogActionsSx } from './use-full-screen-dialog';
+
 export function EnrollmentSwitchLearningModeDialog({
   open,
   row,
@@ -25,6 +27,7 @@ export function EnrollmentSwitchLearningModeDialog({
   onClose,
   onConfirm,
 }) {
+  const fullScreen = useFullScreenDialog();
   const currentFamily = enrollmentLearningModeFamily(row);
   const [selected, setSelected] = useState('');
 
@@ -38,7 +41,13 @@ export function EnrollmentSwitchLearningModeDialog({
   const canSubmit = Boolean(selected) && selected !== currentFamily;
 
   return (
-    <Dialog open={open} onClose={submitting ? undefined : onClose} maxWidth="sm" fullWidth>
+    <Dialog
+      open={open}
+      onClose={submitting ? undefined : onClose}
+      maxWidth="sm"
+      fullWidth
+      fullScreen={fullScreen}
+    >
       <DialogTitle>Switch mode of learning</DialogTitle>
       <DialogContent dividers>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -69,7 +78,7 @@ export function EnrollmentSwitchLearningModeDialog({
           </Typography>
         ) : null}
       </DialogContent>
-      <DialogActions>
+      <DialogActions sx={stackedDialogActionsSx}>
         <Button onClick={onClose} disabled={submitting}>
           Cancel
         </Button>

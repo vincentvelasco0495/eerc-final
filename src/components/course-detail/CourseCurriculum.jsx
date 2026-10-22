@@ -63,6 +63,12 @@ const ModuleToggle = styled.button.attrs({ type: 'button' })`
   line-height: 1.35;
   color: ${colors.text};
   text-align: left;
+  overflow-wrap: anywhere;
+
+  @media (max-width: 600px) {
+    font-size: 16px;
+    padding: ${space(1.75)} ${space(2)};
+  }
 
   &:focus-visible {
     outline: 2px solid ${colors.primary};
@@ -119,6 +125,12 @@ const LessonRow = styled.div`
   padding: 14px ${space(2.75)};
   background: ${colors.bg};
   border-bottom: 2px solid ${colors.white};
+
+  @media (max-width: 600px) {
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    padding: 12px;
+  }
 `;
 
 const LessonRowOuter = styled.div`
@@ -137,6 +149,13 @@ const LessonRowLink = styled(RouterLink)`
   gap: ${space(2)};
   padding: 14px ${space(2.75)};
   padding-right: 10px;
+
+  @media (max-width: 600px) {
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    padding: 12px;
+    padding-right: 8px;
+  }
   margin: 0;
   text-decoration: none;
   color: inherit;
@@ -199,6 +218,7 @@ const LessonTitleText = styled.span`
   font-weight: 600;
   line-height: 1.42;
   color: ${colors.text};
+  overflow-wrap: anywhere;
 `;
 
 const MetaText = styled.span`
@@ -238,6 +258,11 @@ const RightMetaRail = styled.div`
   align-items: center;
   justify-content: flex-end;
   gap: 10px;
+
+  @media (max-width: 600px) {
+    width: 100%;
+    justify-content: flex-start;
+  }
 `;
 
 const DoneSlot = styled.div`

@@ -62,6 +62,8 @@ const PageInner = styled.div`
 
   @media (max-width: 900px) {
     padding: ${space(2)};
+    padding-left: max(${space(2)}, env(safe-area-inset-left));
+    padding-right: max(${space(2)}, env(safe-area-inset-right));
   }
 `;
 

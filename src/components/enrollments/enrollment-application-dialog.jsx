@@ -27,6 +27,8 @@ import {
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 
+import { useFullScreenDialog, stackedDialogActionsSx } from './use-full-screen-dialog';
+
 const DOCUMENT_LABELS = {
   profilePicture: 'Profile picture',
   discountProof: 'Discount proof',
@@ -147,8 +149,25 @@ function downloadBlob(blob, fileName) {
   window.setTimeout(() => URL.revokeObjectURL(blobUrl), 10_000);
 }
 
-function DocumentAttachmentRow({ label, fileName, mime, busy, onView, onDownload }) {
+function documentFileName(doc) {
+  if (!doc || typeof doc !== 'object') {
+    return null;
+  }
+  return doc.originalName || doc.original_name || doc.fileName || doc.file_name || null;
+}
+
+function DocumentAttachmentRow({
+  label,
+  fileName,
+  mime,
+  busy,
+  previewUrl,
+  onView,
+  onDownload,
+}) {
   const { icon, kind } = resolveFileMeta(fileName, mime);
+  const showImage = kind === 'Image' && Boolean(previewUrl);
+  const showPdf = kind === 'PDF' && Boolean(previewUrl);
 
   return (
     <Box>
@@ -157,9 +176,6 @@ function DocumentAttachmentRow({ label, fileName, mime, busy, onView, onDownload
       </Typography>
       <Box
         sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1.5,
           p: 1.5,
           border: '1px solid',
           borderColor: 'divider',
@@ -167,45 +183,120 @@ function DocumentAttachmentRow({ label, fileName, mime, busy, onView, onDownload
           bgcolor: 'background.neutral',
         }}
       >
-        <Box
-          sx={{
-            width: 40,
-            height: 40,
-            flexShrink: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: 1,
-            bgcolor: 'background.paper',
-            color: 'brand.accentText',
-          }}
+        <Stack
+          direction="row"
+          spacing={1.5}
+          alignItems="center"
+          sx={{ mb: showImage || showPdf ? 1.25 : 0 }}
         >
-          <Iconify icon={icon} width={22} />
-        </Box>
-
-        <Box sx={{ minWidth: 0, flex: 1 }}>
-          <Typography
-            variant="body2"
-            sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-            title={fileName}
+          <Box
+            sx={{
+              width: 40,
+              height: 40,
+              flexShrink: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 1,
+              bgcolor: 'background.paper',
+              color: 'brand.accentText',
+            }}
           >
-            {fileName}
-          </Typography>
-          <Typography variant="caption" color="text.disabled">
-            {kind}
-          </Typography>
-        </Box>
+            <Iconify icon={icon} width={22} />
+          </Box>
 
-        <Stack direction="row" spacing={0.5} flexShrink={0}>
-          <Button size="small" variant="outlined" disabled={busy} onClick={onView}>
-            {busy ? 'Opening…' : 'View'}
-          </Button>
-          <Button size="small" variant="text" disabled={busy} onClick={onDownload}>
-            Download
-          </Button>
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Typography
+              variant="body2"
+              sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+              title={fileName}
+            >
+              {fileName}
+            </Typography>
+            <Typography variant="caption" color="text.disabled">
+              {kind}
+            </Typography>
+          </Box>
+
+          <Stack direction="row" spacing={0.5} flexShrink={0} flexWrap="wrap" useFlexGap>
+            <Button size="small" variant="outlined" disabled={busy} onClick={onView}>
+              {busy ? 'Opening…' : 'View'}
+            </Button>
+            <Button size="small" variant="text" disabled={busy} onClick={onDownload}>
+              Download
+            </Button>
+          </Stack>
         </Stack>
+
+        {showImage ? (
+          <Box
+            component="img"
+            src={previewUrl}
+            alt={label}
+            onClick={onView}
+            sx={{
+              display: 'block',
+              width: 1,
+              maxHeight: 280,
+              objectFit: 'contain',
+              borderRadius: 1,
+              bgcolor: 'background.paper',
+              cursor: 'zoom-in',
+            }}
+          />
+        ) : null}
+
+        {showPdf ? (
+          <Box
+            component="iframe"
+            title={label}
+            src={previewUrl}
+            sx={{
+              display: 'block',
+              width: 1,
+              height: 280,
+              border: 0,
+              borderRadius: 1,
+              bgcolor: 'background.paper',
+            }}
+          />
+        ) : null}
       </Box>
     </Box>
+  );
+}
+
+function DocumentPreviewDialog({ open, title, kind, src, onClose }) {
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      <DialogTitle>{title}</DialogTitle>
+      <DialogContent
+        dividers
+        sx={{ display: 'flex', justifyContent: 'center', bgcolor: 'background.neutral' }}
+      >
+        {kind === 'Image' && src ? (
+          <Box
+            component="img"
+            src={src}
+            alt={title}
+            sx={{ maxWidth: 1, maxHeight: '70vh', objectFit: 'contain' }}
+          />
+        ) : null}
+        {kind === 'PDF' && src ? (
+          <Box
+            component="iframe"
+            title={title}
+            src={src}
+            sx={{ width: 1, height: '70vh', border: 0, bgcolor: 'background.paper' }}
+          />
+        ) : null}
+      </DialogContent>
+      <DialogActions>
+        <Button variant="contained" onClick={onClose}>
+          Close
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }
 
@@ -241,10 +332,13 @@ function ApplicationSection({ title, children }) {
 }
 
 export function EnrollmentApplicationDialog({ open, enrollmentId, onClose }) {
+  const fullScreen = useFullScreenDialog();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [application, setApplication] = useState(null);
   const [fileBusyKey, setFileBusyKey] = useState(null);
+  const [previewUrls, setPreviewUrls] = useState({});
+  const [lightbox, setLightbox] = useState(null);
 
   const fetchFileBlob = useCallback(
     async (fileKey, fetcher) => {
@@ -267,22 +361,48 @@ export function EnrollmentApplicationDialog({ open, enrollmentId, onClose }) {
     [enrollmentId]
   );
 
-  const handleViewDocument = useCallback(
-    async (docKey) => {
-      const blob = await fetchFileBlob(`doc:${docKey}`, () =>
-        fetchEnrollmentDocumentBlob(enrollmentId, docKey)
-      );
-      if (blob) {
-        try {
-          await openBlobInNewTab(blob);
-        } catch (err) {
-          const message =
-            typeof err === 'string' ? err : err?.message ?? 'Could not open the file.';
-          toast.error(message);
-        }
+  const openPreview = useCallback(
+    async (fileKey, fetcher, fileName, mime, label) => {
+      const { kind } = resolveFileMeta(fileName, mime);
+      const existingUrl = previewUrls[fileKey];
+      if (existingUrl && (kind === 'Image' || kind === 'PDF')) {
+        setLightbox({ title: label, kind, src: existingUrl });
+        return;
+      }
+
+      const blob = await fetchFileBlob(fileKey, fetcher);
+      if (!blob) {
+        return;
+      }
+
+      if (kind === 'Image' || kind === 'PDF') {
+        const blobUrl = URL.createObjectURL(blob);
+        setPreviewUrls((prev) => ({ ...prev, [fileKey]: blobUrl }));
+        setLightbox({ title: label, kind, src: blobUrl });
+        return;
+      }
+
+      try {
+        await openBlobInNewTab(blob);
+      } catch (err) {
+        const message =
+          typeof err === 'string' ? err : err?.message ?? 'Could not open the file.';
+        toast.error(message);
       }
     },
-    [enrollmentId, fetchFileBlob]
+    [fetchFileBlob, previewUrls]
+  );
+
+  const handleViewDocument = useCallback(
+    (docKey, fileName, mime, label) =>
+      openPreview(
+        `doc:${docKey}`,
+        () => fetchEnrollmentDocumentBlob(enrollmentId, docKey),
+        fileName,
+        mime,
+        label
+      ),
+    [enrollmentId, openPreview]
   );
 
   const handleDownloadDocument = useCallback(
@@ -297,20 +417,17 @@ export function EnrollmentApplicationDialog({ open, enrollmentId, onClose }) {
     [enrollmentId, fetchFileBlob]
   );
 
-  const handleViewPaymentProof = useCallback(async () => {
-    const blob = await fetchFileBlob('payment-proof', () =>
-      fetchEnrollmentPaymentProofBlob(enrollmentId)
-    );
-    if (blob) {
-      try {
-        await openBlobInNewTab(blob);
-      } catch (err) {
-        const message =
-          typeof err === 'string' ? err : err?.message ?? 'Could not open the file.';
-        toast.error(message);
-      }
-    }
-  }, [enrollmentId, fetchFileBlob]);
+  const handleViewPaymentProof = useCallback(
+    (fileName, mime, label) =>
+      openPreview(
+        'payment-proof',
+        () => fetchEnrollmentPaymentProofBlob(enrollmentId),
+        fileName,
+        mime,
+        label
+      ),
+    [enrollmentId, openPreview]
+  );
 
   const handleDownloadPaymentProof = useCallback(
     async (fileName) => {
@@ -328,6 +445,11 @@ export function EnrollmentApplicationDialog({ open, enrollmentId, onClose }) {
     if (!open || !enrollmentId) {
       setApplication(null);
       setError(null);
+      setPreviewUrls((prev) => {
+        Object.values(prev).forEach((url) => URL.revokeObjectURL(url));
+        return {};
+      });
+      setLightbox(null);
       return undefined;
     }
 
@@ -363,8 +485,53 @@ export function EnrollmentApplicationDialog({ open, enrollmentId, onClose }) {
   const formData = application?.formData ?? null;
   const documents = application?.documents ?? {};
 
+  useEffect(() => {
+    if (!open || !enrollmentId || !application) {
+      return undefined;
+    }
+
+    const files = application.documents && typeof application.documents === 'object' ? application.documents : {};
+    let cancelled = false;
+    const createdUrls = [];
+
+    const loadPreview = async (fileKey, fetcher) => {
+      try {
+        const blob = await fetcher();
+        if (cancelled || !(blob instanceof Blob) || blob.type?.includes('application/json')) {
+          return;
+        }
+        const blobUrl = URL.createObjectURL(blob);
+        createdUrls.push(blobUrl);
+        setPreviewUrls((prev) => ({ ...prev, [fileKey]: blobUrl }));
+      } catch {
+        /* Document is missing or not previewable. */
+      }
+    };
+
+    const jobs = Object.entries(files).flatMap(([docKey, doc]) => {
+      if (!documentFileName(doc)) {
+        return [];
+      }
+      return [
+        loadPreview(`doc:${docKey}`, () => fetchEnrollmentDocumentBlob(enrollmentId, docKey)),
+      ];
+    });
+
+    if (application.hasPaymentProof && !documentFileName(files.paymentProof)) {
+      jobs.push(loadPreview('payment-proof', () => fetchEnrollmentPaymentProofBlob(enrollmentId)));
+    }
+
+    void Promise.all(jobs);
+
+    return () => {
+      cancelled = true;
+      createdUrls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [open, enrollmentId, application]);
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth fullScreen={fullScreen}>
       <DialogTitle>Enrollment application</DialogTitle>
       <DialogContent dividers>
         {loading ? (
@@ -440,22 +607,22 @@ export function EnrollmentApplicationDialog({ open, enrollmentId, onClose }) {
 
                 const documentRows = (section.documents ?? []).map((docKey) => {
                   const doc = documents?.[docKey];
-                  const fileName = doc?.originalName;
+                  const fileName = documentFileName(doc);
+                  const label = DOCUMENT_LABELS[docKey] ?? docKey;
 
                   if (!fileName) {
-                    return (
-                      <SummaryRow key={docKey} label={DOCUMENT_LABELS[docKey] ?? docKey} value="—" />
-                    );
+                    return <SummaryRow key={docKey} label={label} value="—" />;
                   }
 
                   return (
                     <DocumentAttachmentRow
                       key={docKey}
-                      label={DOCUMENT_LABELS[docKey] ?? docKey}
+                      label={label}
                       fileName={fileName}
                       mime={doc?.mime}
+                      previewUrl={previewUrls[`doc:${docKey}`]}
                       busy={fileBusyKey === `doc:${docKey}`}
-                      onView={() => handleViewDocument(docKey)}
+                      onView={() => handleViewDocument(docKey, fileName, doc?.mime, label)}
                       onDownload={() => handleDownloadDocument(docKey, fileName)}
                     />
                   );
@@ -474,7 +641,7 @@ export function EnrollmentApplicationDialog({ open, enrollmentId, onClose }) {
               })
             )}
 
-            {application.hasPaymentProof && !documents?.paymentProof?.originalName ? (
+            {application.hasPaymentProof && !documentFileName(documents?.paymentProof) ? (
               <>
                 <Divider />
                 {application.paymentProofFileName ? (
@@ -482,8 +649,15 @@ export function EnrollmentApplicationDialog({ open, enrollmentId, onClose }) {
                     label="Legacy payment proof"
                     fileName={application.paymentProofFileName}
                     mime={null}
+                    previewUrl={previewUrls['payment-proof']}
                     busy={fileBusyKey === 'payment-proof'}
-                    onView={handleViewPaymentProof}
+                    onView={() =>
+                      handleViewPaymentProof(
+                        application.paymentProofFileName,
+                        null,
+                        'Legacy payment proof'
+                      )
+                    }
                     onDownload={() => handleDownloadPaymentProof(application.paymentProofFileName)}
                   />
                 ) : (
@@ -494,11 +668,19 @@ export function EnrollmentApplicationDialog({ open, enrollmentId, onClose }) {
           </Stack>
         ) : null}
       </DialogContent>
-      <DialogActions>
+      <DialogActions sx={stackedDialogActionsSx}>
         <Button variant="contained" onClick={onClose}>
           Close
         </Button>
       </DialogActions>
     </Dialog>
+    <DocumentPreviewDialog
+      open={Boolean(lightbox)}
+      title={lightbox?.title}
+      kind={lightbox?.kind}
+      src={lightbox?.src}
+      onClose={() => setLightbox(null)}
+    />
+    </>
   );
 }

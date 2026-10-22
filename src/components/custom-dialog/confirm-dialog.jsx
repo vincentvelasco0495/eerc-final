@@ -13,7 +13,14 @@ export function ConfirmDialog({ open, title, action, content, onClose, ...other 
 
       {content && <DialogContent sx={{ typography: 'body2' }}> {content}</DialogContent>}
 
-      <DialogActions>
+      <DialogActions
+        sx={{
+          gap: 1,
+          flexWrap: 'wrap',
+          flexDirection: { xs: 'column-reverse', sm: 'row' },
+          '& .MuiButton-root': { width: { xs: '100%', sm: 'auto' } },
+        }}
+      >
         {action}
 
         <Button variant="outlined" color="inherit" onClick={onClose}>

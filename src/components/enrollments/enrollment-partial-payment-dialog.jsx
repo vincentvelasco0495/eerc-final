@@ -23,6 +23,8 @@ import { buildEnrollmentMethodsFromPaymentApi } from 'src/features/payment-metho
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 
+import { useFullScreenDialog, stackedDialogActionsSx } from './use-full-screen-dialog';
+
 const ACCEPTED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
 const MAX_BYTES = 10 * 1024 * 1024;
 
@@ -59,6 +61,7 @@ export function EnrollmentPartialPaymentDialog({
   onClose,
   onSuccess,
 }) {
+  const fullScreen = useFullScreenDialog();
   const summary = buildPartialPaymentSummary(program, enrollment);
   const inputRef = useRef(null);
   const [amount, setAmount] = useState('');
@@ -182,7 +185,13 @@ export function EnrollmentPartialPaymentDialog({
   };
 
   return (
-    <Dialog fullWidth maxWidth="sm" open={open} onClose={isSubmitting ? undefined : onClose}>
+    <Dialog
+      fullWidth
+      maxWidth="sm"
+      fullScreen={fullScreen}
+      open={open}
+      onClose={isSubmitting ? undefined : onClose}
+    >
       <DialogTitle sx={{ pb: 1 }}>Pay partial amount</DialogTitle>
 
       <DialogContent sx={{ typography: 'body2' }}>
@@ -279,7 +288,7 @@ export function EnrollmentPartialPaymentDialog({
         </Stack>
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, pb: 2.5 }}>
+      <DialogActions sx={[stackedDialogActionsSx, { px: 3, pb: 2.5 }]}>
         <Button variant="outlined" color="inherit" onClick={onClose} disabled={isSubmitting}>
           Cancel
         </Button>

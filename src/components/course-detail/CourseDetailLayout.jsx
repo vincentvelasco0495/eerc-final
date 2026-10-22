@@ -28,6 +28,8 @@ const PageInner = styled.div`
 
   @media (max-width: 900px) {
     padding: ${space(2)};
+    padding-left: max(${space(2)}, env(safe-area-inset-left));
+    padding-right: max(${space(2)}, env(safe-area-inset-right));
   }
 `;
 
@@ -75,6 +77,7 @@ const StatusPill = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: ${space(2)};
   width: 100%;
   padding: 10px 14px;
@@ -84,6 +87,11 @@ const StatusPill = styled.div`
   background: ${brandVars.elevated};
   border: 1px solid ${colors.border};
   box-shadow: inset 0 1px 0 ${whiteAlpha(0.08)};
+
+  @media (max-width: 600px) {
+    align-items: stretch;
+    border-radius: 16px;
+  }
 `;
 
 const CompletionLeft = styled.div`
@@ -137,6 +145,10 @@ const DetailsBtn = styled.button`
 
   &:hover {
     filter: brightness(0.96);
+  }
+
+  @media (max-width: 600px) {
+    width: 100%;
   }
 
   &:focus-visible {

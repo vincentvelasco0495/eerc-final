@@ -7,11 +7,13 @@ import Table from '@mui/material/Table';
 import Button from '@mui/material/Button';
 import TableRow from '@mui/material/TableRow';
 import Skeleton from '@mui/material/Skeleton';
+import { useTheme } from '@mui/material/styles';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import TableContainer from '@mui/material/TableContainer';
 import LinearProgress from '@mui/material/LinearProgress';
 
@@ -24,6 +26,7 @@ import {
 
 import { Iconify } from 'src/components/iconify';
 
+import { EnrollmentRowActions } from './enrollment-row-actions';
 import { EnrollmentRejectDialog } from './enrollment-reject-dialog';
 import { EnrollmentApplicationDialog } from './enrollment-application-dialog';
 import { EnrollmentLearnerDetailsDialog } from './enrollment-learner-details-dialog';
@@ -31,6 +34,13 @@ import { EnrollmentPaymentHistoryDialog } from './enrollment-payment-history-dia
 import { EnrollmentSwitchLearningModeDialog } from './enrollment-switch-learning-mode-dialog';
 
 const SKELETON_ROWS = 5;
+
+const mobileCardSx = {
+  p: 1.5,
+  border: '1px solid',
+  borderColor: 'divider',
+  borderRadius: 1.5,
+};
 
 function findEnrollmentById(rows, enrollmentId) {
   if (!enrollmentId) {
@@ -57,6 +67,15 @@ const STATUS_COLOR = {
   mixed: 'default',
 };
 
+function enrollmentChildKindLabel(row) {
+  if (row.courseTitle) {
+    return row.requestKind === 'course_access'
+      ? `Course access · ${row.courseTitle}`
+      : `Course · ${row.courseTitle}`;
+  }
+  return 'Program application';
+}
+
 function StatusChips({ row }) {
   if (row?.status === 'mixed' && Array.isArray(row.statusSummary) && row.statusSummary.length > 0) {
     return (
@@ -80,7 +99,11 @@ function StatusChips({ row }) {
 
 function LearnerNameButton({ name, onClick }) {
   if (!onClick) {
-    return <Typography variant="body2">{name || '—'}</Typography>;
+    return (
+      <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
+        {name || '—'}
+      </Typography>
+    );
   }
 
   return (
@@ -91,10 +114,14 @@ function LearnerNameButton({ name, onClick }) {
       sx={{
         p: 0,
         minWidth: 0,
+        maxWidth: 1,
         justifyContent: 'flex-start',
         textTransform: 'none',
         fontWeight: 600,
         color: 'brand.accentText',
+        whiteSpace: 'normal',
+        textAlign: 'left',
+        overflowWrap: 'anywhere',
         '&:hover': { textDecoration: 'underline', background: 'transparent' },
       }}
     >
@@ -103,13 +130,18 @@ function LearnerNameButton({ name, onClick }) {
   );
 }
 
-function EnrollmentLearningModeCell({ row, canManage, isBusy, onSwitchLearningMode }) {
+function EnrollmentLearningModeCell({ row, canManage, isBusy, onSwitchLearningMode, wrap = false }) {
   const shortLabel = shortLearningModeLabel(row?.learningModeId, row?.learningModeName);
   const fullName = String(row?.learningModeName ?? '').trim();
 
   return (
     <Stack spacing={0.25} alignItems="flex-start" sx={{ minWidth: 0 }}>
-      <Typography variant="body2" title={fullName || undefined} noWrap>
+      <Typography
+        variant="body2"
+        title={fullName || undefined}
+        noWrap={!wrap}
+        sx={wrap ? { overflowWrap: 'anywhere' } : undefined}
+      >
         {shortLabel}
       </Typography>
       {canManage ? (
@@ -127,72 +159,6 @@ function EnrollmentLearningModeCell({ row, canManage, isBusy, onSwitchLearningMo
   );
 }
 
-function EnrollmentActions({
-  row,
-  canManage,
-  isBusy,
-  onStatusChange,
-  onView,
-  onReject,
-  onPaymentHistory,
-}) {
-  const isApproved = row.status === 'approved';
-  const isRejected = row.status === 'rejected';
-  const isHold = row.status === 'hold';
-
-  if (!canManage) {
-    return (
-      <Typography variant="body2" color="text.secondary">
-        —
-      </Typography>
-    );
-  }
-
-  return (
-    <Stack direction="row" spacing={1} justifyContent="flex-end" flexWrap="wrap" useFlexGap>
-      <Button size="small" variant="outlined" disabled={isBusy} onClick={() => onView(row.id)}>
-        View
-      </Button>
-      <Button
-        size="small"
-        variant="outlined"
-        color="inherit"
-        disabled={isBusy}
-        onClick={() => onPaymentHistory?.(row)}
-      >
-        Payment history
-      </Button>
-      <Button
-        size="small"
-        variant="contained"
-        color="success"
-        disabled={isBusy || isApproved}
-        onClick={() => onStatusChange?.(row, 'approved')}
-      >
-        Approve
-      </Button>
-      <Button
-        size="small"
-        variant="outlined"
-        color="warning"
-        disabled={isBusy || isHold || isRejected}
-        onClick={() => onStatusChange?.(row, 'hold')}
-      >
-        Hold
-      </Button>
-      <Button
-        size="small"
-        variant="outlined"
-        color="error"
-        disabled={isBusy || isRejected}
-        onClick={() => onReject(row)}
-      >
-        Reject
-      </Button>
-    </Stack>
-  );
-}
-
 function rowHighlightSx(row) {
   if (!enrollmentHasUnreviewedPayments(row)) {
     return undefined;
@@ -203,7 +169,7 @@ function rowHighlightSx(row) {
   };
 }
 
-function EnrollmentDataRow({
+function EnrollmentMobileCard({
   row,
   showActions,
   canManage,
@@ -218,6 +184,101 @@ function EnrollmentDataRow({
 }) {
   const isBusy = busyId === row.id;
 
+  return (
+    <Box
+      sx={{
+        ...mobileCardSx,
+        ...rowHighlightSx(row),
+        ...(isChild ? { bgcolor: 'action.hover', ml: 1.5 } : null),
+      }}
+    >
+      <Stack spacing={1}>
+        {isChild ? (
+          <Typography variant="caption" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>
+            {enrollmentChildKindLabel(row)}
+          </Typography>
+        ) : (
+          <Box>
+            <LearnerNameButton name={row.userName} onClick={() => onLearnerView?.(row)} />
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', overflowWrap: 'anywhere' }}>
+              {row.userEmail || '—'}
+            </Typography>
+          </Box>
+        )}
+        <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
+          {row.programTitle || row.programId || '—'}
+        </Typography>
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          justifyContent="space-between"
+          flexWrap="wrap"
+          useFlexGap
+        >
+          <EnrollmentLearningModeCell
+            row={row}
+            canManage={canManage}
+            isBusy={isBusy}
+            onSwitchLearningMode={onSwitchLearningMode}
+            wrap
+          />
+          <StatusChips row={row} />
+        </Stack>
+        <Typography variant="caption" color="text.secondary">
+          Submitted {row.submittedAt || '—'}
+        </Typography>
+        {showActions ? (
+          <EnrollmentRowActions
+            row={row}
+            canManage={canManage}
+            isBusy={isBusy}
+            compact
+            onStatusChange={onStatusChange}
+            onView={onView}
+            onReject={onReject}
+            onPaymentHistory={onPaymentHistory}
+          />
+        ) : null}
+      </Stack>
+    </Box>
+  );
+}
+
+function EnrollmentDataRow({
+  row,
+  showActions,
+  canManage,
+  busyId,
+  onStatusChange,
+  onView,
+  onReject,
+  onPaymentHistory,
+  onLearnerView,
+  onSwitchLearningMode,
+  isChild = false,
+  compact = false,
+}) {
+  const isBusy = busyId === row.id;
+
+  if (compact) {
+    return (
+      <EnrollmentMobileCard
+        row={row}
+        showActions={showActions}
+        canManage={canManage}
+        busyId={busyId}
+        onStatusChange={onStatusChange}
+        onView={onView}
+        onReject={onReject}
+        onPaymentHistory={onPaymentHistory}
+        onLearnerView={onLearnerView}
+        onSwitchLearningMode={onSwitchLearningMode}
+        isChild={isChild}
+      />
+    );
+  }
+
   if (isChild) {
     return (
       <TableRow
@@ -229,11 +290,7 @@ function EnrollmentDataRow({
       >
         <TableCell sx={{ pl: 5 }}>
           <Typography variant="caption" color="text.secondary">
-            {row.courseTitle
-              ? row.requestKind === 'course_access'
-                ? `Course access · ${row.courseTitle}`
-                : `Course · ${row.courseTitle}`
-              : 'Program application'}
+            {enrollmentChildKindLabel(row)}
           </Typography>
         </TableCell>
         <TableCell>
@@ -258,7 +315,7 @@ function EnrollmentDataRow({
         </TableCell>
         {showActions ? (
           <TableCell align="right">
-            <EnrollmentActions
+            <EnrollmentRowActions
               row={row}
               canManage={canManage}
               isBusy={isBusy}
@@ -294,7 +351,7 @@ function EnrollmentDataRow({
       </TableCell>
       {showActions ? (
         <TableCell align="right">
-          <EnrollmentActions
+          <EnrollmentRowActions
             row={row}
             canManage={canManage}
             isBusy={isBusy}
@@ -322,8 +379,82 @@ function LearnerGroupRow({
   onPaymentHistory,
   onLearnerView,
   onSwitchLearningMode,
+  compact = false,
 }) {
   const childEnrollments = Array.isArray(row.enrollments) ? row.enrollments : [];
+  const childRows = expanded
+    ? childEnrollments.map((child) => (
+        <EnrollmentDataRow
+          key={child.id}
+          row={child}
+          showActions={showActions}
+          canManage={canManage}
+          busyId={busyId}
+          onStatusChange={onStatusChange}
+          onView={onView}
+          onReject={onReject}
+          onPaymentHistory={onPaymentHistory}
+          onSwitchLearningMode={onSwitchLearningMode}
+          compact={compact}
+          isChild
+        />
+      ))
+    : null;
+
+  if (compact) {
+    return (
+      <Stack spacing={1}>
+        <Box sx={{ ...mobileCardSx, ...rowHighlightSx(row) }}>
+          <Stack direction="row" alignItems="flex-start" spacing={0.5}>
+            <IconButton size="small" onClick={onToggle} aria-label="Toggle program applications">
+              <Iconify
+                icon={expanded ? 'eva:arrow-ios-downward-fill' : 'eva:arrow-ios-forward-fill'}
+                width={18}
+              />
+            </IconButton>
+            <Stack spacing={0.75} sx={{ flex: 1, minWidth: 0 }}>
+              <Box>
+                <LearnerNameButton name={row.userName} onClick={() => onLearnerView?.(row)} />
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                  {row.enrollmentCount} application{row.enrollmentCount === 1 ? '' : 's'}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: 'block', overflowWrap: 'anywhere' }}
+                >
+                  {row.userEmail || '—'}
+                </Typography>
+              </Box>
+              <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
+                {row.programTitle || '—'}
+              </Typography>
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                justifyContent="space-between"
+                flexWrap="wrap"
+                useFlexGap
+              >
+                <Typography variant="body2">{learnerGroupLearningModeLabel(row)}</Typography>
+                <StatusChips row={row} />
+              </Stack>
+              <Typography variant="caption" color="text.secondary">
+                Submitted {row.submittedAt || '—'}
+              </Typography>
+              {showActions ? (
+                <Button size="small" variant="outlined" onClick={() => onLearnerView?.(row)}>
+                  View details
+                </Button>
+              ) : null}
+            </Stack>
+          </Stack>
+        </Box>
+        {childRows}
+      </Stack>
+    );
+  }
 
   return (
     <>
@@ -359,23 +490,7 @@ function LearnerGroupRow({
           </TableCell>
         ) : null}
       </TableRow>
-      {expanded
-        ? childEnrollments.map((child) => (
-            <EnrollmentDataRow
-              key={child.id}
-              row={child}
-              showActions={showActions}
-              canManage={canManage}
-              busyId={busyId}
-              onStatusChange={onStatusChange}
-              onView={onView}
-              onReject={onReject}
-              onPaymentHistory={onPaymentHistory}
-              onSwitchLearningMode={onSwitchLearningMode}
-              isChild
-            />
-          ))
-        : null}
+      {childRows}
     </>
   );
 }
@@ -391,6 +506,8 @@ export function EnrollmentTable({
   emptyMessage = 'No enrollments found',
   onPaymentVerified,
 }) {
+  const theme = useTheme();
+  const isCompact = useMediaQuery(theme.breakpoints.down('md'));
   const [rejectTarget, setRejectTarget] = useState(null);
   const [viewTargetId, setViewTargetId] = useState(null);
   const [historyTarget, setHistoryTarget] = useState(null);
@@ -455,6 +572,54 @@ export function EnrollmentTable({
   const showActions = showActionsColumn || canManage;
   const colSpan = showActions ? 7 : 6;
 
+  const renderedRows =
+    !showSkeleton && rows.length > 0
+      ? rows.map((row) => {
+          if (row?.isLearnerGroup && Array.isArray(row.enrollments) && row.enrollments.length > 1) {
+            return (
+              <LearnerGroupRow
+                key={row.id}
+                row={row}
+                expanded={Boolean(expandedGroups[row.id])}
+                onToggle={() => toggleGroup(row.id)}
+                showActions={showActions}
+                canManage={canManage}
+                busyId={busyId}
+                onStatusChange={onStatusChange}
+                onView={handleView}
+                onReject={handleReject}
+                onPaymentHistory={handlePaymentHistory}
+                onLearnerView={handleLearnerView}
+                onSwitchLearningMode={handleSwitchLearningMode}
+                compact={isCompact}
+              />
+            );
+          }
+
+          const flatRow =
+            row?.isLearnerGroup && Array.isArray(row.enrollments) && row.enrollments.length === 1
+              ? row.enrollments[0]
+              : row;
+
+          return (
+            <EnrollmentDataRow
+              key={flatRow.id}
+              row={flatRow}
+              showActions={showActions}
+              canManage={canManage}
+              busyId={busyId}
+              onStatusChange={onStatusChange}
+              onView={handleView}
+              onReject={handleReject}
+              onPaymentHistory={handlePaymentHistory}
+              onLearnerView={handleLearnerView}
+              onSwitchLearningMode={handleSwitchLearningMode}
+              compact={isCompact}
+            />
+          );
+        })
+      : null;
+
   return (
     <Box sx={{ position: 'relative' }}>
       {loading && rows.length > 0 ? (
@@ -469,97 +634,81 @@ export function EnrollmentTable({
           }}
         />
       ) : null}
-      <TableContainer sx={{ overflowX: 'auto' }}>
-        <Table
-          size="small"
+
+      {isCompact ? (
+        <Stack
+          spacing={1.25}
           sx={{
-            tableLayout: 'fixed',
-            minWidth: showActions ? 1180 : 860,
             opacity: loading && rows.length > 0 ? 0.72 : 1,
-            transition: (theme) => theme.transitions.create('opacity', { duration: 160 }),
-            '& th, & td': { verticalAlign: 'middle' },
-            '& td:not(:last-of-type)': { overflowWrap: 'anywhere' },
+            transition: (t) => t.transitions.create('opacity', { duration: 160 }),
           }}
         >
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ width: 220 }}>Learner</TableCell>
-              <TableCell sx={{ width: 180 }}>Email</TableCell>
-              <TableCell sx={{ width: 180 }}>Program</TableCell>
-              <TableCell sx={{ width: 150 }}>Mode of learning</TableCell>
-              <TableCell sx={{ width: 110 }}>Submitted</TableCell>
-              <TableCell sx={{ width: 110 }}>Status</TableCell>
-              {showActions ? <TableCell align="right" sx={{ width: 230 }}>Actions</TableCell> : null}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {showSkeleton
-              ? Array.from({ length: SKELETON_ROWS }).map((_, i) => (
-                  <TableRow key={`sk-${i}`}>
-                    <TableCell colSpan={colSpan} sx={{ py: 1.5 }}>
-                      <Skeleton variant="rounded" height={40} animation="wave" />
-                    </TableCell>
-                  </TableRow>
-                ))
-              : null}
-
-            {!showSkeleton && !loading && rows.length === 0 ? (
+          {showSkeleton
+            ? Array.from({ length: SKELETON_ROWS }).map((_, i) => (
+                <Skeleton key={`sk-${i}`} variant="rounded" height={92} animation="wave" />
+              ))
+            : null}
+          {!showSkeleton && !loading && rows.length === 0 ? (
+            <Typography variant="body2" color="text.secondary" sx={{ py: 6, textAlign: 'center' }}>
+              {emptyMessage}
+            </Typography>
+          ) : null}
+          {renderedRows}
+        </Stack>
+      ) : (
+        <TableContainer sx={{ overflowX: 'auto' }}>
+          <Table
+            size="small"
+            sx={{
+              tableLayout: 'fixed',
+              minWidth: showActions ? 1180 : 860,
+              opacity: loading && rows.length > 0 ? 0.72 : 1,
+              transition: (t) => t.transitions.create('opacity', { duration: 160 }),
+              '& th, & td': { verticalAlign: 'middle' },
+              '& td:not(:last-of-type)': { overflowWrap: 'anywhere' },
+            }}
+          >
+            <TableHead>
               <TableRow>
-                <TableCell colSpan={colSpan} align="center" sx={{ py: 6 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    {emptyMessage}
-                  </Typography>
-                </TableCell>
+                <TableCell sx={{ width: 220 }}>Learner</TableCell>
+                <TableCell sx={{ width: 180 }}>Email</TableCell>
+                <TableCell sx={{ width: 180 }}>Program</TableCell>
+                <TableCell sx={{ width: 150 }}>Mode of learning</TableCell>
+                <TableCell sx={{ width: 110 }}>Submitted</TableCell>
+                <TableCell sx={{ width: 110 }}>Status</TableCell>
+                {showActions ? (
+                  <TableCell align="right" sx={{ width: 230 }}>
+                    Actions
+                  </TableCell>
+                ) : null}
               </TableRow>
-            ) : null}
+            </TableHead>
+            <TableBody>
+              {showSkeleton
+                ? Array.from({ length: SKELETON_ROWS }).map((_, i) => (
+                    <TableRow key={`sk-${i}`}>
+                      <TableCell colSpan={colSpan} sx={{ py: 1.5 }}>
+                        <Skeleton variant="rounded" height={40} animation="wave" />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                : null}
 
-            {!showSkeleton && rows.length > 0
-              ? rows.map((row) => {
-                  if (row?.isLearnerGroup && Array.isArray(row.enrollments) && row.enrollments.length > 1) {
-                    return (
-                      <LearnerGroupRow
-                        key={row.id}
-                        row={row}
-                        expanded={Boolean(expandedGroups[row.id])}
-                        onToggle={() => toggleGroup(row.id)}
-                        showActions={showActions}
-                        canManage={canManage}
-                        busyId={busyId}
-                        onStatusChange={onStatusChange}
-                        onView={handleView}
-                        onReject={handleReject}
-                        onPaymentHistory={handlePaymentHistory}
-                        onLearnerView={handleLearnerView}
-                        onSwitchLearningMode={handleSwitchLearningMode}
-                      />
-                    );
-                  }
+              {!showSkeleton && !loading && rows.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={colSpan} align="center" sx={{ py: 6 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      {emptyMessage}
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : null}
 
-                  const flatRow =
-                    row?.isLearnerGroup && Array.isArray(row.enrollments) && row.enrollments.length === 1
-                      ? row.enrollments[0]
-                      : row;
-
-                  return (
-                    <EnrollmentDataRow
-                      key={flatRow.id}
-                      row={flatRow}
-                      showActions={showActions}
-                      canManage={canManage}
-                      busyId={busyId}
-                      onStatusChange={onStatusChange}
-                      onView={handleView}
-                      onReject={handleReject}
-                      onPaymentHistory={handlePaymentHistory}
-                      onLearnerView={handleLearnerView}
-                      onSwitchLearningMode={handleSwitchLearningMode}
-                    />
-                  );
-                })
-              : null}
-          </TableBody>
-        </Table>
-      </TableContainer>
+              {renderedRows}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
 
       <EnrollmentRejectDialog
         open={Boolean(rejectTarget)}

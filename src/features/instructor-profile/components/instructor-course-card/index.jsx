@@ -346,7 +346,15 @@ export function InstructorCourseCard({
             <>
               <Divider />
 
-              <Stack direction="row" spacing={1} justifyContent="space-between" alignItems="flex-end">
+              <Stack
+                direction="row"
+                spacing={1}
+                justifyContent="space-between"
+                alignItems="flex-end"
+                flexWrap="wrap"
+                useFlexGap
+                sx={{ rowGap: 1 }}
+              >
                 <Stack spacing={0.25}>
                   <Typography variant="caption" sx={styles.statusCaption}>
                     Course status:

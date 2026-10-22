@@ -20,6 +20,7 @@ export function ExportExcelButton({
   disabled = false,
   onExport,
   successMessage = 'List exported to Excel.',
+  children,
 }) {
   const [exporting, setExporting] = useState(false);
   const [from, setFrom] = useState(null);
@@ -51,7 +52,15 @@ export function ExportExcelButton({
   };
 
   return (
-    <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
+    <Stack
+      direction={{ xs: 'column', sm: 'row' }}
+      alignItems={{ xs: 'stretch', sm: 'center' }}
+      spacing={1}
+      flexWrap="wrap"
+      useFlexGap
+      sx={{ width: { xs: 1, sm: 'auto' } }}
+    >
+      {children}
       <DatePicker
         label="From"
         value={from}
@@ -59,7 +68,10 @@ export function ExportExcelButton({
         maxDate={to || undefined}
         slotProps={{
           field: { clearable: true },
-          textField: { size: 'small', sx: { width: 148 } },
+          textField: {
+            size: 'small',
+            sx: { width: { xs: 1, sm: 200 }, minWidth: { xs: 0, sm: 200 } },
+          },
         }}
       />
       <DatePicker
@@ -69,7 +81,10 @@ export function ExportExcelButton({
         minDate={from || undefined}
         slotProps={{
           field: { clearable: true },
-          textField: { size: 'small', sx: { width: 148 } },
+          textField: {
+            size: 'small',
+            sx: { width: { xs: 1, sm: 200 }, minWidth: { xs: 0, sm: 200 } },
+          },
         }}
       />
       <Button
@@ -79,6 +94,7 @@ export function ExportExcelButton({
         startIcon={<Iconify icon="solar:export-bold" />}
         onClick={handleClick}
         disabled={disabled || exporting || rangeError}
+        sx={{ width: { xs: 1, sm: 'auto' } }}
       >
         {exporting ? 'Exporting…' : 'Export Excel'}
       </Button>

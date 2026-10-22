@@ -28,6 +28,8 @@ import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 import { ConfirmDialog } from 'src/components/custom-dialog';
 
+import { useFullScreenDialog, stackedDialogActionsSx } from './use-full-screen-dialog';
+
 const STATUS_COLOR = {
   approved: 'success',
   pending: 'warning',
@@ -44,6 +46,7 @@ function matchesSearch(row, search) {
 }
 
 export function CourseEnrollmentsDialog({ open, courseId, courseTitle, onClose }) {
+  const fullScreen = useFullScreenDialog();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -154,7 +157,13 @@ export function CourseEnrollmentsDialog({ open, courseId, courseTitle, onClose }
 
   return (
     <>
-      <Dialog open={open} onClose={busy ? undefined : onClose} maxWidth="md" fullWidth>
+      <Dialog
+        open={open}
+        onClose={busy ? undefined : onClose}
+        maxWidth="md"
+        fullWidth
+        fullScreen={fullScreen}
+      >
         <DialogTitle sx={{ pb: 1 }}>{title}</DialogTitle>
         <DialogContent dividers>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -168,7 +177,7 @@ export function CourseEnrollmentsDialog({ open, courseId, courseTitle, onClose }
             placeholder="Name, email, or status…"
             value={searchDraft}
             onChange={(event) => setSearchDraft(event.target.value)}
-            sx={{ mb: 2, maxWidth: 360 }}
+            sx={{ mb: 2, width: 1, maxWidth: { xs: '100%', sm: 360 } }}
           />
 
           {loading ? (
@@ -191,7 +200,86 @@ export function CourseEnrollmentsDialog({ open, courseId, courseTitle, onClose }
             </Typography>
           ) : null}
 
-          {!loading && !error && visibleRows.length > 0 ? (
+          {!loading && !error && visibleRows.length > 0 && fullScreen ? (
+            <Stack spacing={1.25}>
+              <Stack direction="row" alignItems="center" spacing={0.5}>
+                <Checkbox
+                  size="small"
+                  checked={allVisibleSelected}
+                  indeterminate={selectedVisibleCount > 0 && !allVisibleSelected}
+                  onChange={toggleAllVisible}
+                  inputProps={{ 'aria-label': 'Select all enrolled students' }}
+                />
+                <Typography variant="body2">Select all</Typography>
+              </Stack>
+              {visibleRows.map((row) => {
+                const checked = selectedIds.includes(row.id);
+                return (
+                  <Box
+                    key={row.id}
+                    sx={{
+                      p: 1.5,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      borderRadius: 1.5,
+                      bgcolor: checked ? 'action.selected' : 'transparent',
+                    }}
+                  >
+                    <Stack direction="row" spacing={0.5} alignItems="flex-start">
+                      <Checkbox
+                        size="small"
+                        checked={checked}
+                        onChange={() => toggleRow(row.id)}
+                        inputProps={{ 'aria-label': `Select ${row.userName || 'learner'}` }}
+                      />
+                      <Stack spacing={0.75} sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography variant="subtitle2" sx={{ overflowWrap: 'anywhere' }}>
+                          {row.userName || '—'}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>
+                          {row.userEmail || '—'}
+                        </Typography>
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          alignItems="center"
+                          flexWrap="wrap"
+                          useFlexGap
+                        >
+                          <Chip
+                            size="small"
+                            label={row.status}
+                            color={STATUS_COLOR[row.status] ?? 'default'}
+                          />
+                          <Typography variant="caption" color="text.secondary">
+                            {shortLearningModeLabel(row.learningModeId, row.learningModeName)}
+                          </Typography>
+                        </Stack>
+                        <Typography variant="caption" color="text.secondary">
+                          Submitted {row.submittedAt || '—'}
+                        </Typography>
+                      </Stack>
+                      <Tooltip title="Delete enrollment">
+                        <span>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            disabled={busy}
+                            aria-label={`Delete ${row.userName || 'learner'}`}
+                            onClick={() => setPendingDelete({ kind: 'one', row })}
+                          >
+                            <Iconify icon="solar:trash-bin-trash-bold" width={18} />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    </Stack>
+                  </Box>
+                );
+              })}
+            </Stack>
+          ) : null}
+
+          {!loading && !error && visibleRows.length > 0 && !fullScreen ? (
             <Box sx={{ overflowX: 'auto' }}>
               <Table size="small" sx={{ minWidth: 720 }}>
                 <TableHead>
@@ -264,7 +352,9 @@ export function CourseEnrollmentsDialog({ open, courseId, courseTitle, onClose }
             </Box>
           ) : null}
         </DialogContent>
-        <DialogActions sx={{ flexWrap: 'wrap', gap: 1 }}>
+        <DialogActions
+          sx={[stackedDialogActionsSx, { flexDirection: { xs: 'column', sm: 'row' } }]}
+        >
           {!loading && !error && rows.length > 0 ? (
             <>
               <Button
@@ -285,7 +375,7 @@ export function CourseEnrollmentsDialog({ open, courseId, courseTitle, onClose }
               </Button>
             </>
           ) : null}
-          <Box sx={{ flex: 1 }} />
+          <Box sx={{ flex: { xs: '0 0 auto', sm: 1 }, display: { xs: 'none', sm: 'block' } }} />
           <Button onClick={onClose} disabled={busy}>
             Close
           </Button>

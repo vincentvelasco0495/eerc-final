@@ -2,10 +2,12 @@ import axios from 'src/lib/axios';
 import { CONFIG } from 'src/global-config';
 import { fetchLmsExcelExport } from 'src/lib/lms-excel-export';
 import {
+  deleteEnrollment as mockDeleteEnrollment,
   uploadAdminModule as mockUploadAdminModule,
   createBatchEnroll as mockCreateBatchEnroll,
   updateBatchEnroll as mockUpdateBatchEnroll,
   deleteBatchEnroll as mockDeleteBatchEnroll,
+  deleteEnrollments as mockDeleteEnrollments,
   createLearningMode as mockCreateLearningMode,
   updateLearningMode as mockUpdateLearningMode,
   deleteLearningMode as mockDeleteLearningMode,
@@ -23,13 +25,11 @@ import {
   fetchQuizQuestionSet as mockFetchQuizQuestionSet,
   toggleModuleVisibility as mockToggleModuleVisibility,
   updateEnrollmentStatus as mockUpdateEnrollmentStatus,
+  fetchCourseEnrollments as mockFetchCourseEnrollments,
   createHonorAwardDiscount as mockCreateHonorAwardDiscount,
   updateHonorAwardDiscount as mockUpdateHonorAwardDiscount,
   deleteHonorAwardDiscount as mockDeleteHonorAwardDiscount,
   updateEnrollmentLearningMode as mockUpdateEnrollmentLearningMode,
-  fetchCourseEnrollments as mockFetchCourseEnrollments,
-  deleteEnrollment as mockDeleteEnrollment,
-  deleteEnrollments as mockDeleteEnrollments,
 } from 'src/services/lms.service';
 
 const apiRoot = '/api';
@@ -736,11 +736,11 @@ export async function fetchEnrollmentApplication(publicId) {
   return payload;
 }
 
-export async function fetchEnrollmentExcelExport({ search = '', from, to } = {}) {
+export async function fetchEnrollmentExcelExport({ search = '', program = '', from, to } = {}) {
   if (isLmsLiveApi()) {
     return fetchLmsExcelExport(
       `${apiRoot}/enrollments/export`,
-      { search, from, to },
+      { search, program, from, to },
       `enrollments-${new Date().toISOString().slice(0, 10)}.xlsx`
     );
   }

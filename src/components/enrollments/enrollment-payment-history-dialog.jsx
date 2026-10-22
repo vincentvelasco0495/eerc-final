@@ -28,6 +28,8 @@ import {
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 
+import { useFullScreenDialog, stackedDialogActionsSx } from './use-full-screen-dialog';
+
 function verificationChipColor(status) {
   if (status === PAYMENT_VERIFICATION.CORRECT) {
     return 'success';
@@ -46,6 +48,7 @@ export function EnrollmentPaymentHistoryDialog({
   onClose,
   onVerified,
 }) {
+  const fullScreen = useFullScreenDialog();
   const [downloadingId, setDownloadingId] = useState(null);
   const [verifyingId, setVerifyingId] = useState(null);
 
@@ -124,7 +127,7 @@ export function EnrollmentPaymentHistoryDialog({
   };
 
   return (
-    <Dialog fullWidth maxWidth="sm" open={open} onClose={handleClose}>
+    <Dialog fullWidth maxWidth="sm" fullScreen={fullScreen} open={open} onClose={handleClose}>
       <DialogTitle>Payment history</DialogTitle>
       <DialogContent dividers>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -229,7 +232,7 @@ export function EnrollmentPaymentHistoryDialog({
           </List>
         )}
       </DialogContent>
-      <DialogActions>
+      <DialogActions sx={stackedDialogActionsSx}>
         <Button onClick={handleClose} disabled={Boolean(downloadingId || verifyingId)}>
           Close
         </Button>

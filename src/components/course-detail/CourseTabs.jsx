@@ -4,8 +4,10 @@ import { radii, space, colors } from './course-detail-tokens';
 
 const TabsRoot = styled.nav`
   margin: 0 0 ${space(2.5)};
+  padding-inline: 2px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
 `;
 
 const TabsList = styled.div`
@@ -28,6 +30,11 @@ const TabBtn = styled.button`
   color: ${(props) => (props.$active ? colors.accentText : colors.muted)};
   white-space: nowrap;
   transition: color 0.15s ease;
+
+  @media (max-width: 600px) {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
 
   &::after {
     content: '';

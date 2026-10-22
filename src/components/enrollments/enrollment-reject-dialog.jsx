@@ -8,6 +8,8 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 
+import { useFullScreenDialog, stackedDialogActionsSx } from './use-full-screen-dialog';
+
 export function EnrollmentRejectDialog({
   open,
   learnerName = '',
@@ -15,6 +17,7 @@ export function EnrollmentRejectDialog({
   onClose,
   onConfirm,
 }) {
+  const fullScreen = useFullScreenDialog();
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
 
@@ -35,7 +38,13 @@ export function EnrollmentRejectDialog({
   };
 
   return (
-    <Dialog open={open} onClose={submitting ? undefined : onClose} maxWidth="sm" fullWidth>
+    <Dialog
+      open={open}
+      onClose={submitting ? undefined : onClose}
+      maxWidth="sm"
+      fullWidth
+      fullScreen={fullScreen}
+    >
       <DialogTitle>Reject enrollment</DialogTitle>
       <DialogContent dividers>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -62,7 +71,7 @@ export function EnrollmentRejectDialog({
           }}
         />
       </DialogContent>
-      <DialogActions>
+      <DialogActions sx={stackedDialogActionsSx}>
         <Button onClick={onClose} disabled={submitting}>
           Cancel
         </Button>

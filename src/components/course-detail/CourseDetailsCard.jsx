@@ -11,7 +11,7 @@ const Title = styled.h2`
 
 const Row = styled.div`
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: ${space(2)};
   padding: 10px 0;
@@ -45,8 +45,11 @@ const IconBox = styled.span`
 `;
 
 const ValueText = styled.span`
+  min-width: 0;
   font-weight: 700;
   color: ${colors.text};
+  text-align: right;
+  overflow-wrap: anywhere;
 `;
 
 /** Tiny inline SVGs — no external icon pack. */

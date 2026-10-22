@@ -31,7 +31,11 @@ export const styles = {
   cardContent: { p: 1.5 },
   categoryCaptionOuter: { opacity: 0.84 },
   categoryCaption: { color: 'text.secondary' },
-  title: { minHeight: 58, lineHeight: 1.3 },
+  title: {
+    minHeight: { xs: 0, sm: 58 },
+    lineHeight: 1.3,
+    overflowWrap: 'anywhere',
+  },
   courseMetaIcon: { color: 'text.secondary', flexShrink: 0 },
   courseMetaText: { color: 'text.secondary', fontSize: '0.8125rem', lineHeight: 1.35 },
   metaRow: {

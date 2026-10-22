@@ -21,6 +21,8 @@ import { buildEnrollmentMethodsFromPaymentApi } from 'src/features/payment-metho
 
 import { Iconify } from 'src/components/iconify';
 
+import { useFullScreenDialog, stackedDialogActionsSx } from './use-full-screen-dialog';
+
 const ACCEPTED_MIME = new Set([
   'image/jpeg',
   'image/png',
@@ -65,6 +67,7 @@ export function EnrollmentPaymentDialog({
   onClose,
   onSubmit,
 }) {
+  const fullScreen = useFullScreenDialog();
   const feeLabel = getProgramEnrollmentFeeLabel({ programId, programCode, programTitle });
   const inputRef = useRef(null);
   const [proofFile, setProofFile] = useState(null);
@@ -149,7 +152,13 @@ export function EnrollmentPaymentDialog({
   };
 
   return (
-    <Dialog fullWidth maxWidth="sm" open={open} onClose={submitting ? undefined : onClose}>
+    <Dialog
+      fullWidth
+      maxWidth="sm"
+      fullScreen={fullScreen}
+      open={open}
+      onClose={submitting ? undefined : onClose}
+    >
       <DialogTitle sx={{ pb: 1 }}>{title}</DialogTitle>
 
       <DialogContent sx={{ typography: 'body2' }}>
@@ -223,7 +232,7 @@ export function EnrollmentPaymentDialog({
         </Stack>
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, pb: 2.5 }}>
+      <DialogActions sx={[stackedDialogActionsSx, { px: 3, pb: 2.5 }]}>
         <Button variant="outlined" color="inherit" onClick={onClose} disabled={submitting}>
           Cancel
         </Button>

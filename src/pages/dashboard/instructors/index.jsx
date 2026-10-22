@@ -391,7 +391,7 @@ export default function InstructorsPage() {
           ) : null}
 
           <Card>
-            <CardContent>
+            <CardContent sx={{ px: { xs: 1.5, sm: 3 }, py: { xs: 2, sm: 3 } }}>
               <Stack spacing={2}>
                 <Stack
                   direction="row"

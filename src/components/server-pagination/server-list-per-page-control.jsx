@@ -17,7 +17,7 @@ export function ServerListPerPageControl({
   selectSx,
 }) {
   return (
-    <Stack direction="row" spacing={1} alignItems="center" sx={{ flexShrink: 0 }}>
+    <Stack direction="row" spacing={1} alignItems="center" sx={{ flexShrink: 0, minWidth: 0 }}>
       <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
         {label}
       </Typography>

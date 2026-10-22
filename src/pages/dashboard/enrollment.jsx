@@ -5,11 +5,15 @@ import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Stack from '@mui/material/Stack';
 import Alert from '@mui/material/Alert';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
+import InputLabel from '@mui/material/InputLabel';
 import Typography from '@mui/material/Typography';
+import FormControl from '@mui/material/FormControl';
 import CardContent from '@mui/material/CardContent';
 
-import { useLmsUser, useLmsEnrollmentsPaginated } from 'src/hooks/use-lms';
+import { useLmsUser, useLmsPrograms, useLmsEnrollmentsPaginated } from 'src/hooks/use-lms';
 
 import { CONFIG } from 'src/global-config';
 import { getLmsAxiosErrorMessage } from 'src/lib/lms-instructor-api';
@@ -63,7 +67,9 @@ export default function EnrollmentPage() {
   } = useLmsEnrollmentsPaginated(page, perPage, debouncedSearch);
   const { user } = useLmsUser();
   const { user: authUser } = useAuthContext();
+  const { programs } = useLmsPrograms();
   const [busyId, setBusyId] = useState(null);
+  const [exportProgramId, setExportProgramId] = useState('');
 
   const normalizeRole = (account) =>
     typeof account?.role === 'string' ? account.role.trim().toLowerCase() : '';
@@ -193,11 +199,12 @@ export default function EnrollmentPage() {
   const handleExportExcel = useCallback(async ({ from, to } = {}) => {
     const { blob, fileName } = await fetchEnrollmentExcelExport({
       search: debouncedSearch,
+      program: exportProgramId,
       from,
       to,
     });
     downloadBlob(blob, fileName);
-  }, [debouncedSearch]);
+  }, [debouncedSearch, exportProgramId]);
 
   return (
     <>
@@ -216,7 +223,7 @@ export default function EnrollmentPage() {
           {listErrorMessage ? <Alert severity="error">{listErrorMessage}</Alert> : null}
 
           <Card>
-            <CardContent>
+            <CardContent sx={{ px: { xs: 1.5, sm: 3 }, py: { xs: 2, sm: 3 } }}>
               <Stack spacing={2}>
                 <Stack
                   direction="row"
@@ -235,7 +242,24 @@ export default function EnrollmentPage() {
                         disabled={listLoading}
                         onExport={handleExportExcel}
                         successMessage="Enrollment list exported."
-                      />
+                      >
+                        <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 200 } }}>
+                          <InputLabel id="enrollment-export-program-label">Program</InputLabel>
+                          <Select
+                            labelId="enrollment-export-program-label"
+                            label="Program"
+                            value={exportProgramId}
+                            onChange={(event) => setExportProgramId(String(event.target.value ?? ''))}
+                          >
+                            <MenuItem value="">All programs</MenuItem>
+                            {(programs ?? []).map((program) => (
+                              <MenuItem key={program.id} value={program.id}>
+                                {program.title || program.id}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      </ExportExcelButton>
                     ) : null}
                     <ServerListPerPageControl
                       perPage={perPage}
@@ -246,7 +270,7 @@ export default function EnrollmentPage() {
                 </Stack>
                 <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 720 }}>
                   {isInstructorLike
-                    ? 'Search matches learner name, email, program title, enrollment id, or status. Click a learner name to view their details. Each learner appears once; expand to review individual programs. Rows highlighted in yellow have student payments waiting for your review in Payment history. Export Excel downloads every matching application, not only this page.'
+                    ? 'Search matches learner name, email, program title, enrollment id, or status. Click a learner name to view their details. Each learner appears once; expand to review individual programs. Rows highlighted in yellow have student payments waiting for your review in Payment history. Export Excel includes the application form details. Uploaded photos are embedded in the spreadsheet; PDFs are listed by file name. Choose a program in the toolbar to limit the spreadsheet to that program.'
                     : 'Courses you have applied for appear below with their current approval status.'}
                 </Typography>
                 {isInstructorLike ? (
