@@ -2,16 +2,24 @@ import styled from 'styled-components';
 import { useMemo, useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import Button from '@mui/material/Button';
 import Skeleton from '@mui/material/Skeleton';
 
 import { goldAlpha, brandVars } from 'src/theme';
+import { fetchCourseLibraryTabs } from 'src/redux/api/lmsApi';
+
+import { Iconify } from 'src/components/iconify';
 
 import { CourseTabs } from './CourseTabs';
 import { CourseCurriculum } from './CourseCurriculum';
+import { CourseLibraryPanel } from './CourseLibraryPanel';
+import { CourseTabsManageDialog } from './CourseTabsManageDialog';
 import { radii, space, colors, shadow } from './course-detail-tokens';
 import {
   tabKeys,
   tabEmptyMessages,
+  DEFAULT_COURSE_TAB_LABELS,
   resolveCourseDetailTabKey,
   filterCurriculumModulesForTab,
 } from './course-detail-data';
@@ -89,19 +97,57 @@ export function CourseContent({
   heroImageUrl,
   curriculumModules,
   courseLookup,
+  courseId,
   requiresEnrollment = false,
   canAccessLessons = true,
   allowedTabKeys,
+  libraryTabs: libraryTabsProp,
+  canManageLibrary = false,
   programCourses,
   programCoursesHeading,
 }) {
-  const tabOptions = useMemo(() => {
-    if (!Array.isArray(allowedTabKeys)) {
-      return [...tabKeys];
+  const [libraryTabs, setLibraryTabs] = useState(() =>
+    Array.isArray(libraryTabsProp) ? libraryTabsProp : []
+  );
+  const [manageOpen, setManageOpen] = useState(false);
+
+  useEffect(() => {
+    setLibraryTabs(Array.isArray(libraryTabsProp) ? libraryTabsProp : []);
+  }, [libraryTabsProp]);
+
+  const refreshLibraryTabs = useCallback(async () => {
+    if (!courseId) {
+      return;
     }
-    return allowedTabKeys.filter((key) => tabKeys.includes(key));
-  }, [allowedTabKeys]);
-  const defaultTab = tabOptions[0] ?? 'quiz';
+    const payload = await fetchCourseLibraryTabs(courseId);
+    setLibraryTabs(Array.isArray(payload?.data) ? payload.data : []);
+  }, [courseId]);
+
+  const extraTabItems = useMemo(
+    () =>
+      (libraryTabs ?? []).map((tab) => ({
+        key: tab.key,
+        label: tab.title,
+        id: tab.id,
+        folders: tab.folders,
+      })),
+    [libraryTabs]
+  );
+
+  const tabOptions = useMemo(() => {
+    const defaultAllowed = Array.isArray(allowedTabKeys)
+      ? tabKeys.filter((key) => allowedTabKeys.includes(key))
+      : [...tabKeys];
+    const extrasAllowed = Array.isArray(allowedTabKeys)
+      ? extraTabItems.filter((item) => allowedTabKeys.includes(item.key) || canManageLibrary)
+      : extraTabItems;
+    return [
+      ...defaultAllowed.map((key) => ({ key, label: DEFAULT_COURSE_TAB_LABELS[key] ?? key })),
+      ...extrasAllowed.map((item) => ({ key: item.key, label: item.label })),
+    ];
+  }, [allowedTabKeys, canManageLibrary, extraTabItems]);
+  const tabOptionKeys = useMemo(() => tabOptions.map((item) => item.key), [tabOptions]);
+  const defaultTab = tabOptionKeys[0] ?? 'quiz';
   const [tabKey, setTabKey] = useState(defaultTab);
   const filteredModules = useMemo(
     () => filterCurriculumModulesForTab(curriculumModules, tabKey),
@@ -122,24 +168,24 @@ export function CourseContent({
   useEffect(() => {
     const applyHashTab = () => {
       const resolved = resolveCourseDetailTabKey(window.location.hash);
-      if (resolved && tabOptions.includes(resolved)) {
+      if (resolved && tabOptionKeys.includes(resolved)) {
         setTabKey(resolved);
         return;
       }
-      if (tabOptions.length > 0) {
-        selectTab(tabOptions[0]);
+      if (tabOptionKeys.length > 0) {
+        selectTab(tabOptionKeys[0]);
       }
     };
     applyHashTab();
     window.addEventListener('hashchange', applyHashTab);
     return () => window.removeEventListener('hashchange', applyHashTab);
-  }, [selectTab, tabOptions]);
+  }, [selectTab, tabOptionKeys]);
 
   useEffect(() => {
-    if (tabOptions.length > 0 && !tabOptions.includes(tabKey)) {
-      selectTab(tabOptions[0]);
+    if (tabOptionKeys.length > 0 && !tabOptionKeys.includes(tabKey)) {
+      selectTab(tabOptionKeys[0]);
     }
-  }, [selectTab, tabKey, tabOptions]);
+  }, [selectTab, tabKey, tabOptionKeys]);
 
   const [bannerLoadFailed, setBannerLoadFailed] = useState(false);
 
@@ -190,17 +236,55 @@ export function CourseContent({
       ) : null}
 
       {canAccessLessons && tabOptions.length > 0 ? (
-        <CourseTabs activeKey={tabKey} onChange={selectTab} options={tabOptions} />
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          flexWrap="wrap"
+          gap={1}
+          sx={{ mb: 0 }}
+        >
+          <CourseTabs activeKey={tabKey} onChange={selectTab} options={tabOptions} />
+          {canManageLibrary ? (
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<Iconify icon="solar:settings-bold" />}
+              onClick={() => setManageOpen(true)}
+              sx={{ mb: 2.5 }}
+            >
+              Manage tabs
+            </Button>
+          ) : null}
+        </Stack>
       ) : null}
 
-      <CourseCurriculum
-        key={canAccessLessons ? tabKey : 'locked'}
-        modules={canAccessLessons && tabOptions.includes(tabKey) ? filteredModules : []}
-        courseLookup={courseLookup}
-        requiresEnrollment={requiresEnrollment}
-        canAccessLessons={canAccessLessons}
-        emptyMessage={tabEmptyMessages[tabKey] ?? 'No items in this section yet.'}
-      />
+      {tabKeys.includes(tabKey) ? (
+        <CourseCurriculum
+          key={canAccessLessons ? tabKey : 'locked'}
+          modules={canAccessLessons && tabOptionKeys.includes(tabKey) ? filteredModules : []}
+          courseLookup={courseLookup}
+          requiresEnrollment={requiresEnrollment}
+          canAccessLessons={canAccessLessons}
+          emptyMessage={tabEmptyMessages[tabKey] ?? 'No items in this section yet.'}
+        />
+      ) : (
+        <CourseLibraryPanel
+          tab={extraTabItems.find((item) => item.key === tabKey) ?? null}
+          canManage={canManageLibrary}
+          onChanged={refreshLibraryTabs}
+        />
+      )}
+
+      {canManageLibrary ? (
+        <CourseTabsManageDialog
+          open={manageOpen}
+          onClose={() => setManageOpen(false)}
+          courseId={courseId}
+          customTabs={libraryTabs}
+          onChanged={refreshLibraryTabs}
+        />
+      ) : null}
     </ContentRoot>
   );
 }

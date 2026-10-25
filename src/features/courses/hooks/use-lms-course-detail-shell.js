@@ -62,7 +62,18 @@ export function useLmsCourseDetailShell(
     return learnerLmsAccessLevel(accessArgs);
   }, [accessArgs, authenticated, authLoading, disableEnrollment]);
 
-  const allowedTabKeys = useMemo(() => allowedCourseTabKeysForAccess(lmsAccess), [lmsAccess]);
+  const extraTabKeys = useMemo(
+    () =>
+      (Array.isArray(course?.libraryTabs) ? course.libraryTabs : [])
+        .map((tab) => tab?.key)
+        .filter(Boolean),
+    [course?.libraryTabs]
+  );
+
+  const allowedTabKeys = useMemo(
+    () => allowedCourseTabKeysForAccess(lmsAccess, extraTabKeys),
+    [extraTabKeys, lmsAccess]
+  );
 
   const canAccessLessons = useMemo(() => {
     if (disableEnrollment) {

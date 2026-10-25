@@ -17,8 +17,12 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import TableContainer from '@mui/material/TableContainer';
 import LinearProgress from '@mui/material/LinearProgress';
 
+import { formatPesoAmount } from 'src/config/enrollment-payment';
 import { learnerDetailsFromRow } from 'src/features/enrollment/utils/enrollment-rows';
-import { enrollmentHasUnreviewedPayments } from 'src/features/enrollment/utils/enrollment-payments';
+import {
+  programAmountTargets,
+  enrollmentHasUnreviewedPayments,
+} from 'src/features/enrollment/utils/enrollment-payments';
 import {
   shortLearningModeLabel,
   learnerGroupLearningModeLabel,
@@ -28,6 +32,7 @@ import { Iconify } from 'src/components/iconify';
 
 import { EnrollmentRowActions } from './enrollment-row-actions';
 import { EnrollmentRejectDialog } from './enrollment-reject-dialog';
+import { EnrollmentAmountDueDialog } from './enrollment-amount-due-dialog';
 import { EnrollmentApplicationDialog } from './enrollment-application-dialog';
 import { EnrollmentLearnerDetailsDialog } from './enrollment-learner-details-dialog';
 import { EnrollmentPaymentHistoryDialog } from './enrollment-payment-history-dialog';
@@ -180,6 +185,7 @@ function EnrollmentMobileCard({
   onPaymentHistory,
   onLearnerView,
   onSwitchLearningMode,
+  onSetAmount,
   isChild = false,
 }) {
   const isBusy = busyId === row.id;
@@ -238,6 +244,7 @@ function EnrollmentMobileCard({
             onView={onView}
             onReject={onReject}
             onPaymentHistory={onPaymentHistory}
+            onSetAmount={!isChild && programAmountTargets(row).length > 0 ? onSetAmount : undefined}
           />
         ) : null}
       </Stack>
@@ -256,6 +263,7 @@ function EnrollmentDataRow({
   onPaymentHistory,
   onLearnerView,
   onSwitchLearningMode,
+  onSetAmount,
   isChild = false,
   compact = false,
 }) {
@@ -274,6 +282,7 @@ function EnrollmentDataRow({
         onPaymentHistory={onPaymentHistory}
         onLearnerView={onLearnerView}
         onSwitchLearningMode={onSwitchLearningMode}
+        onSetAmount={onSetAmount}
         isChild={isChild}
       />
     );
@@ -359,11 +368,19 @@ function EnrollmentDataRow({
             onView={onView}
             onReject={onReject}
             onPaymentHistory={onPaymentHistory}
+            onSetAmount={programAmountTargets(row).length > 0 ? onSetAmount : undefined}
           />
         </TableCell>
       ) : null}
     </TableRow>
   );
+}
+
+function amountDueCaption(row) {
+  return programAmountTargets(row)
+    .filter((item) => item.amountDue != null)
+    .map((item) => `${item.programTitle}: ${formatPesoAmount(item.amountDue)}`)
+    .join(' · ');
 }
 
 function LearnerGroupRow({
@@ -379,9 +396,11 @@ function LearnerGroupRow({
   onPaymentHistory,
   onLearnerView,
   onSwitchLearningMode,
+  onSetAmount,
   compact = false,
 }) {
   const childEnrollments = Array.isArray(row.enrollments) ? row.enrollments : [];
+  const dueCaption = amountDueCaption(row);
   const childRows = expanded
     ? childEnrollments.map((child) => (
         <EnrollmentDataRow
@@ -444,9 +463,21 @@ function LearnerGroupRow({
                 Submitted {row.submittedAt || '—'}
               </Typography>
               {showActions ? (
-                <Button size="small" variant="outlined" onClick={() => onLearnerView?.(row)}>
-                  View details
-                </Button>
+                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                  {canManage && programAmountTargets(row).length > 0 ? (
+                    <Button size="small" variant="outlined" onClick={() => onSetAmount?.(row)}>
+                      Amount due
+                    </Button>
+                  ) : null}
+                  <Button size="small" variant="outlined" onClick={() => onLearnerView?.(row)}>
+                    View details
+                  </Button>
+                </Stack>
+              ) : null}
+              {dueCaption ? (
+                <Typography variant="caption" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>
+                  {dueCaption}
+                </Typography>
               ) : null}
             </Stack>
           </Stack>
@@ -484,9 +515,32 @@ function LearnerGroupRow({
         </TableCell>
         {showActions ? (
           <TableCell align="right">
-            <Button size="small" variant="outlined" onClick={() => onLearnerView?.(row)}>
-              View details
-            </Button>
+            <Stack spacing={0.75} alignItems="stretch">
+              <Stack
+                direction="row"
+                spacing={1}
+                justifyContent="space-between"
+                alignItems="center"
+                flexWrap="wrap"
+                useFlexGap
+              >
+                {canManage && programAmountTargets(row).length > 0 ? (
+                  <Button size="small" variant="outlined" onClick={() => onSetAmount?.(row)}>
+                    Amount due
+                  </Button>
+                ) : (
+                  <Box />
+                )}
+                <Button size="small" variant="outlined" onClick={() => onLearnerView?.(row)}>
+                  View details
+                </Button>
+              </Stack>
+              {dueCaption ? (
+                <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'right' }}>
+                  {dueCaption}
+                </Typography>
+              ) : null}
+            </Stack>
           </TableCell>
         ) : null}
       </TableRow>
@@ -513,6 +567,7 @@ export function EnrollmentTable({
   const [historyTarget, setHistoryTarget] = useState(null);
   const [learnerTarget, setLearnerTarget] = useState(null);
   const [learningModeTarget, setLearningModeTarget] = useState(null);
+  const [amountTarget, setAmountTarget] = useState(null);
   const [expandedGroups, setExpandedGroups] = useState({});
 
   useEffect(() => {
@@ -561,6 +616,10 @@ export function EnrollmentTable({
     setLearningModeTarget(row);
   }, []);
 
+  const handleSetAmount = useCallback((row) => {
+    setAmountTarget(row);
+  }, []);
+
   const toggleGroup = useCallback((groupId) => {
     setExpandedGroups((prev) => ({
       ...prev,
@@ -591,6 +650,7 @@ export function EnrollmentTable({
                 onPaymentHistory={handlePaymentHistory}
                 onLearnerView={handleLearnerView}
                 onSwitchLearningMode={handleSwitchLearningMode}
+                onSetAmount={handleSetAmount}
                 compact={isCompact}
               />
             );
@@ -614,6 +674,7 @@ export function EnrollmentTable({
               onPaymentHistory={handlePaymentHistory}
               onLearnerView={handleLearnerView}
               onSwitchLearningMode={handleSwitchLearningMode}
+              onSetAmount={handleSetAmount}
               compact={isCompact}
             />
           );
@@ -763,6 +824,13 @@ export function EnrollmentTable({
           onLearningModeChange?.(learningModeTarget, learningMode);
           setLearningModeTarget(null);
         }}
+      />
+
+      <EnrollmentAmountDueDialog
+        open={Boolean(amountTarget)}
+        row={amountTarget}
+        onClose={() => setAmountTarget(null)}
+        onSaved={onPaymentVerified}
       />
 
       <EnrollmentPaymentHistoryDialog

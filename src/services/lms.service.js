@@ -1888,6 +1888,30 @@ export async function updateEnrollmentLearningMode({ enrollmentId, learningMode 
   };
 }
 
+export async function updateEnrollmentAmountDue({ enrollmentId, amount }) {
+  await delay(150);
+
+  const row = enrollments.find((item) => item.id === enrollmentId);
+  if (!row) {
+    throw new Error('Enrollment not found.');
+  }
+
+  if (row.courseId) {
+    throw new Error('Set the amount on the program application, not on a course.');
+  }
+
+  const next = amount == null || amount === '' ? null : Number(amount);
+  const related = enrollments.filter(
+    (item) => item.userEmail === row.userEmail && item.programId && item.programId === row.programId
+  );
+
+  related.forEach((item) => {
+    item.amountDue = item.courseId ? null : next;
+  });
+
+  return { enrollmentId, amountDue: next, updatedCount: related.length };
+}
+
 export async function fetchCourseEnrollments(courseId) {
   await delay(150);
   const data = enrollments.filter(

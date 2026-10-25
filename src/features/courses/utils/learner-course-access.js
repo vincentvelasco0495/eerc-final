@@ -171,15 +171,16 @@ export function learnerLmsAccessLevel({
   return bestAccessTier(tiers);
 }
 
-export function allowedCourseTabKeysForAccess(lmsAccess) {
+export function allowedCourseTabKeysForAccess(lmsAccess, extraTabKeys = []) {
+  const extras = (Array.isArray(extraTabKeys) ? extraTabKeys : []).filter(Boolean);
   if (lmsAccess === LMS_ACCESS_FULL) {
-    return [...FULL_TAB_KEYS];
+    return [...FULL_TAB_KEYS, ...extras];
   }
   if (lmsAccess === LMS_ACCESS_REPLAY) {
-    return [...REPLAY_TAB_KEYS];
+    return [...REPLAY_TAB_KEYS, ...extras];
   }
   if (lmsAccess === LMS_ACCESS_CLASSROOM) {
-    return [...CLASSROOM_TAB_KEYS];
+    return [...CLASSROOM_TAB_KEYS, ...extras];
   }
   return [];
 }

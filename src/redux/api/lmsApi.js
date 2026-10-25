@@ -29,6 +29,7 @@ import {
   createHonorAwardDiscount as mockCreateHonorAwardDiscount,
   updateHonorAwardDiscount as mockUpdateHonorAwardDiscount,
   deleteHonorAwardDiscount as mockDeleteHonorAwardDiscount,
+  updateEnrollmentAmountDue as mockUpdateEnrollmentAmountDue,
   updateEnrollmentLearningMode as mockUpdateEnrollmentLearningMode,
 } from 'src/services/lms.service';
 
@@ -315,6 +316,89 @@ export async function resetLmsAdminPassword(publicId, payload = {}) {
     `/api/admins/${encodeURIComponent(publicId)}/reset-password`,
     payload ?? {}
   );
+  return data;
+}
+
+export const COURSE_LIBRARY_MAX_FILE_BYTES = 10 * 1024 * 1024;
+
+export async function fetchCourseLibraryTabs(coursePublicId) {
+  const { data } = await axios.get(
+    `/api/courses/${encodeURIComponent(coursePublicId)}/library-tabs`
+  );
+  return data;
+}
+
+export async function postCourseLibraryTab(coursePublicId, payload = {}) {
+  const { data } = await axios.post(
+    `/api/courses/${encodeURIComponent(coursePublicId)}/library-tabs`,
+    payload
+  );
+  return data;
+}
+
+export async function patchCourseLibraryTab(publicId, payload = {}) {
+  const { data } = await axios.patch(`/api/library-tabs/${encodeURIComponent(publicId)}`, payload);
+  return data;
+}
+
+export async function deleteCourseLibraryTab(publicId) {
+  const { data } = await axios.delete(`/api/library-tabs/${encodeURIComponent(publicId)}`);
+  return data;
+}
+
+export async function postCourseLibraryFolder(tabPublicId, payload = {}) {
+  const { data } = await axios.post(
+    `/api/library-tabs/${encodeURIComponent(tabPublicId)}/folders`,
+    payload
+  );
+  return data;
+}
+
+export async function patchCourseLibraryFolder(publicId, payload = {}) {
+  const { data } = await axios.patch(
+    `/api/library-folders/${encodeURIComponent(publicId)}`,
+    payload
+  );
+  return data;
+}
+
+export async function deleteCourseLibraryFolder(publicId) {
+  const { data } = await axios.delete(`/api/library-folders/${encodeURIComponent(publicId)}`);
+  return data;
+}
+
+export async function postCourseLibraryFile(folderPublicId, file, { onUploadProgress } = {}) {
+  const form = new FormData();
+  form.append('file', file);
+  const { data } = await axios.post(
+    `/api/library-folders/${encodeURIComponent(folderPublicId)}/files`,
+    form,
+    {
+      headers: { 'Content-Type': undefined },
+      onUploadProgress: (event) => {
+        const total = Number(event.total) || file.size || 0;
+        const loaded = Number(event.loaded) || 0;
+        if (total <= 0) {
+          onUploadProgress?.(1);
+          return;
+        }
+        onUploadProgress?.(Math.min(99, Math.max(1, Math.round((loaded / total) * 100))));
+      },
+    }
+  );
+  return data;
+}
+
+export async function deleteCourseLibraryFile(publicId) {
+  const { data } = await axios.delete(`/api/library-files/${encodeURIComponent(publicId)}`);
+  return data;
+}
+
+export async function fetchCourseLibraryFileBlob(publicId, inline = true) {
+  const { data } = await axios.get(`/api/library-files/${encodeURIComponent(publicId)}/file`, {
+    params: inline ? { inline: 1 } : {},
+    responseType: 'blob',
+  });
   return data;
 }
 export async function patchLmsUser(payload = {}) {
@@ -938,6 +1022,14 @@ export const lmsApi = {
           { learningMode: payload.learningMode }
         )
       : mockUpdateEnrollmentLearningMode(payload),
+
+  updateEnrollmentAmountDue: (payload) =>
+    isLmsLiveApi()
+      ? patchJson(
+          `${apiRoot}/enrollments/${encodeURIComponent(payload.enrollmentId)}/amount-due`,
+          { amount: payload.amount }
+        )
+      : mockUpdateEnrollmentAmountDue(payload),
 
   fetchCourseEnrollments: (courseId) =>
     isLmsLiveApi()

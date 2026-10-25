@@ -310,6 +310,13 @@ export const faqItemsMock = [
 
 export const tabKeys = ['quiz', 'handouts', 'lecture-video', 'group-study'];
 
+export const DEFAULT_COURSE_TAB_LABELS = {
+  quiz: 'Quiz',
+  handouts: 'Handouts',
+  'lecture-video': 'Lecture video',
+  'group-study': 'Group study',
+};
+
 /** Lesson types shown on each learner course-detail tab. */
 export const tabLessonTypes = {
   quiz: ['quiz', 'assignment'],
@@ -345,11 +352,18 @@ export function resolveCourseDetailTabKey(rawHash) {
   if (tabKeys.includes(raw)) {
     return raw;
   }
-  const compact = raw.replace(/\s+/g, '');
+  const compact = raw.replace(/\s+/g, '-');
   if (tabKeys.includes(compact)) {
     return compact;
   }
-  return TAB_HASH_ALIASES[raw] ?? TAB_HASH_ALIASES[compact] ?? null;
+  const alias = TAB_HASH_ALIASES[raw] ?? TAB_HASH_ALIASES[compact.replace(/-/g, '')];
+  if (alias) {
+    return alias;
+  }
+  if (/^[a-z0-9-]+$/.test(compact) && compact.length > 0) {
+    return compact;
+  }
+  return null;
 }
 
 export function filterCurriculumModulesForTab(modules, tabKey) {

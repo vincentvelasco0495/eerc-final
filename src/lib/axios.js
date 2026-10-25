@@ -85,7 +85,12 @@ axiosInstance.interceptors.response.use(
   },
   (error) => {
     const data = error?.response?.data;
-    let message = data?.message || error?.message || 'Something went wrong!';
+    let message = error?.message || 'Something went wrong!';
+    if (typeof data === 'string' && data.trim()) {
+      message = data.trim();
+    } else if (data && typeof data === 'object' && typeof data.message === 'string' && data.message.trim()) {
+      message = data.message.trim();
+    }
 
     if (data?.errors && typeof data.errors === 'object') {
       const msgs = Object.values(data.errors).flat().filter(Boolean);

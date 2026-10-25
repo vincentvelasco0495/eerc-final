@@ -1,6 +1,7 @@
 import styled from 'styled-components';
 
 import { radii, space, colors } from './course-detail-tokens';
+import { DEFAULT_COURSE_TAB_LABELS } from './course-detail-data';
 
 const TabsRoot = styled.nav`
   margin: 0 0 ${space(2.5)};
@@ -58,12 +59,16 @@ const TabBtn = styled.button`
   }
 `;
 
-const TAB_LABELS = {
-  quiz: 'Quiz',
-  handouts: 'Handouts',
-  'lecture-video': 'Lecture video',
-  'group-study': 'Group study',
-};
+function normalizeTabOption(item) {
+  if (item && typeof item === 'object') {
+    return {
+      key: String(item.key ?? ''),
+      label: String(item.label ?? item.title ?? item.key ?? ''),
+    };
+  }
+  const key = String(item ?? '');
+  return { key, label: DEFAULT_COURSE_TAB_LABELS[key] ?? key };
+}
 
 /**
  * Accessible tabstrip for Quiz / Handouts / Lecture video / Group study panels.
@@ -71,21 +76,21 @@ const TAB_LABELS = {
  * `activeKey`: one of `tabKeys`; `options` defaults to the canonical four tabs.
  */
 export function CourseTabs({ activeKey, onChange, options }) {
-  const keys = options ?? Object.keys(TAB_LABELS);
+  const items = (options ?? Object.keys(DEFAULT_COURSE_TAB_LABELS)).map(normalizeTabOption);
 
   return (
     <TabsRoot aria-label="Course sections">
       <TabsList role="tablist">
-        {keys.map((key) => (
+        {items.map((item) => (
           <TabBtn
-            key={key}
+            key={item.key}
             type="button"
             role="tab"
-            aria-selected={activeKey === key}
-            $active={activeKey === key}
-            onClick={() => onChange(key)}
+            aria-selected={activeKey === item.key}
+            $active={activeKey === item.key}
+            onClick={() => onChange(item.key)}
           >
-            {TAB_LABELS[key]}
+            {item.label}
           </TabBtn>
         ))}
       </TabsList>

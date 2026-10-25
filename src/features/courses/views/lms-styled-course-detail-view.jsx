@@ -15,9 +15,14 @@ import { useLmsCourseDetailShell } from 'src/features/courses/hooks/use-lms-cour
 
 import { CourseDetailLayout } from 'src/components/course-detail/CourseDetailLayout';
 
+import { useAuthContext } from 'src/auth/hooks';
+import { normalizeUserRole } from 'src/auth/utils/role';
+
 // ----------------------------------------------------------------------
 
 export function LmsStyledCourseDetailView({ courseLookup }) {
+  const { user } = useAuthContext();
+  const canManageLibrary = ['admin', 'instructor'].includes(normalizeUserRole(user?.role));
   const { course, isLoading: courseLoading, error: courseError } = useLmsCourseByLookup(courseLookup ?? '');
   const courseId = course?.id ?? '';
   const { modules } = useLmsModulesByCourse(courseId);
@@ -94,6 +99,9 @@ export function LmsStyledCourseDetailView({ courseLookup }) {
         requiresEnrollment={requiresEnrollment}
         canAccessLessons={canAccessLessons}
         allowedTabKeys={allowedTabKeys}
+        courseId={courseId}
+        libraryTabs={course?.libraryTabs}
+        canManageLibrary={canManageLibrary}
         wrapMinHeightPage={false}
       />
     </>

@@ -204,6 +204,9 @@ export function CourseDetailLayout({
   requiresEnrollment = false,
   canAccessLessons = true,
   allowedTabKeys,
+  courseId,
+  libraryTabs,
+  canManageLibrary = false,
   /** When set with `requiresEnrollment`, ENROLL opens this handler instead of navigating away. */
   onEnrollClick,
   /** Optional CTA below Course details rows — guests only (sign-in redirect). */
@@ -271,6 +274,9 @@ export function CourseDetailLayout({
                 requiresEnrollment={requiresEnrollment}
                 canAccessLessons={canAccessLessons}
                 allowedTabKeys={allowedTabKeys}
+                courseId={courseId}
+                libraryTabs={libraryTabs}
+                canManageLibrary={canManageLibrary}
               />
             </MainColumn>
           </TwoColGrid>

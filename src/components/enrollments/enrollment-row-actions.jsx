@@ -17,6 +17,7 @@ export function EnrollmentRowActions({
   onView,
   onReject,
   onPaymentHistory,
+  onSetAmount,
   compact = false,
 }) {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -66,6 +67,11 @@ export function EnrollmentRowActions({
           transformOrigin={{ vertical: 'top', horizontal: 'right' }}
           slotProps={{ paper: { sx: { minWidth: 196 } } }}
         >
+          {onSetAmount ? (
+            <MenuItem disabled={isBusy} onClick={() => runAndClose(() => onSetAmount(row))}>
+              <ListItemText>Amount due</ListItemText>
+            </MenuItem>
+          ) : null}
           <MenuItem disabled={isBusy} onClick={() => runAndClose(() => onPaymentHistory?.(row))}>
             <ListItemText>Payment history</ListItemText>
           </MenuItem>
@@ -97,6 +103,11 @@ export function EnrollmentRowActions({
       <Button size="small" variant="outlined" disabled={isBusy} onClick={() => onView(row.id)}>
         View
       </Button>
+      {onSetAmount ? (
+        <Button size="small" variant="outlined" disabled={isBusy} onClick={() => onSetAmount(row)}>
+          Amount due
+        </Button>
+      ) : null}
       <Button
         size="small"
         variant="outlined"

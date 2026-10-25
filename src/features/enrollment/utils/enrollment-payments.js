@@ -149,7 +149,56 @@ export function enrollmentHasUnreviewedPayments(enrollment) {
   return summarizeEnrollmentPayments(enrollment).hasUnreviewed;
 }
 
+export function isProgramLevelEnrollment(enrollment) {
+  if (!enrollment || enrollment.isLearnerGroup) {
+    return false;
+  }
+  if (enrollment.courseId) {
+    return false;
+  }
+  const kind = String(enrollment.requestKind ?? '');
+  return kind !== 'course' && kind !== 'course_access';
+}
+
+export function getEnrollmentAmountDue(enrollment) {
+  if (!isProgramLevelEnrollment(enrollment)) {
+    return null;
+  }
+  const raw = enrollment?.amountDue ?? enrollment?.amount_due;
+  if (raw == null || raw === '') {
+    return null;
+  }
+  const value = Number(raw);
+  return Number.isFinite(value) && value >= 0 ? value : null;
+}
+
+/** One payable total per program application. Course enrollments are not included. */
+export function programAmountTargets(row) {
+  const source =
+    Array.isArray(row?.enrollments) && row.enrollments.length > 0 ? row.enrollments : row ? [row] : [];
+  const map = new Map();
+
+  source.forEach((item) => {
+    if (!isProgramLevelEnrollment(item)) {
+      return;
+    }
+    const key = String(item.programId || item.programTitle || item.id || '');
+    if (!key || map.has(key)) {
+      return;
+    }
+    map.set(key, {
+      key,
+      programTitle: item.programTitle || 'Program',
+      enrollmentId: item.id,
+      amountDue: getEnrollmentAmountDue(item),
+    });
+  });
+
+  return [...map.values()];
+}
+
 export function buildPartialPaymentSummary(program, enrollment) {
+  const customDue = getEnrollmentAmountDue(enrollment);
   const hasBackendFeeField =
     program != null &&
     (Object.prototype.hasOwnProperty.call(program, 'enrollmentFee') ||
@@ -159,7 +208,7 @@ export function buildPartialPaymentSummary(program, enrollment) {
     rawBackendFee != null && rawBackendFee !== '' && Number.isFinite(Number(rawBackendFee))
       ? Number(rawBackendFee)
       : null;
-  const totalFee = hasBackendFeeField
+  const catalogFee = hasBackendFeeField
     ? backendFee
     : getProgramEnrollmentFeeAmount({
         programId: program?.id ?? enrollment?.programId,
@@ -167,6 +216,7 @@ export function buildPartialPaymentSummary(program, enrollment) {
         programTitle: program?.title ?? enrollment?.programTitle,
         enrollmentFee: rawBackendFee,
       });
+  const totalFee = customDue != null ? customDue : catalogFee;
   const paymentSummary = summarizeEnrollmentPayments(enrollment);
   const totalPaid = paymentSummary.verifiedTotal;
   const remaining =
