@@ -35,6 +35,17 @@ export default defineConfig({
       },
     ],
   },
-  server: { port: PORT, host: true },
+  server: {
+    port: PORT,
+    host: true,
+    watch: {
+      // Laravel logs and sessions live under backend/. Watching them reloads the
+      // page on every API call, so the first visit looks like it never finishes.
+      ignored: ['**/node_modules/**', '**/.git/**', '**/backend/**', '**/dist/**'],
+    },
+    warmup: {
+      clientFiles: ['./src/main.jsx', './src/pages/home.jsx'],
+    },
+  },
   preview: { port: PORT, host: true },
 });

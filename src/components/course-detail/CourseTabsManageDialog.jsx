@@ -3,9 +3,13 @@ import { useState } from 'react';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
+import InputLabel from '@mui/material/InputLabel';
 import Typography from '@mui/material/Typography';
 import DialogTitle from '@mui/material/DialogTitle';
+import FormControl from '@mui/material/FormControl';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 
@@ -19,16 +23,18 @@ import {
 import { toast } from 'src/components/snackbar';
 import { ConfirmDialog } from 'src/components/custom-dialog';
 
-import { DEFAULT_COURSE_TAB_LABELS } from './course-detail-data';
+import { courseTabTypeLabel, COURSE_TAB_TYPE_OPTIONS } from './course-detail-data';
 
-export function CourseTabsManageDialog({ open, onClose, courseId, customTabs, onChanged }) {
+export function CourseTabsManageDialog({ open, onClose, courseId, tabs, onChanged }) {
   const [title, setTitle] = useState('');
+  const [type, setType] = useState('folder');
   const [editing, setEditing] = useState(null);
   const [busy, setBusy] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(null);
 
   const resetDraft = () => {
     setTitle('');
+    setType('folder');
     setEditing(null);
   };
 
@@ -43,13 +49,14 @@ export function CourseTabsManageDialog({ open, onClose, courseId, customTabs, on
       toast.error('Tab name is required.');
       return;
     }
+    const payload = { title: nextTitle, type };
     setBusy(true);
     try {
       if (editing?.id) {
-        await patchCourseLibraryTab(editing.id, { title: nextTitle });
+        await patchCourseLibraryTab(editing.id, payload);
         toast.success('Tab updated.');
       } else {
-        await postCourseLibraryTab(courseId, { title: nextTitle });
+        await postCourseLibraryTab(courseId, payload);
         toast.success('Tab added.');
       }
       resetDraft();
@@ -81,6 +88,11 @@ export function CourseTabsManageDialog({ open, onClose, courseId, customTabs, on
     }
   };
 
+  const deleteContent =
+    (pendingDelete?.type || 'folder') === 'folder'
+      ? `Delete “${pendingDelete?.title ?? 'this tab'}” and all of its folders and files?`
+      : `Delete the “${pendingDelete?.title ?? 'this tab'}” tab? Lessons stay on the course.`;
+
   return (
     <>
       <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
@@ -88,25 +100,13 @@ export function CourseTabsManageDialog({ open, onClose, courseId, customTabs, on
         <DialogContent>
           <Stack spacing={2} sx={{ pt: 1 }}>
             <Typography variant="body2" color="text.secondary">
-              Quiz, Handouts, Lecture video, and Group study stay as the default tabs. Extra tabs are
-              for folders of images, PDFs, and other files (10 MB max per file).
+              Every tab can be renamed, retyped, or deleted. Quiz, Handouts, Lecture video, and Group
+              study show course lessons. Folder tabs hold images, PDFs, and other files (10 MB max per
+              file).
             </Typography>
 
             <Stack spacing={1}>
-              {Object.entries(DEFAULT_COURSE_TAB_LABELS).map(([key, label]) => (
-                <Stack
-                  key={key}
-                  direction="row"
-                  justifyContent="space-between"
-                  sx={{ px: 1.5, py: 1, borderRadius: 1, bgcolor: 'action.hover' }}
-                >
-                  <Typography variant="body2">{label}</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Default
-                  </Typography>
-                </Stack>
-              ))}
-              {(customTabs ?? []).map((tab) => (
+              {(tabs ?? []).map((tab) => (
                 <Stack
                   key={tab.id}
                   direction="row"
@@ -115,13 +115,19 @@ export function CourseTabsManageDialog({ open, onClose, courseId, customTabs, on
                   justifyContent="space-between"
                   sx={{ px: 1.5, py: 1, borderRadius: 1, border: '1px solid', borderColor: 'divider' }}
                 >
-                  <Typography variant="body2">{tab.title}</Typography>
+                  <Stack spacing={0.25}>
+                    <Typography variant="body2">{tab.title}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {courseTabTypeLabel(tab.type)}
+                    </Typography>
+                  </Stack>
                   <Stack direction="row" spacing={1}>
                     <Button
                       size="small"
                       onClick={() => {
                         setEditing(tab);
                         setTitle(tab.title);
+                        setType(tab.type || 'folder');
                       }}
                     >
                       Edit
@@ -135,11 +141,27 @@ export function CourseTabsManageDialog({ open, onClose, courseId, customTabs, on
             </Stack>
 
             <TextField
-              label={editing ? 'Rename tab' : 'New tab name'}
+              label={editing ? 'Tab name' : 'New tab name'}
               value={title}
               onChange={(event) => setTitle(event.target.value)}
               fullWidth
             />
+
+            <FormControl fullWidth>
+              <InputLabel id="course-tab-type-label">Type</InputLabel>
+              <Select
+                labelId="course-tab-type-label"
+                label="Type"
+                value={type}
+                onChange={(event) => setType(event.target.value)}
+              >
+                {COURSE_TAB_TYPE_OPTIONS.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Stack>
         </DialogContent>
         <DialogActions>
@@ -159,7 +181,7 @@ export function CourseTabsManageDialog({ open, onClose, courseId, customTabs, on
         open={Boolean(pendingDelete)}
         onClose={() => setPendingDelete(null)}
         title="Delete tab"
-        content={`Delete “${pendingDelete?.title ?? 'this tab'}” and all of its folders and files?`}
+        content={deleteContent}
         action={
           <Button color="error" variant="contained" onClick={removeTab} disabled={busy}>
             Delete

@@ -17,9 +17,8 @@ import { CourseLibraryPanel } from './CourseLibraryPanel';
 import { CourseTabsManageDialog } from './CourseTabsManageDialog';
 import { radii, space, colors, shadow } from './course-detail-tokens';
 import {
-  tabKeys,
   tabEmptyMessages,
-  DEFAULT_COURSE_TAB_LABELS,
+  courseTabContentType,
   resolveCourseDetailTabKey,
   filterCurriculumModulesForTab,
 } from './course-detail-data';
@@ -123,35 +122,26 @@ export function CourseContent({
     setLibraryTabs(Array.isArray(payload?.data) ? payload.data : []);
   }, [courseId]);
 
-  const extraTabItems = useMemo(
-    () =>
-      (libraryTabs ?? []).map((tab) => ({
-        key: tab.key,
-        label: tab.title,
-        id: tab.id,
-        folders: tab.folders,
-      })),
-    [libraryTabs]
-  );
+  const visibleTabs = useMemo(() => {
+    const tabs = Array.isArray(libraryTabs) ? libraryTabs : [];
+    if (canManageLibrary || !Array.isArray(allowedTabKeys)) {
+      return tabs;
+    }
+    return tabs.filter((tab) => allowedTabKeys.includes(tab.key));
+  }, [allowedTabKeys, canManageLibrary, libraryTabs]);
 
-  const tabOptions = useMemo(() => {
-    const defaultAllowed = Array.isArray(allowedTabKeys)
-      ? tabKeys.filter((key) => allowedTabKeys.includes(key))
-      : [...tabKeys];
-    const extrasAllowed = Array.isArray(allowedTabKeys)
-      ? extraTabItems.filter((item) => allowedTabKeys.includes(item.key) || canManageLibrary)
-      : extraTabItems;
-    return [
-      ...defaultAllowed.map((key) => ({ key, label: DEFAULT_COURSE_TAB_LABELS[key] ?? key })),
-      ...extrasAllowed.map((item) => ({ key: item.key, label: item.label })),
-    ];
-  }, [allowedTabKeys, canManageLibrary, extraTabItems]);
+  const tabOptions = useMemo(
+    () => visibleTabs.map((tab) => ({ key: tab.key, label: tab.title || tab.key })),
+    [visibleTabs]
+  );
   const tabOptionKeys = useMemo(() => tabOptions.map((item) => item.key), [tabOptions]);
   const defaultTab = tabOptionKeys[0] ?? 'quiz';
   const [tabKey, setTabKey] = useState(defaultTab);
+  const activeTab = visibleTabs.find((item) => item.key === tabKey) ?? null;
+  const activeContentType = courseTabContentType(activeTab);
   const filteredModules = useMemo(
-    () => filterCurriculumModulesForTab(curriculumModules, tabKey),
-    [curriculumModules, tabKey]
+    () => filterCurriculumModulesForTab(curriculumModules, activeContentType ?? tabKey),
+    [activeContentType, curriculumModules, tabKey]
   );
 
   const selectTab = useCallback((key) => {
@@ -259,29 +249,29 @@ export function CourseContent({
         </Stack>
       ) : null}
 
-      {tabKeys.includes(tabKey) ? (
+      {activeContentType ? (
         <CourseCurriculum
           key={canAccessLessons ? tabKey : 'locked'}
           modules={canAccessLessons && tabOptionKeys.includes(tabKey) ? filteredModules : []}
           courseLookup={courseLookup}
           requiresEnrollment={requiresEnrollment}
           canAccessLessons={canAccessLessons}
-          emptyMessage={tabEmptyMessages[tabKey] ?? 'No items in this section yet.'}
+          emptyMessage={tabEmptyMessages[activeContentType] ?? 'No items in this section yet.'}
         />
-      ) : (
+      ) : activeTab ? (
         <CourseLibraryPanel
-          tab={extraTabItems.find((item) => item.key === tabKey) ?? null}
+          tab={activeTab}
           canManage={canManageLibrary}
           onChanged={refreshLibraryTabs}
         />
-      )}
+      ) : null}
 
       {canManageLibrary ? (
         <CourseTabsManageDialog
           open={manageOpen}
           onClose={() => setManageOpen(false)}
           courseId={courseId}
-          customTabs={libraryTabs}
+          tabs={libraryTabs}
           onChanged={refreshLibraryTabs}
         />
       ) : null}

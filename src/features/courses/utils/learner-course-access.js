@@ -9,9 +9,9 @@ export const LMS_ACCESS_REPLAY = 'replay';
 export const LMS_ACCESS_CLASSROOM = 'classroom';
 export const LMS_ACCESS_FULL = 'full';
 
-const REPLAY_TAB_KEYS = ['lecture-video'];
-const CLASSROOM_TAB_KEYS = ['quiz', 'handouts', 'group-study'];
-const FULL_TAB_KEYS = ['quiz', 'handouts', 'lecture-video', 'group-study'];
+const REPLAY_TAB_TYPES = ['lecture-video', 'folder'];
+const CLASSROOM_TAB_TYPES = ['quiz', 'handouts', 'group-study', 'folder'];
+const FULL_TAB_TYPES = ['quiz', 'handouts', 'lecture-video', 'group-study', 'folder'];
 
 function enrollmentLearningModeFields(item) {
   const formData = item?.formData && typeof item.formData === 'object' ? item.formData : {};
@@ -171,18 +171,31 @@ export function learnerLmsAccessLevel({
   return bestAccessTier(tiers);
 }
 
-export function allowedCourseTabKeysForAccess(lmsAccess, extraTabKeys = []) {
-  const extras = (Array.isArray(extraTabKeys) ? extraTabKeys : []).filter(Boolean);
-  if (lmsAccess === LMS_ACCESS_FULL) {
-    return [...FULL_TAB_KEYS, ...extras];
+export function allowedCourseTabKeysForAccess(lmsAccess, libraryTabs = []) {
+  const allowedTypes =
+    lmsAccess === LMS_ACCESS_FULL
+      ? FULL_TAB_TYPES
+      : lmsAccess === LMS_ACCESS_REPLAY
+        ? REPLAY_TAB_TYPES
+        : lmsAccess === LMS_ACCESS_CLASSROOM
+          ? CLASSROOM_TAB_TYPES
+          : [];
+
+  return (Array.isArray(libraryTabs) ? libraryTabs : [])
+    .filter((tab) => allowedTypes.includes(resolvedLibraryTabType(tab)))
+    .map((tab) => tab?.key)
+    .filter(Boolean);
+}
+
+function resolvedLibraryTabType(tab) {
+  const type = tab?.type;
+  if (FULL_TAB_TYPES.includes(type)) {
+    return type;
   }
-  if (lmsAccess === LMS_ACCESS_REPLAY) {
-    return [...REPLAY_TAB_KEYS, ...extras];
+  if (!type && FULL_TAB_TYPES.includes(tab?.key)) {
+    return tab.key;
   }
-  if (lmsAccess === LMS_ACCESS_CLASSROOM) {
-    return [...CLASSROOM_TAB_KEYS, ...extras];
-  }
-  return [];
+  return 'folder';
 }
 
 export function learnerCanAccessLessonType(lmsAccess, lessonType) {

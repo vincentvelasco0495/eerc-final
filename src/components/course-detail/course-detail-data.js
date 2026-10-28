@@ -317,6 +317,18 @@ export const DEFAULT_COURSE_TAB_LABELS = {
   'group-study': 'Group study',
 };
 
+export const COURSE_TAB_TYPE_OPTIONS = [
+  { value: 'quiz', label: 'Quiz' },
+  { value: 'handouts', label: 'Handouts' },
+  { value: 'lecture-video', label: 'Lecture video' },
+  { value: 'group-study', label: 'Group study' },
+  { value: 'folder', label: 'Folder' },
+];
+
+export function courseTabTypeLabel(type) {
+  return COURSE_TAB_TYPE_OPTIONS.find((option) => option.value === type)?.label ?? 'Folder';
+}
+
 /** Lesson types shown on each learner course-detail tab. */
 export const tabLessonTypes = {
   quiz: ['quiz', 'assignment'],
@@ -324,6 +336,21 @@ export const tabLessonTypes = {
   'lecture-video': ['video'],
   'group-study': ['stream', 'zoom', 'live'],
 };
+
+/** Curriculum type for a library tab, or null when the tab is a materials folder. */
+export function courseTabContentType(tab) {
+  const type = tab?.type;
+  if (type === 'folder') {
+    return null;
+  }
+  if (type && tabLessonTypes[type]) {
+    return type;
+  }
+  if (!type && tabLessonTypes[tab?.key]) {
+    return tab.key;
+  }
+  return null;
+}
 
 export const tabEmptyMessages = {
   quiz: 'No quizzes are available in this course yet.',
