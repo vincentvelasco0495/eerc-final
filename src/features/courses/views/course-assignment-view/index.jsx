@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router';
+import { useParams, useNavigate, useSearchParams } from 'react-router';
 import { useRef, useMemo, useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
@@ -223,6 +223,7 @@ function AssignmentIntroPanel({
 export function CourseAssignmentView() {
   const theme = useTheme();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { slug = '', courseId = '', assignmentId = '' } = useParams();
   const courseLookup = slug || courseId;
   const { authenticated } = useAuthContext();
@@ -259,6 +260,8 @@ export function CourseAssignmentView() {
   const attemptRecordedRef = useRef(false);
   const attemptSubmitRef = useRef('');
   const sentProgressRef = useRef('');
+  const freshAttemptStartedRef = useRef(false);
+  const [autoStarting, setAutoStarting] = useState(false);
 
   const courseLinkHref = `${paths.dashboard.courseDetails(
     typeof course?.slug === 'string' && course.slug.trim() ? course.slug.trim() : courseLookup
@@ -342,7 +345,7 @@ export function CourseAssignmentView() {
         rows = await fetchQuestions();
       }
       if (!rows.length) {
-        return;
+        return false;
       }
 
       const totalSeconds = Math.max(0, Math.round(durationMinutes * 60));
@@ -369,9 +372,37 @@ export function CourseAssignmentView() {
       } catch {
         // ignore
       }
+      return true;
     },
     [assignment?.resetTimeLimitOnRetake, assignmentId, courseLookup, durationMinutes, fetchQuestions, questions]
   );
+
+  useEffect(() => {
+    if (freshAttemptStartedRef.current || searchParams.get('new') !== '1') {
+      return;
+    }
+    if (!assignment || courseLoading || modulesLoading || isGuest) {
+      return;
+    }
+
+    freshAttemptStartedRef.current = true;
+    const next = new URLSearchParams(searchParams);
+    next.delete('new');
+    setSearchParams(next, { replace: true });
+
+    const allowed = Number(assignment.attemptsAllowed) || 0;
+    const used = Number(assignment.attemptsUsed) || 0;
+    if (allowed > 0 && used >= allowed) {
+      return;
+    }
+
+    setAutoStarting(true);
+    void beginAttempt(true).then((started) => {
+      if (!started) {
+        setAutoStarting(false);
+      }
+    });
+  }, [assignment, beginAttempt, courseLoading, isGuest, modulesLoading, searchParams, setSearchParams]);
 
   const finishAttempt = useCallback(() => {
     setPhase('complete');
@@ -521,6 +552,24 @@ export function CourseAssignmentView() {
   const questionCount = questions.length || assignment.questionCount || 0;
   const contentHtml = String(assignment.lessonContentHtml ?? '').trim();
   const materials = Array.isArray(assignment.materials) ? assignment.materials : [];
+
+  if (phase === 'intro' && autoStarting) {
+    return (
+      <DashboardContent
+        maxWidth={false}
+        sx={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: 'min(72dvh, 640px)',
+          py: 4,
+        }}
+      >
+        <CircularProgress aria-label="Starting assignment" />
+      </DashboardContent>
+    );
+  }
 
   if (phase === 'intro') {
     return (

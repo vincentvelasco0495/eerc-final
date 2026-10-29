@@ -558,6 +558,8 @@ export function CourseVideoLessonView() {
                     poster={resolveCourseMarketingBannerUrl(course)}
                     title={lessonPayload.title}
                     watermarkText={watermarkText}
+                    watermarkColor={lessonPayload?.watermarkColor}
+                    watermarkOpacity={lessonPayload?.watermarkOpacity}
                     dateLabel={dateLabel}
                     initialPercent={Number(progressRecord?.progressPercent) || 0}
                     initialPositionSeconds={Number(progressRecord?.lastPositionSeconds) || 0}
@@ -627,6 +629,8 @@ export function CourseVideoLessonView() {
                         variant="video"
                         username={watermarkText}
                         dateLabel={dateLabel}
+                        color={lessonPayload?.watermarkColor}
+                        opacity={lessonPayload?.watermarkOpacity}
                       />
                     ) : null}
                   </Box>

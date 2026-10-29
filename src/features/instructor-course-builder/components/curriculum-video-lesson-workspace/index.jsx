@@ -25,13 +25,17 @@ import { TextLessonWorkspaceSettings } from '../text-lesson-workspace-settings';
 import { TextLessonWorkspaceMaterials } from '../text-lesson-workspace-materials';
 import { TextLessonWorkspaceEditorSection } from '../text-lesson-workspace-editor-section';
 import {
-  normalizeVideoWatermarkText,
-  normalizeVideoWorkspaceMeta,
-} from '../../utils/lesson-authoring-helpers';
-import {
   buildLessonAuthoringTargetKey,
   normalizeUploadedLessonMaterial,
 } from '../../utils/lesson-materials-cache';
+import {
+  normalizeVideoWorkspaceMeta,
+  normalizeVideoWatermarkText,
+  normalizeVideoWatermarkColor,
+  DEFAULT_VIDEO_WATERMARK_COLOR,
+  normalizeVideoWatermarkOpacity,
+  DEFAULT_VIDEO_WATERMARK_OPACITY,
+} from '../../utils/lesson-authoring-helpers';
 
 export function CurriculumVideoLessonWorkspace({
   lesson,
@@ -75,6 +79,8 @@ export function CurriculumVideoLessonWorkspace({
   const [sourceType, setSourceType] = useState('html-mp4');
   const [duration, setDuration] = useState('');
   const [watermarkText, setWatermarkText] = useState('');
+  const [watermarkColor, setWatermarkColor] = useState(DEFAULT_VIDEO_WATERMARK_COLOR);
+  const [watermarkOpacity, setWatermarkOpacity] = useState(DEFAULT_VIDEO_WATERMARK_OPACITY);
   const [videoLessonMaterialPublicId, setVideoLessonMaterialPublicId] = useState(null);
   const [lessonPreview, setLessonPreview] = useState(false);
   const [shortDescriptionHtml, setShortDescriptionHtml] = useState('');
@@ -175,6 +181,8 @@ export function CurriculumVideoLessonWorkspace({
       setSourceType('html-mp4');
       setDuration('');
       setWatermarkText('');
+      setWatermarkColor(DEFAULT_VIDEO_WATERMARK_COLOR);
+      setWatermarkOpacity(DEFAULT_VIDEO_WATERMARK_OPACITY);
       setVideoLessonMaterialPublicId(null);
       setLessonPreview(false);
       setShortDescriptionHtml('');
@@ -218,6 +226,8 @@ export function CurriculumVideoLessonWorkspace({
 
     setLessonPreview(!!lm.lessonPreview);
     setWatermarkText(normalizeVideoWatermarkText(lm.watermarkText ?? lm.watermark_text ?? ''));
+    setWatermarkColor(normalizeVideoWatermarkColor(lm.watermarkColor ?? lm.watermark_color));
+    setWatermarkOpacity(normalizeVideoWatermarkOpacity(lm.watermarkOpacity ?? lm.watermark_opacity));
 
     setShortDescriptionHtml(String(liveLessonAuthoring.excerptHtml ?? '').trim());
     setLessonContentHtml(String(liveLessonAuthoring.bodyHtml ?? '').trim());
@@ -292,11 +302,21 @@ export function CurriculumVideoLessonWorkspace({
           videoSourceType: sourceType,
           videoLessonMaterialPublicId,
           watermarkText,
+          watermarkColor,
+          watermarkOpacity,
           ...overrides,
         },
         { durationLabelFallback: duration }
       ),
-    [duration, lessonPreview, sourceType, videoLessonMaterialPublicId, watermarkText]
+    [
+      duration,
+      lessonPreview,
+      sourceType,
+      videoLessonMaterialPublicId,
+      watermarkColor,
+      watermarkOpacity,
+      watermarkText,
+    ]
   );
 
   const persistLesson = useCallback(async () => {
@@ -567,6 +587,10 @@ export function CurriculumVideoLessonWorkspace({
             showVideoRemove={showVideoRemoveControls}
             watermarkText={watermarkText}
             onWatermarkTextChange={setWatermarkText}
+            watermarkColor={watermarkColor}
+            onWatermarkColorChange={setWatermarkColor}
+            watermarkOpacity={watermarkOpacity}
+            onWatermarkOpacityChange={setWatermarkOpacity}
           />
 
           <TextLessonWorkspaceSettings

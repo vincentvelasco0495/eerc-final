@@ -37,6 +37,8 @@ export const HOMEPAGE_V2_DEFAULTS = {
   sections: {
     hero: {
       visible: true,
+      imageOnly: false,
+      banner: { label: 'Banner image', alt: 'Homepage banner', url: null, mediaId: null },
       label: 'Professional learning platform',
       headline: 'High quality learning at your own pace',
       description:

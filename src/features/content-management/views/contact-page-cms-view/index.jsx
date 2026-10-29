@@ -19,6 +19,7 @@ import { InstructorWorkspaceShell } from 'src/features/instructor-profile/compon
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 
+import { pickChangedSections } from '../../utils/changed-sections';
 import { useContactPageAdmin, adminDataToFormSections } from '../../hooks/use-contact-page-admin';
 import {
   ContactDetailsEditor,
@@ -55,7 +56,7 @@ export function ContactPageCmsView() {
   });
 
   const { reset, handleSubmit, formState } = methods;
-  const { isDirty } = formState;
+  const { isDirty, dirtyFields } = formState;
 
   useEffect(() => {
     if (!query.data) {
@@ -77,8 +78,13 @@ export function ContactPageCmsView() {
   }, [isDirty]);
 
   const onSave = handleSubmit(async (values) => {
+    const changed = pickChangedSections(values.sections, dirtyFields.sections);
+    if (Object.keys(changed).length === 0) {
+      reset(values);
+      return;
+    }
     try {
-      await saveAllSections(values.sections);
+      await saveAllSections(changed);
       reset(values);
     } catch (e) {
       toast.error(e?.response?.data?.message ?? e?.message ?? 'Save failed.');

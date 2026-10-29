@@ -2,8 +2,10 @@ import { useMemo, useState, useEffect } from 'react';
 
 import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
+import Checkbox from '@mui/material/Checkbox';
 import Typography from '@mui/material/Typography';
 import Pagination from '@mui/material/Pagination';
+import FormControlLabel from '@mui/material/FormControlLabel';
 
 import { useLmsCourses, useLmsPrograms, useLmsEnrollments } from 'src/hooks/use-lms';
 
@@ -17,11 +19,17 @@ import { StudentWorkspaceShell } from '../../components/student-workspace-shell'
 
 const ITEMS_PER_PAGE = 6;
 
+function isOwnProgram(enrollmentKind) {
+  return enrollmentKind === 'approved' || enrollmentKind === 'pending' || enrollmentKind === 'hold';
+}
+
 export function StudentAvailableProgramsView() {
-  const { enrollments, mutate: mutateEnrollments } = useLmsEnrollments();
-  const { courses } = useLmsCourses(1, 200);
-  const { programs } = useLmsPrograms();
+  const { enrollments, isLoading: enrollmentsLoading, mutate: mutateEnrollments } = useLmsEnrollments();
+  const { courses, isLoading: coursesLoading } = useLmsCourses(1, 200);
+  const { programs, isLoading: programsLoading } = useLmsPrograms();
   const [page, setPage] = useState(1);
+  const [showNotEnrolled, setShowNotEnrolled] = useState(false);
+  const [catalogSettled, setCatalogSettled] = useState(false);
 
   const programItems = useMemo(
     () =>
@@ -34,8 +42,26 @@ export function StudentAvailableProgramsView() {
     [courses, enrollments, programs]
   );
 
-  const totalPages = Math.max(1, Math.ceil(programItems.length / ITEMS_PER_PAGE));
-  const visiblePrograms = programItems.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+  const hasEnrolledProgram = programItems.some((program) => program.enrollmentKind === 'approved');
+
+  useEffect(() => {
+    if (!enrollmentsLoading && !programsLoading && !coursesLoading) {
+      setCatalogSettled(true);
+    }
+  }, [coursesLoading, enrollmentsLoading, programsLoading]);
+
+  const listedPrograms = useMemo(() => {
+    if (!catalogSettled) {
+      return [];
+    }
+    if (!hasEnrolledProgram || showNotEnrolled) {
+      return programItems;
+    }
+    return programItems.filter((program) => isOwnProgram(program.enrollmentKind));
+  }, [catalogSettled, hasEnrolledProgram, programItems, showNotEnrolled]);
+
+  const totalPages = Math.max(1, Math.ceil(listedPrograms.length / ITEMS_PER_PAGE));
+  const visiblePrograms = listedPrograms.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
   useEffect(() => {
     if (page > totalPages) {
@@ -46,9 +72,32 @@ export function StudentAvailableProgramsView() {
   return (
     <StudentWorkspaceShell>
       <Stack spacing={3}>
-        <Typography variant="h4" sx={{ fontWeight: 700 }}>
-          Programs
-        </Typography>
+        <Stack
+          direction="row"
+          spacing={2}
+          useFlexGap
+          flexWrap="wrap"
+          alignItems="center"
+          justifyContent="space-between"
+        >
+          <Typography variant="h4" sx={{ fontWeight: 700 }}>
+            Programs
+          </Typography>
+
+          <FormControlLabel
+            label="Show not enrolled programs"
+            sx={{ mr: 0, userSelect: 'none' }}
+            control={
+              <Checkbox
+                checked={showNotEnrolled}
+                onChange={(event) => {
+                  setShowNotEnrolled(event.target.checked);
+                  setPage(1);
+                }}
+              />
+            }
+          />
+        </Stack>
 
         <Grid container spacing={{ xs: 2, sm: 2, md: 2.5 }}>
           {visiblePrograms.map((program) => (
@@ -63,7 +112,7 @@ export function StudentAvailableProgramsView() {
           ))}
         </Grid>
 
-        {visiblePrograms.length === 0 ? (
+        {catalogSettled && visiblePrograms.length === 0 ? (
           <Stack spacing={0.5} sx={{ py: 2, textAlign: 'center' }}>
             <Typography variant="body2" color="text.secondary">
               No programs are available right now.

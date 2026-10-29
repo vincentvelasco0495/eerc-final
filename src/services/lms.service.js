@@ -1511,6 +1511,10 @@ export async function mockResponseForKey(key) {
     return { data: quizResults };
   }
 
+  if (path === '/api/assignment-results') {
+    return { data: [] };
+  }
+
   if (path === '/api/leaderboard') {
     const type = params.get('type') || 'daily';
     return { data: leaderboard[type] ?? [] };

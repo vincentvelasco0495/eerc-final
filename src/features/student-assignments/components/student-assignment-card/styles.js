@@ -6,7 +6,18 @@ export const styles = {
     boxShadow: 'none',
   },
   cardContent: { p: { xs: 2.25, md: 2.75 } },
-  title: { fontSize: '1.02rem' },
+  title: { fontSize: '1.02rem', minWidth: 0, flex: '1 1 auto' },
+  actions: {
+    width: { xs: '100%', sm: 'auto' },
+    justifyContent: { xs: 'flex-start', sm: 'flex-end' },
+    flexShrink: 0,
+  },
+  actionBtn: {
+    minWidth: { xs: 0, sm: 92 },
+    flex: { xs: '1 1 0', sm: '0 0 auto' },
+    px: { xs: 0.75, sm: 1.25 },
+    whiteSpace: 'nowrap',
+  },
   grid: {
     display: 'grid',
     gap: { xs: 1.75, md: 2.25 },

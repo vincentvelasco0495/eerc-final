@@ -211,6 +211,7 @@ export const lmsEndpoints = {
   quizzes: (moduleId) =>
     moduleId ? `/api/quizzes?moduleId=${encodeURIComponent(moduleId)}` : '/api/quizzes',
   quizResults: () => '/api/quiz-results',
+  assignmentResults: () => '/api/assignment-results',
   assignmentSummaries: () => '/api/assignment-summaries',
   quizSummaries: () => '/api/quiz-summaries',
   gradebookCourses: () => '/api/gradebook/courses',

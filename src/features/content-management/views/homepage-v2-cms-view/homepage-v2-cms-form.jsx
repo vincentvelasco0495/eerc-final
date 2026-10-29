@@ -86,10 +86,40 @@ export function HeroSectionEditor() {
     keyName: 'fieldKey',
   });
   const images = watch('sections.hero.images') ?? [];
+  const imageOnly = watch('sections.hero.imageOnly');
 
   return (
     <SectionShell title="Hero Section" sectionKey="hero">
       <Stack spacing={2}>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={Boolean(imageOnly)}
+              onChange={(event) =>
+                setValue('sections.hero.imageOnly', event.target.checked, { shouldDirty: true })
+              }
+            />
+          }
+          label="Show one banner image"
+        />
+        {imageOnly ? (
+          <Controller
+            name="sections.hero.banner"
+            control={control}
+            render={({ field }) => (
+              <CmsImageUploadField
+                label="Banner image"
+                inputId="cms-hero-banner"
+                value={
+                  field.value && typeof field.value === 'object'
+                    ? field.value
+                    : { label: 'Banner image', alt: 'Homepage banner', url: null, mediaId: null }
+                }
+                onChange={field.onChange}
+              />
+            )}
+          />
+        ) : null}
         <TextRow name="sections.hero.label" label="Small label" />
         <TextRow name="sections.hero.headline" label="Headline" />
         <TextRow name="sections.hero.description" label="Description" multiline />

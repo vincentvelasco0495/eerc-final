@@ -29,6 +29,7 @@ export const LMS_REDUX_FLAGS = {
     '/api/modules': true,
     '/api/quizzes': true,
     '/api/quiz-results': true,
+    '/api/assignment-results': true,
     '/api/assignment-summaries': true,
     '/api/quiz-summaries': true,
     '/api/gradebook/courses': true,
@@ -143,6 +144,9 @@ export function shouldUseReduxRead(endpoint) {
   }
   if (/^\/api\/quizzes\/[^/]+\/leaderboard(\?.*)?$/.test(normalized)) {
     return Boolean(map['/api/quizzes/*/leaderboard']);
+  }
+  if (normalized === '/api/assignment-results' || normalized.startsWith('/api/assignment-results?')) {
+    return Boolean(map['/api/assignment-results']);
   }
   if (/^\/api\/my-assignments(\?.*)?$/.test(normalized)) {
     return Boolean(map['/api/my-assignments']);

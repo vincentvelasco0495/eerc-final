@@ -33,6 +33,8 @@ export function SecureLessonVideo({
   poster,
   title,
   watermarkText,
+  watermarkColor,
+  watermarkOpacity,
   dateLabel,
   initialPercent = 0,
   initialPositionSeconds = 0,
@@ -425,6 +427,8 @@ export function SecureLessonVideo({
             containerRef={playerRef}
             username={watermarkText}
             dateLabel={dateLabel}
+            color={watermarkColor}
+            opacity={watermarkOpacity}
             observeKey={activeSrc}
           />
         ) : null}

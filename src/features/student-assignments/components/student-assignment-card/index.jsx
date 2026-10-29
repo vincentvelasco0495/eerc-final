@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Chip from '@mui/material/Chip';
@@ -9,6 +11,8 @@ import CardContent from '@mui/material/CardContent';
 
 import { paths } from 'src/routes/paths';
 import { RouterLink } from 'src/routes/components';
+
+import { AssignmentAttemptHistoryDialog } from 'src/features/quizzes/components/quiz-attempt-history-dialog';
 
 import { styles } from './styles';
 
@@ -47,7 +51,22 @@ function gradeAvatarSx(status) {
   return { bgcolor: 'warning.darker', color: 'warning.light' };
 }
 
+function canRetakeAssignment(assignment) {
+  if (assignment?.status !== 'Passed' && assignment?.status !== 'Failed') {
+    return false;
+  }
+
+  const used = Number(assignment?.attemptsUsed) || 0;
+  const allowed = Number(assignment?.attemptsAllowed) || 0;
+  if (allowed > 0 && used >= allowed) {
+    return false;
+  }
+
+  return true;
+}
+
 export function StudentAssignmentCard({ assignment }) {
+  const [historyOpen, setHistoryOpen] = useState(false);
   const courseKey =
     (typeof assignment?.courseSlug === 'string' && assignment.courseSlug.trim()) ||
     (typeof assignment?.courseId === 'string' && assignment.courseId.trim()) ||
@@ -62,6 +81,9 @@ export function StudentAssignmentCard({ assignment }) {
       : null;
   const actionHref = assignment.status === 'Pending' ? assignmentHref : leaderboardHref;
   const actionLabel = assignment.status === 'Pending' ? 'Start' : 'Leaderboard';
+  const retakeHref =
+    canRetakeAssignment(assignment) && assignmentHref ? `${assignmentHref}?new=1` : null;
+  const showHistory = Boolean(assignment?.id) && (Number(assignment?.attemptsUsed) || 0) > 0;
 
   return (
     <Card sx={styles.card}>
@@ -76,17 +98,44 @@ export function StudentAssignmentCard({ assignment }) {
             <Typography variant="h6" sx={styles.title}>
               {assignment.title}
             </Typography>
-            {actionHref ? (
-              <Button
-                component={RouterLink}
-                href={actionHref}
-                size="small"
-                variant="contained"
-                disableElevation
-              >
-                {actionLabel}
-              </Button>
-            ) : null}
+            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={styles.actions}>
+              {showHistory ? (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="inherit"
+                  sx={styles.actionBtn}
+                  onClick={() => setHistoryOpen(true)}
+                >
+                  History
+                </Button>
+              ) : null}
+              {retakeHref ? (
+                <Button
+                  component={RouterLink}
+                  href={retakeHref}
+                  size="small"
+                  variant="outlined"
+                  color="inherit"
+                  sx={styles.actionBtn}
+                >
+                  Retake
+                </Button>
+              ) : null}
+              {actionHref ? (
+                <Button
+                  component={RouterLink}
+                  href={actionHref}
+                  size="small"
+                  variant={assignment.status === 'Pending' ? 'contained' : 'soft'}
+                  color={assignment.status === 'Pending' ? 'primary' : 'inherit'}
+                  disableElevation
+                  sx={styles.actionBtn}
+                >
+                  {actionLabel}
+                </Button>
+              ) : null}
+            </Stack>
           </Stack>
 
           <Box sx={styles.grid}>
@@ -121,6 +170,14 @@ export function StudentAssignmentCard({ assignment }) {
           </Box>
         </Stack>
       </CardContent>
+
+      {showHistory ? (
+        <AssignmentAttemptHistoryDialog
+          open={historyOpen}
+          assignment={assignment}
+          onClose={() => setHistoryOpen(false)}
+        />
+      ) : null}
     </Card>
   );
 }

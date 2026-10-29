@@ -33,6 +33,8 @@ export function PremiumPlayableVideo({
   title = 'Video',
   aspectRatio = '16 / 9',
   watermarkText = '',
+  watermarkColor,
+  watermarkOpacity,
   dateLabel,
   preload = 'metadata',
   sx,
@@ -196,6 +198,8 @@ export function PremiumPlayableVideo({
           containerRef={playerRef}
           username={watermarkText}
           dateLabel={dateLabel}
+          color={watermarkColor}
+          opacity={watermarkOpacity}
           observeKey={activeSrc}
         />
       ) : null}

@@ -23,6 +23,11 @@ export async function publishAllHomepageV2Sections() {
   return data;
 }
 
+export async function reorderHomepageV2Sections(sectionKeys) {
+  const { data } = await axios.put('/api/admin/homepage-v2/order', { sectionKeys });
+  return data;
+}
+
 export async function uploadCmsMedia(file, alt = '') {
   const form = new FormData();
   form.append('file', file);

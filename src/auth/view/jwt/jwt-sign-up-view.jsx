@@ -51,11 +51,11 @@ export function JwtSignUpView() {
   const [errorMessage, setErrorMessage] = useState(null);
 
   const defaultValues = {
-    firstName: 'Hello',
-    lastName: 'Friend',
-    email: 'hello@gmail.com',
-    password: '@2Minimal',
-    confirmPassword: '@2Minimal',
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
   };
 
   const methods = useForm({

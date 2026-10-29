@@ -70,7 +70,7 @@ export function useAboutAdmin() {
         })
       );
       invalidateAll();
-      toast.success('All changes saved.');
+      toast.success('Changes saved.');
     },
     [invalidateAll]
   );

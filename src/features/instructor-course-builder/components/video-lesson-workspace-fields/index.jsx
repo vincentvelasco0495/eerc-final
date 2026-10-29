@@ -1,8 +1,9 @@
-import { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
+import Slider from '@mui/material/Slider';
 import Button from '@mui/material/Button';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
@@ -16,9 +17,89 @@ import { Iconify } from 'src/components/iconify';
 import { PremiumPlayableVideo } from 'src/components/common/premium-playable-video';
 
 import { styles } from './styles';
-import { VIDEO_WATERMARK_MAX_LENGTH } from '../../utils/lesson-authoring-helpers';
+import {
+  VIDEO_WATERMARK_MAX_LENGTH,
+  normalizeVideoWatermarkColor,
+  DEFAULT_VIDEO_WATERMARK_COLOR,
+  DEFAULT_VIDEO_WATERMARK_OPACITY,
+} from '../../utils/lesson-authoring-helpers';
 
 const SOURCE_OPTIONS = [{ value: 'html-mp4', label: 'HTML (MP4)' }];
+
+function WatermarkAppearanceFields({ color, opacity, onColorChange, onOpacityChange }) {
+  const normalizedColor = normalizeVideoWatermarkColor(color);
+  const [colorDraft, setColorDraft] = useState(normalizedColor);
+
+  useEffect(() => {
+    setColorDraft(normalizedColor);
+  }, [normalizedColor]);
+
+  const commitColor = (next) => {
+    const resolved = normalizeVideoWatermarkColor(next);
+    setColorDraft(resolved);
+    onColorChange?.(resolved);
+  };
+
+  return (
+    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 1.5 }}>
+      <Box sx={{ minWidth: { sm: 200 } }}>
+        <Typography sx={styles.fieldLabel}>Text color</Typography>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Box
+            component="input"
+            type="color"
+            value={normalizedColor}
+            aria-label="Watermark text color"
+            onChange={(event) => commitColor(event.target.value)}
+            sx={{
+              width: 40,
+              height: 40,
+              p: 0.25,
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 1,
+              bgcolor: 'background.paper',
+              cursor: 'pointer',
+            }}
+          />
+          <TextField
+            size="small"
+            value={colorDraft}
+            onChange={(event) => {
+              const next = event.target.value;
+              setColorDraft(next);
+              if (/^#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/.test(next.trim())) {
+                onColorChange?.(normalizeVideoWatermarkColor(next));
+              }
+            }}
+            onBlur={() => commitColor(colorDraft)}
+            slotProps={{ htmlInput: { maxLength: 7, 'aria-label': 'Watermark color hex' } }}
+            sx={{ width: 120 }}
+          />
+        </Stack>
+      </Box>
+
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Typography sx={styles.fieldLabel}>Opacity</Typography>
+        <Stack direction="row" spacing={2} alignItems="center">
+          <Slider
+            value={Number.isFinite(Number(opacity)) ? Number(opacity) : DEFAULT_VIDEO_WATERMARK_OPACITY}
+            min={0}
+            max={100}
+            aria-label="Watermark opacity"
+            valueLabelDisplay="auto"
+            valueLabelFormat={(value) => `${value}%`}
+            onChange={(_, value) => onOpacityChange?.(Array.isArray(value) ? value[0] : value)}
+            sx={{ flex: 1 }}
+          />
+          <Typography variant="body2" sx={{ width: 42, flexShrink: 0, fontWeight: 600 }}>
+            {Number.isFinite(Number(opacity)) ? Number(opacity) : DEFAULT_VIDEO_WATERMARK_OPACITY}%
+          </Typography>
+        </Stack>
+      </Box>
+    </Stack>
+  );
+}
 
 function MediaDropzone({
   accept,
@@ -36,6 +117,8 @@ function MediaDropzone({
   uploadPercent = null,
   previewLoading = false,
   watermarkText = '',
+  watermarkColor = DEFAULT_VIDEO_WATERMARK_COLOR,
+  watermarkOpacity = DEFAULT_VIDEO_WATERMARK_OPACITY,
 }) {
   const onDrop = useCallback(
     (acceptedFiles) => {
@@ -75,6 +158,8 @@ function MediaDropzone({
                 title="Lesson video"
                 aspectRatio="16 / 9"
                 watermarkText={watermarkText}
+                watermarkColor={watermarkColor}
+                watermarkOpacity={watermarkOpacity}
               />
             ) : (
               <Box component="img" src={previewUrl} alt="" sx={styles.posterPreview} loading="lazy" />
@@ -193,6 +278,10 @@ export function VideoLessonWorkspaceFields({
   showVideoRemove = false,
   watermarkText = '',
   onWatermarkTextChange,
+  watermarkColor = DEFAULT_VIDEO_WATERMARK_COLOR,
+  onWatermarkColorChange,
+  watermarkOpacity = DEFAULT_VIDEO_WATERMARK_OPACITY,
+  onWatermarkOpacityChange,
 }) {
   return (
     <Stack sx={styles.root}>
@@ -231,6 +320,8 @@ export function VideoLessonWorkspaceFields({
           uploadPercent={videoUploadPercent}
           previewLoading={videoPreviewLoading}
           watermarkText={watermarkText}
+          watermarkColor={watermarkColor}
+          watermarkOpacity={watermarkOpacity}
         />
         {videoSecondaryHint ? (
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75 }}>
@@ -259,8 +350,14 @@ export function VideoLessonWorkspaceFields({
           value={watermarkText}
           onChange={(e) => onWatermarkTextChange?.(e.target.value)}
           placeholder="Text tiled over this video"
-          helperText="Shown on this video only. Leave blank for no watermark. Click Save lesson after editing."
+          helperText="Shown on this video only. Leave blank for no watermark. Color and opacity update the preview now. Click Save lesson to keep them."
           slotProps={{ htmlInput: { maxLength: VIDEO_WATERMARK_MAX_LENGTH } }}
+        />
+        <WatermarkAppearanceFields
+          color={watermarkColor}
+          opacity={watermarkOpacity}
+          onColorChange={onWatermarkColorChange}
+          onOpacityChange={onWatermarkOpacityChange}
         />
       </Box>
 

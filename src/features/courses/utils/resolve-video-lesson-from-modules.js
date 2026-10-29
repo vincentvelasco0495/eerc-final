@@ -2,6 +2,10 @@ import {
   deriveLessonType,
   coreLessonListTitle,
 } from 'src/features/instructor-course-builder/utils/map-lms-modules-to-curriculum-builder';
+import {
+  normalizeVideoWatermarkColor,
+  normalizeVideoWatermarkOpacity,
+} from 'src/features/instructor-course-builder/utils/lesson-authoring-helpers';
 
 import { moduleCurriculumTitle } from './resolve-text-lesson-from-modules';
 
@@ -62,12 +66,14 @@ function bodyFromModule(mod) {
   return '';
 }
 
-function lessonWatermarkText(lessonMeta) {
-  if (!lessonMeta || typeof lessonMeta !== 'object') {
-    return '';
-  }
-  const raw = lessonMeta.watermarkText ?? lessonMeta.watermark_text;
-  return typeof raw === 'string' ? raw.trim() : '';
+function lessonWatermark(lessonMeta) {
+  const meta = lessonMeta && typeof lessonMeta === 'object' ? lessonMeta : {};
+  const raw = meta.watermarkText ?? meta.watermark_text;
+  return {
+    watermarkText: typeof raw === 'string' ? raw.trim() : '',
+    watermarkColor: normalizeVideoWatermarkColor(meta.watermarkColor ?? meta.watermark_color),
+    watermarkOpacity: normalizeVideoWatermarkOpacity(meta.watermarkOpacity ?? meta.watermark_opacity),
+  };
 }
 
 function bodyFromStandaloneRow(row) {
@@ -91,7 +97,7 @@ function bodyFromStandaloneRow(row) {
  *
  * @param {string} lessonKey
  * @param {object[]} modules
- * @returns {{ kind: 'standalone' | 'core', lessonKind: string, title: string, bodyHtml: string, moduleId: string, moduleTitle: string, lessonMaterials: object[], primaryVideoMaterial: { id: string, name?: string, mime?: string } | null, watermarkText: string } | null}
+ * @returns {{ kind: 'standalone' | 'core', lessonKind: string, title: string, bodyHtml: string, moduleId: string, moduleTitle: string, lessonMaterials: object[], primaryVideoMaterial: { id: string, name?: string, mime?: string } | null, watermarkText: string, watermarkColor: string, watermarkOpacity: number } | null}
  */
 export function resolveVideoLessonFromModules(lessonKey, modules) {
   if (!lessonKey || !Array.isArray(modules)) {
@@ -118,7 +124,7 @@ export function resolveVideoLessonFromModules(lessonKey, modules) {
       bodyHtml: body,
       lessonMaterials,
       primaryVideoMaterial: pickPrimaryVideoMaterial(lessonMaterials),
-      watermarkText: lessonWatermarkText(mod.lessonMeta),
+      ...lessonWatermark(mod.lessonMeta),
     };
   }
 
@@ -136,7 +142,7 @@ export function resolveVideoLessonFromModules(lessonKey, modules) {
         bodyHtml: bodyFromStandaloneRow(row),
         lessonMaterials,
         primaryVideoMaterial: pickPrimaryVideoMaterial(lessonMaterials),
-        watermarkText: lessonWatermarkText(row.lessonMeta),
+        ...lessonWatermark(row.lessonMeta),
       };
     }
   }

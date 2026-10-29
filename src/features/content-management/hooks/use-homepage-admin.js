@@ -6,6 +6,7 @@ import { HOMEPAGE_V2_DEFAULTS } from 'src/features/homepage-v2/data/homepage-v2-
 import {
   fetchHomepageV2Admin,
   updateHomepageV2Section,
+  reorderHomepageV2Sections,
   publishAllHomepageV2Sections,
 } from 'src/features/homepage-v2/api/homepage-v2-api';
 
@@ -68,6 +69,43 @@ export function useHomepageAdmin() {
     },
   });
 
+  const reorderMutation = useMutation({
+    mutationFn: reorderHomepageV2Sections,
+    onMutate: async (sectionKeys) => {
+      await queryClient.cancelQueries({ queryKey: HOMEPAGE_ADMIN_QUERY_KEY });
+      const previous = queryClient.getQueryData(HOMEPAGE_ADMIN_QUERY_KEY);
+      queryClient.setQueryData(HOMEPAGE_ADMIN_QUERY_KEY, (current) => {
+        if (!current?.sections) {
+          return current;
+        }
+        const sections = {};
+        sectionKeys.forEach((key, index) => {
+          if (current.sections[key]) {
+            sections[key] = { ...current.sections[key], sortOrder: (index + 1) * 10 };
+          }
+        });
+        Object.keys(current.sections).forEach((key) => {
+          if (!sections[key]) {
+            sections[key] = current.sections[key];
+          }
+        });
+        return { ...current, sections };
+      });
+      return { previous };
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(HOMEPAGE_ADMIN_QUERY_KEY, data);
+      queryClient.invalidateQueries({ queryKey: ['homepage-v2'] });
+      toast.success('Section order saved.');
+    },
+    onError: (error, _keys, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(HOMEPAGE_ADMIN_QUERY_KEY, context.previous);
+      }
+      toast.error(error?.response?.data?.message ?? error?.message ?? 'Could not reorder sections.');
+    },
+  });
+
   const saveAllSections = useCallback(
     async (sectionsByKey) => {
       const keys = Object.keys(sectionsByKey);
@@ -82,7 +120,7 @@ export function useHomepageAdmin() {
         })
       );
       invalidateAll();
-      toast.success('All changes saved.');
+      toast.success('Changes saved.');
     },
     [invalidateAll]
   );
@@ -95,6 +133,8 @@ export function useHomepageAdmin() {
     isSaving: saveSectionMutation.isPending || publishAllMutation.isPending,
     saveSection: saveSectionMutation.mutateAsync,
     saveAllSections,
+    reorderSections: reorderMutation.mutateAsync,
+    isReordering: reorderMutation.isPending,
     publishAll: publishAllMutation.mutateAsync,
     refetch: query.refetch,
   };

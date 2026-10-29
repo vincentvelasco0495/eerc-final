@@ -4,9 +4,31 @@ import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
-function WatermarkTiles({ username, dateLabel }) {
+function resolveTileColor(color) {
+  return typeof color === 'string' && /^#[0-9A-Fa-f]{6}$/.test(color) ? color : '#FFFFFF';
+}
+
+function resolveTileOpacity(opacity) {
+  const amount = Number(opacity);
+  if (!Number.isFinite(amount)) {
+    return 0.42;
+  }
+  return Math.max(0, Math.min(100, amount)) / 100;
+}
+
+function tileTextShadow(color) {
+  const hex = color.slice(1);
+  const red = parseInt(hex.slice(0, 2), 16);
+  const green = parseInt(hex.slice(2, 4), 16);
+  const blue = parseInt(hex.slice(4, 6), 16);
+  const luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255;
+  return luminance > 0.62 ? '0 1px 3px rgba(0,0,0,0.65)' : '0 1px 2px rgba(255,255,255,0.7)';
+}
+
+function WatermarkTiles({ username, dateLabel, color, opacity }) {
   const label = [username, dateLabel].filter(Boolean).join('  ·  ');
   const tiles = Array.from({ length: 40 }, (_, index) => index);
+  const textColor = resolveTileColor(color);
 
   return (
     <Box
@@ -24,7 +46,7 @@ function WatermarkTiles({ username, dateLabel }) {
           inset: '-35%',
           display: 'grid',
           position: 'absolute',
-          opacity: 0.42,
+          opacity: resolveTileOpacity(opacity),
           transform: 'rotate(-22deg)',
           gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
         }}
@@ -34,11 +56,11 @@ function WatermarkTiles({ username, dateLabel }) {
             key={index}
             variant="caption"
             sx={{
-              color: 'common.white',
+              color: textColor,
               fontWeight: 700,
               letterSpacing: 0.04,
               whiteSpace: 'nowrap',
-              textShadow: '0 1px 3px rgba(0,0,0,0.65)',
+              textShadow: tileTextShadow(textColor),
             }}
           >
             {label}
@@ -49,9 +71,9 @@ function WatermarkTiles({ username, dateLabel }) {
   );
 }
 
-export function WatermarkOverlay({ username, dateLabel, variant = 'badge' }) {
+export function WatermarkOverlay({ username, dateLabel, variant = 'badge', color, opacity }) {
   if (variant === 'video') {
-    return <WatermarkTiles username={username} dateLabel={dateLabel} />;
+    return <WatermarkTiles username={username} dateLabel={dateLabel} color={color} opacity={opacity} />;
   }
 
   return (

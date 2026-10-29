@@ -23,6 +23,17 @@ import {
   SampleLectureSection,
 } from '../sections';
 
+const HOMEPAGE_SECTION_VIEWS = {
+  hero: HeroSection,
+  feature_cards: FeatureCards,
+  instructors: InstructorSection,
+  sample_lecture: SampleLectureSection,
+  stats: StatisticsBanner,
+  success_stories: SuccessStories,
+  how_it_works: HowItWorks,
+  featured_content: FeaturedCarousel,
+};
+
 export function HomeV2View() {
   const [searchParams] = useSearchParams();
   const { user } = useAuthContext();
@@ -38,14 +49,12 @@ export function HomeV2View() {
     <HomepageV2ContentProvider sections={sections}>
       <Box sx={[sectionStyles.pageRoot, pageContentStyles.homeContainers]}>
         <BackToTopButton />
-        <HeroSection />
-        <FeatureCards />
-        <InstructorSection />
-        <SampleLectureSection />
-        <StatisticsBanner />
-        <SuccessStories />
-        <HowItWorks />
-        <FeaturedCarousel />
+        {Object.keys(sections)
+          .filter((key) => HOMEPAGE_SECTION_VIEWS[key])
+          .map((key) => {
+            const Section = HOMEPAGE_SECTION_VIEWS[key];
+            return <Section key={key} />;
+          })}
       </Box>
     </HomepageV2ContentProvider>
   );

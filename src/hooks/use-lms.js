@@ -5,10 +5,10 @@ import axios from 'src/lib/axios';
 import { lmsEndpoints } from 'src/redux/api/lmsEndpoints';
 import { LMS_REDUX_FLAGS, shouldUseReduxRead } from 'src/features/lms/redux-flags';
 import {
-  getLearnerEnrollmentAccessSets,
-  isSoftDeletedRecord,
   withoutSoftDeleted,
+  isSoftDeletedRecord,
   withoutSoftDeletedModules,
+  getLearnerEnrollmentAccessSets,
 } from 'src/features/student-profile/student-profile-data';
 import {
   selectAppState,
@@ -649,6 +649,7 @@ export function useRefreshLmsCoursesCatalog() {
         key.startsWith('/api/my-quizzes') ||
         key.startsWith('/api/my-assignments') ||
         key.startsWith('/api/quiz-results') ||
+        key.startsWith('/api/assignment-results') ||
         key.startsWith('/api/gradebook')
     );
     const endpoints = [...new Set([
@@ -1000,6 +1001,12 @@ export function useLmsQuizHistory(quizId) {
 
 export function useLmsQuizResults(enabled = true) {
   const key = enabled ? lmsEndpoints.quizResults() : null;
+  const redux = useReduxLmsResource(key, Boolean(key), { ttlMs: 30_000 });
+  return { results: redux.data?.data ?? [], isLoading: redux.isLoading, mutate: redux.mutate };
+}
+
+export function useLmsAssignmentResults(enabled = true) {
+  const key = enabled ? lmsEndpoints.assignmentResults() : null;
   const redux = useReduxLmsResource(key, Boolean(key), { ttlMs: 30_000 });
   return { results: redux.data?.data ?? [], isLoading: redux.isLoading, mutate: redux.mutate };
 }

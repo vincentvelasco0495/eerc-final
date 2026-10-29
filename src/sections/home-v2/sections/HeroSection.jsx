@@ -11,6 +11,7 @@ import Typography from '@mui/material/Typography';
 import { RouterLink } from 'src/routes/components';
 
 import { Iconify } from 'src/components/iconify';
+import { Carousel, useCarousel, CarouselDotButtons } from 'src/components/carousel';
 
 import { CmsImage } from '../components/CmsImage';
 import { sectionStyles } from '../styles/section-styles';
@@ -87,6 +88,42 @@ const LAYOUT_BY_KEY = {
   testimonial: HERO_MEDIA_LAYOUTS[2],
 };
 
+function HeroPreviewSlider({ images }) {
+  const carousel = useCarousel({
+    loop: images.length > 1,
+    align: 'start',
+    slidesToShow: 1,
+  });
+
+  return (
+    <Stack spacing={1.5} sx={{ display: { xs: 'flex', md: 'none' }, mx: 'auto', width: 1, maxWidth: 560 }}>
+      <Carousel carousel={carousel}>
+        {images.map((image, index) => (
+          <Box
+            key={image.key ?? image.label ?? index}
+            sx={{
+              borderRadius: 3,
+              overflow: 'hidden',
+              boxShadow: (theme) => theme.customShadows?.z16 ?? theme.shadows[16],
+            }}
+          >
+            <CmsImage media={image} label={image.label ?? 'Preview'} aspectRatio="4 / 3" />
+          </Box>
+        ))}
+      </Carousel>
+      {images.length > 1 ? (
+        <CarouselDotButtons
+          variant="rounded"
+          scrollSnaps={carousel.dots.scrollSnaps}
+          selectedIndex={carousel.dots.selectedIndex}
+          onClickDot={carousel.dots.onClickDot}
+          sx={{ width: 1, justifyContent: 'center', color: 'text.primary' }}
+        />
+      ) : null}
+    </Stack>
+  );
+}
+
 function layoutForHeroImage(image, index) {
   const preset = LAYOUT_BY_KEY[image?.key] ?? HERO_MEDIA_LAYOUTS[index % HERO_MEDIA_LAYOUTS.length];
   const cycle = LAYOUT_BY_KEY[image?.key] ? 0 : Math.floor(index / HERO_MEDIA_LAYOUTS.length);
@@ -112,6 +149,7 @@ export function HeroSection() {
   const primary = content.primaryButton ?? {};
   const secondary = content.secondaryButton ?? {};
   const images = Array.isArray(content.images) ? content.images : [];
+  const imageOnly = Boolean(content.imageOnly);
 
   return (
     <Box component="section" sx={sectionStyles.section}>
@@ -161,40 +199,65 @@ export function HeroSection() {
 
           <Grid size={{ xs: 12, lg: 6 }}>
             <ScrollReveal direction="inRight" distance={40}>
-              <Box
-                component={m.div}
-                whileHover={{ y: -6 }}
-                transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-                sx={{
-                  position: 'relative',
-                  minHeight: { xs: 360, sm: 420, md: images.length > 3 ? 540 : 480 },
-                  mx: 'auto',
-                  maxWidth: 560,
-                }}
-              >
-                {images.map((image, index) => {
-                  const layout = layoutForHeroImage(image, index);
-                  return (
-                    <Box
-                      key={image.key ?? image.label ?? index}
-                      component={m.div}
-                      whileHover={{ scale: 1.03, zIndex: 10 }}
-                      transition={{ type: 'spring', stiffness: 320, damping: 24 }}
-                      sx={{
-                        position: 'absolute',
-                        boxShadow: (theme) => theme.customShadows?.z16 ?? theme.shadows[16],
-                        ...layout.sx,
-                      }}
-                    >
-                      <CmsImage
-                        media={image}
-                        label={image.label ?? 'Preview'}
-                        aspectRatio={layout.aspectRatio}
-                      />
-                    </Box>
-                  );
-                })}
-              </Box>
+              {imageOnly ? (
+                <Box
+                  component={m.div}
+                  whileHover={{ y: -6 }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+                  sx={{
+                    mx: 'auto',
+                    maxWidth: 560,
+                    borderRadius: 3,
+                    overflow: 'hidden',
+                    boxShadow: (theme) => theme.customShadows?.z16 ?? theme.shadows[16],
+                  }}
+                >
+                  <CmsImage
+                    media={content.banner}
+                    label={content.banner?.label || 'Banner image'}
+                    aspectRatio="4 / 3"
+                  />
+                </Box>
+              ) : (
+                <>
+                  <HeroPreviewSlider images={images} />
+                  <Box
+                    component={m.div}
+                    whileHover={{ y: -6 }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+                    sx={{
+                      display: { xs: 'none', md: 'block' },
+                      position: 'relative',
+                      minHeight: { md: images.length > 3 ? 540 : 480 },
+                      mx: 'auto',
+                      maxWidth: 560,
+                    }}
+                  >
+                    {images.map((image, index) => {
+                      const layout = layoutForHeroImage(image, index);
+                      return (
+                        <Box
+                          key={image.key ?? image.label ?? index}
+                          component={m.div}
+                          whileHover={{ scale: 1.03, zIndex: 10 }}
+                          transition={{ type: 'spring', stiffness: 320, damping: 24 }}
+                          sx={{
+                            position: 'absolute',
+                            boxShadow: (theme) => theme.customShadows?.z16 ?? theme.shadows[16],
+                            ...layout.sx,
+                          }}
+                        >
+                          <CmsImage
+                            media={image}
+                            label={image.label ?? 'Preview'}
+                            aspectRatio={layout.aspectRatio}
+                          />
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                </>
+              )}
             </ScrollReveal>
           </Grid>
         </Grid>

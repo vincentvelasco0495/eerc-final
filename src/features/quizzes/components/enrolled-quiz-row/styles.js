@@ -8,32 +8,46 @@ export const styles = {
     borderBottom: isLast ? 'none' : '1px solid',
     borderColor: 'divider',
     gridTemplateColumns: {
-      xs: '1fr',
-      md: 'minmax(180px, 1.4fr) minmax(160px, 1fr) minmax(150px, 1fr) auto',
-      xl: 'minmax(220px, 1.6fr) minmax(180px, 1fr) minmax(170px, 1fr) auto',
+      xs: 'minmax(0, 1fr) minmax(0, 1fr) auto',
+      // Fixed tracks so Attempts, Questions, and score line up even when
+      // one row has a Retake button and the next does not.
+      md: 'minmax(150px, 1.45fr) minmax(248px, 1fr) 168px 304px',
+      xl: 'minmax(200px, 1.6fr) minmax(268px, 1fr) 180px 304px',
     },
   }),
-  titleCol: { minWidth: 0 },
+  titleCol: {
+    minWidth: 0,
+    gridColumn: { xs: '1 / -1', md: 'auto' },
+  },
   quizTitle: {
+    minWidth: 0,
+    flex: { xs: '1 1 auto', md: '0 1 auto' },
     fontWeight: 700,
     fontSize: '0.98rem',
     lineHeight: 1.35,
     color: 'text.primary',
   },
   statusChip: {
-    alignSelf: 'flex-start',
+    alignSelf: { xs: 'center', md: 'flex-start' },
     fontWeight: 600,
     height: 24,
   },
   metricsCol: {
     display: 'grid',
-    gap: { xs: 1.25, sm: 1.5 },
-    gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(2, minmax(88px, 1fr))' },
+    gap: { xs: 1.5, md: 2 },
+    gridColumn: { xs: '1 / 3', md: 'auto' },
+    gridTemplateColumns: { xs: 'minmax(0, 1fr) minmax(0, 1fr)', md: 'minmax(108px, 1fr) minmax(116px, 1fr)' },
+    alignItems: 'start',
   },
   metaBlock: { minWidth: 0 },
   metaCaption: { color: 'text.secondary', lineHeight: 1.2 },
   metaValue: { fontWeight: 600, color: 'text.primary' },
-  scoreCol: { minWidth: 0 },
+  scoreCol: {
+    minWidth: 0,
+    gridColumn: { xs: '3 / 4', md: 'auto' },
+    alignSelf: 'center',
+    justifyContent: { xs: 'flex-end', md: 'flex-start' },
+  },
   gradeAvatar: {
     width: 32,
     height: 32,
@@ -46,8 +60,17 @@ export const styles = {
   gradeProgress: { color: 'text.secondary' },
   actionCol: {
     display: 'flex',
+    gap: 1,
+    gridColumn: { xs: '1 / -1', md: 'auto' },
+    flexWrap: 'nowrap',
     justifyContent: { xs: 'flex-start', md: 'flex-end' },
     alignItems: 'center',
+    width: { xs: '100%', md: 304 },
   },
-  actionBtn: { minWidth: 92 },
+  actionBtn: {
+    minWidth: { xs: 0, md: 92 },
+    flex: { xs: '1 1 0', md: '0 0 auto' },
+    px: { xs: 0.75, md: 1.25 },
+    whiteSpace: 'nowrap',
+  },
 };

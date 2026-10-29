@@ -9,6 +9,8 @@ export function VideoFrameWatermark({
   containerRef,
   username,
   dateLabel,
+  color,
+  opacity,
   observeKey,
 }) {
   const rect = useObjectFitContainRect(videoRef, containerRef, observeKey);
@@ -30,7 +32,13 @@ export function VideoFrameWatermark({
         zIndex: 2,
       }}
     >
-      <WatermarkOverlay variant="video" username={username} dateLabel={dateLabel} />
+      <WatermarkOverlay
+        variant="video"
+        username={username}
+        dateLabel={dateLabel}
+        color={color}
+        opacity={opacity}
+      />
     </Box>
   );
 }

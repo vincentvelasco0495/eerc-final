@@ -1,5 +1,5 @@
 import { useForm, FormProvider } from 'react-hook-form';
-import { useState, useEffect, useCallback } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
@@ -17,6 +17,8 @@ import { InstructorWorkspaceShell } from 'src/features/instructor-profile/compon
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 
+import { pickChangedSections } from '../../utils/changed-sections';
+import { moveItem, ReorderControls } from '../../components/ReorderControls';
 import { useHomepageAdmin, adminDataToFormSections } from '../../hooks/use-homepage-admin';
 import {
   StatisticsEditor,
@@ -82,7 +84,8 @@ function buildDefaultFormValues(sections) {
 }
 
 export function HomepageV2CmsView() {
-  const { hasApi, isLoading, isSaving, saveAllSections, publishAll, query } = useHomepageAdmin();
+  const { hasApi, isLoading, isSaving, isReordering, saveAllSections, publishAll, reorderSections, query } =
+    useHomepageAdmin();
 
   const methods = useForm({
     defaultValues: buildDefaultFormValues(HOMEPAGE_V2_DEFAULTS.sections),
@@ -90,7 +93,7 @@ export function HomepageV2CmsView() {
 
   const [formReady, setFormReady] = useState(false);
   const { reset, handleSubmit, formState } = methods;
-  const { isDirty } = formState;
+  const { isDirty, dirtyFields } = formState;
 
   useEffect(() => {
     if (!query.data) {
@@ -115,13 +118,39 @@ export function HomepageV2CmsView() {
   }, [isDirty]);
 
   const onSave = handleSubmit(async (values) => {
+    const changed = pickChangedSections(values.sections, dirtyFields.sections);
+    if (Object.keys(changed).length === 0) {
+      reset(values);
+      return;
+    }
     try {
-      await saveAllSections(values.sections);
+      await saveAllSections(changed);
       reset(values);
     } catch (e) {
       toast.error(e?.response?.data?.message ?? e?.message ?? 'Save failed.');
     }
   });
+
+  const accordions = useMemo(() => {
+    const rows = query.data?.sections ?? {};
+    return [...ACCORDIONS].sort(
+      (left, right) => Number(rows[left.key]?.sortOrder ?? 0) - Number(rows[right.key]?.sortOrder ?? 0)
+    );
+  }, [query.data]);
+
+  const moveSection = useCallback(
+    (index, delta) => {
+      const target = index + delta;
+      if (isReordering || target < 0 || target >= accordions.length) {
+        return;
+      }
+      const keys = accordions.map((item) => item.key);
+      reorderSections(moveItem(keys, index, target)).catch(() => {
+        /* toast in hook */
+      });
+    },
+    [accordions, isReordering, reorderSections]
+  );
 
   const onPublishAll = useCallback(async () => {
     try {
@@ -161,24 +190,34 @@ export function HomepageV2CmsView() {
             </Box>
           ) : (
             <Stack spacing={2}>
-              {ACCORDIONS.map(({ key, title, Editor }) => (
-                <Accordion
-                  key={key}
-                  defaultExpanded={key === 'hero' || key === 'sample_lecture'}
-                  disableGutters
-                  elevation={0}
-                  slotProps={{ transition: { unmountOnExit: true } }}
-                  sx={{ '&:before': { display: 'none' } }}
-                >
-                  <AccordionSummary expandIcon={<Iconify icon="solar:alt-arrow-down-linear" />}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                      {title}
-                    </Typography>
-                  </AccordionSummary>
-                  <AccordionDetails sx={{ pt: 0 }}>
-                    <Editor />
-                  </AccordionDetails>
-                </Accordion>
+              {accordions.map(({ key, title, Editor }, index) => (
+                <Stack key={key} direction="row" spacing={0.5} alignItems="flex-start">
+                  <Box sx={{ pt: 0.75 }}>
+                    <ReorderControls
+                      index={index}
+                      total={accordions.length}
+                      disabled={isReordering || isSaving}
+                      onMoveUp={() => moveSection(index, -1)}
+                      onMoveDown={() => moveSection(index, 1)}
+                    />
+                  </Box>
+                  <Accordion
+                    disableGutters
+                    elevation={0}
+                    defaultExpanded={key === 'hero' || key === 'sample_lecture'}
+                    slotProps={{ transition: { unmountOnExit: true } }}
+                    sx={{ flex: 1, minWidth: 0, '&:before': { display: 'none' } }}
+                  >
+                    <AccordionSummary expandIcon={<Iconify icon="solar:alt-arrow-down-linear" />}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                        {title}
+                      </Typography>
+                    </AccordionSummary>
+                    <AccordionDetails sx={{ pt: 0 }}>
+                      <Editor />
+                    </AccordionDetails>
+                  </Accordion>
+                </Stack>
               ))}
             </Stack>
           )}
