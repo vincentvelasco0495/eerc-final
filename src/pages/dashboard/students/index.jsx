@@ -288,7 +288,11 @@ export default function StudentsPage() {
     setBusyId(studentId);
     try {
       await runCommand('student.delete', { publicId: studentId });
-      toast.success('Student roster entry deleted.');
+      toast.success(
+        pendingDeleteRow?.isStudent === false
+          ? 'Student roster entry deleted.'
+          : 'Student roster entry deleted. That email can be registered again.'
+      );
       setConfirmOpen(false);
       setPendingDeleteRow(null);
       await refetchStudentLists();
@@ -593,8 +597,10 @@ export default function StudentsPage() {
         title="Delete student roster entry"
         content={
           <>
-            Remove roster entry for <strong>{pendingDeleteRow?.name ?? ''}</strong>? This performs a soft delete on the
-            link only.
+            Remove roster entry for <strong>{pendingDeleteRow?.name ?? ''}</strong>?{' '}
+            {pendingDeleteRow?.isStudent === false
+              ? 'This only removes the roster link. The account email stays in use.'
+              : 'Their email can be used to register again.'}
           </>
         }
         action={

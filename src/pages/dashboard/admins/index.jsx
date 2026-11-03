@@ -177,7 +177,7 @@ export default function AdminsPage() {
     setBusyId(adminId);
     try {
       await deleteLmsAdmin(adminId);
-      toast.success('Admin account deleted.');
+      toast.success('Admin account deleted. That email can be registered again.');
       setConfirmOpen(false);
       setPendingDeleteRow(null);
       if (editingId === adminId) {
@@ -420,7 +420,7 @@ export default function AdminsPage() {
           setPendingDeleteRow(null);
         }}
         title="Delete admin"
-        content={`Delete ${pendingDeleteRow?.name ?? 'this admin'}? They will no longer be able to sign in.`}
+        content={`Delete ${pendingDeleteRow?.name ?? 'this admin'}? They will no longer be able to sign in, and their email can be used to register again.`}
         action={
           <Button color="error" variant="contained" onClick={handleDelete} disabled={Boolean(busyId)}>
             Delete
