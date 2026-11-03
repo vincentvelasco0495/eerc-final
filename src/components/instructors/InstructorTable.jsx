@@ -5,6 +5,7 @@ import Menu from '@mui/material/Menu';
 import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
 import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
 import MenuItem from '@mui/material/MenuItem';
 import Skeleton from '@mui/material/Skeleton';
 import TableRow from '@mui/material/TableRow';
@@ -18,6 +19,7 @@ import ListItemText from '@mui/material/ListItemText';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import TableContainer from '@mui/material/TableContainer';
 import LinearProgress from '@mui/material/LinearProgress';
+import FormControlLabel from '@mui/material/FormControlLabel';
 
 import { Iconify } from 'src/components/iconify';
 
@@ -25,7 +27,7 @@ const SKELETON_ROWS = 5;
 
 function InstructorRowActions({ row, compact, busyId, onEdit, onDelete, onResetPassword }) {
   const [anchorEl, setAnchorEl] = useState(null);
-  const isBusy = busyId === row.id;
+  const isBusy = busyId === row.id || busyId === 'batch';
   const menuOpen = Boolean(anchorEl);
   const closeMenu = () => setAnchorEl(null);
   const runAndClose = (fn) => {
@@ -106,6 +108,9 @@ function InstructorMobileCard({
   onDelete,
   onResetPassword,
   busyId,
+  selectable = false,
+  selected = false,
+  onToggleRow,
 }) {
   const profileSrc = row.profileUrl || row.profilePath;
 
@@ -119,6 +124,16 @@ function InstructorMobileCard({
       }}
     >
       <Stack direction="row" spacing={1.25} alignItems="flex-start">
+        {selectable ? (
+          <Checkbox
+            size="small"
+            checked={selected}
+            disabled={Boolean(busyId)}
+            onChange={() => onToggleRow?.(row.id)}
+            slotProps={{ input: { 'aria-label': `Select ${row.name}` } }}
+            sx={{ p: 0.5, mt: 0.25 }}
+          />
+        ) : null}
         {profileSrc ? (
           <Box
             component="img"
@@ -166,10 +181,17 @@ export function InstructorTable({
   busyId = null,
   emptyMessage = 'No instructors found',
   showAliasName = false,
+  selectable = false,
+  selectedIds = [],
+  onToggleRow,
+  onToggleAll,
 }) {
   const theme = useTheme();
   const isCompact = useMediaQuery(theme.breakpoints.down('md'));
-  const colCount = showAliasName ? 6 : 5;
+  const colCount = (showAliasName ? 6 : 5) + (selectable ? 1 : 0);
+  const selectedIdSet = new Set(selectedIds);
+  const someSelected = rows.some((row) => selectedIdSet.has(row.id));
+  const allSelected = rows.length > 0 && rows.every((row) => selectedIdSet.has(row.id));
   const showSkeleton = loading && (!Array.isArray(rows) || rows.length === 0);
 
   return (
@@ -205,6 +227,22 @@ export function InstructorTable({
               {emptyMessage}
             </Typography>
           ) : null}
+          {selectable && !showSkeleton && rows.length > 0 ? (
+            <FormControlLabel
+              label="Select all"
+              sx={{ ml: 0, width: 'fit-content', userSelect: 'none' }}
+              control={
+                <Checkbox
+                  size="small"
+                  checked={allSelected}
+                  indeterminate={someSelected && !allSelected}
+                  disabled={Boolean(busyId)}
+                  onChange={(event) => onToggleAll?.(event.target.checked)}
+                  slotProps={{ input: { 'aria-label': 'Select all' } }}
+                />
+              }
+            />
+          ) : null}
           {!showSkeleton && rows.length > 0
             ? rows.map((row) => (
                 <InstructorMobileCard
@@ -216,6 +254,9 @@ export function InstructorTable({
                   onDelete={onDelete}
                   onResetPassword={onResetPassword}
                   busyId={busyId}
+                  selectable={selectable}
+                  selected={selectedIdSet.has(row.id)}
+                  onToggleRow={onToggleRow}
                 />
               ))
             : null}
@@ -225,13 +266,25 @@ export function InstructorTable({
           <Table
             size="small"
             sx={{
-              minWidth: showAliasName ? 720 : 640,
+              minWidth: (showAliasName ? 720 : 640) + (selectable ? 52 : 0),
               opacity: loading && rows.length > 0 ? 0.72 : 1,
               transition: (t) => t.transitions.create('opacity', { duration: 160 }),
             }}
           >
             <TableHead>
               <TableRow>
+                {selectable ? (
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      size="small"
+                      checked={allSelected}
+                      indeterminate={someSelected && !allSelected}
+                      disabled={loading || rows.length === 0 || Boolean(busyId)}
+                      onChange={(event) => onToggleAll?.(event.target.checked)}
+                      slotProps={{ input: { 'aria-label': 'Select all' } }}
+                    />
+                  </TableCell>
+                ) : null}
                 <TableCell>Name</TableCell>
                 {showAliasName ? <TableCell>Alias name</TableCell> : null}
                 <TableCell>Email</TableCell>
@@ -263,7 +316,18 @@ export function InstructorTable({
 
               {!showSkeleton && rows.length > 0
                 ? rows.map((row) => (
-                    <TableRow key={row.id} hover>
+                    <TableRow key={row.id} hover selected={selectable && selectedIdSet.has(row.id)}>
+                      {selectable ? (
+                        <TableCell padding="checkbox">
+                          <Checkbox
+                            size="small"
+                            checked={selectedIdSet.has(row.id)}
+                            disabled={Boolean(busyId)}
+                            onChange={() => onToggleRow?.(row.id)}
+                            slotProps={{ input: { 'aria-label': `Select ${row.name}` } }}
+                          />
+                        </TableCell>
+                      ) : null}
                       <TableCell>{row.name}</TableCell>
                       {showAliasName ? (
                         <TableCell>{row.aliasName?.trim() ? row.aliasName : '—'}</TableCell>

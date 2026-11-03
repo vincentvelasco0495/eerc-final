@@ -97,7 +97,8 @@ export default function StudentsPage() {
   const [editingId, setEditingId] = useState(null);
   const [busyId, setBusyId] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [pendingDeleteRow, setPendingDeleteRow] = useState(null);
+  const [pendingDeleteRows, setPendingDeleteRows] = useState([]);
+  const [selectedIds, setSelectedIds] = useState([]);
   const [pendingResetRow, setPendingResetRow] = useState(null);
   const [resetPassword, setResetPassword] = useState('');
   const [resetPasswordConfirm, setResetPasswordConfirm] = useState('');
@@ -111,6 +112,27 @@ export default function StudentsPage() {
 
   const listErrorMessage =
     typeof listError === 'string' ? listError : listError?.message ?? null;
+
+  useEffect(() => {
+    const visibleIds = new Set(students.map((row) => row.id));
+    setSelectedIds((current) => {
+      const next = current.filter((id) => visibleIds.has(id));
+      return next.length === current.length ? current : next;
+    });
+  }, [students]);
+
+  const toggleStudentSelection = useCallback((studentId) => {
+    setSelectedIds((current) =>
+      current.includes(studentId) ? current.filter((id) => id !== studentId) : [...current, studentId]
+    );
+  }, []);
+
+  const toggleAllStudentSelection = useCallback(
+    (checked) => {
+      setSelectedIds(checked ? students.map((row) => row.id) : []);
+    },
+    [students]
+  );
 
   useEffect(() => {
     if (!listErrorMessage) {
@@ -281,26 +303,51 @@ export default function StudentsPage() {
   };
 
   const handleDelete = async () => {
-    const studentId = pendingDeleteRow?.id;
-    if (!studentId) {
+    const rows = pendingDeleteRows.filter((row) => row?.id);
+    if (!rows.length) {
       return;
     }
-    setBusyId(studentId);
-    try {
-      await runCommand('student.delete', { publicId: studentId });
-      toast.success(
-        pendingDeleteRow?.isStudent === false
-          ? 'Student roster entry deleted.'
-          : 'Student roster entry deleted. That email can be registered again.'
-      );
-      setConfirmOpen(false);
-      setPendingDeleteRow(null);
-      await refetchStudentLists();
-    } catch (err) {
-      toast.error(getLmsAxiosErrorMessage(err, 'Could not delete student.'));
-    } finally {
-      setBusyId(null);
+    setBusyId(rows.length === 1 ? rows[0].id : 'batch');
+    let deleted = 0;
+    const deletedIds = [];
+    let lastError = null;
+    for (const row of rows) {
+      try {
+        await runCommand('student.delete', { publicId: row.id });
+        deleted += 1;
+        deletedIds.push(row.id);
+      } catch (err) {
+        lastError = err;
+      }
     }
+    const failed = rows.length - deleted;
+    const keepsEmail = rows.some((row) => row.isStudent === false);
+    if (deleted > 0 && failed === 0) {
+      if (rows.length === 1) {
+        toast.success(
+          keepsEmail
+            ? 'Student roster entry deleted.'
+            : 'Student roster entry deleted. That email can be registered again.'
+        );
+      } else {
+        toast.success(
+          keepsEmail
+            ? `${deleted} roster entries deleted.`
+            : `${deleted} roster entries deleted. Those emails can be registered again.`
+        );
+      }
+    } else if (deleted > 0) {
+      toast.error(`Deleted ${deleted}. ${failed} could not be deleted.`);
+    } else {
+      toast.error(getLmsAxiosErrorMessage(lastError, 'Could not delete student.'));
+    }
+    setConfirmOpen(false);
+    setPendingDeleteRows([]);
+    if (deletedIds.length) {
+      setSelectedIds((current) => current.filter((id) => !deletedIds.includes(id)));
+      await refetchStudentLists();
+    }
+    setBusyId(null);
   };
 
   return (
@@ -469,6 +516,20 @@ export default function StudentsPage() {
                     Student roster
                   </Typography>
                   <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
+                    {selectedIds.length > 0 ? (
+                      <Button
+                        size="small"
+                        color="error"
+                        variant="outlined"
+                        disabled={listLoading || !!busyId}
+                        onClick={() => {
+                          setPendingDeleteRows(students.filter((row) => selectedIds.includes(row.id)));
+                          setConfirmOpen(true);
+                        }}
+                      >
+                        Delete selected ({selectedIds.length})
+                      </Button>
+                    ) : null}
                     <ExportExcelButton
                       disabled={listLoading}
                       onExport={({ from, to }) =>
@@ -506,6 +567,10 @@ export default function StudentsPage() {
                   loading={listLoading}
                   resolveProfileSrc={resolveProfileSrc}
                   showAliasName
+                  selectable
+                  selectedIds={selectedIds}
+                  onToggleRow={toggleStudentSelection}
+                  onToggleAll={toggleAllStudentSelection}
                   onEdit={handleEdit}
                   onResetPassword={(row) => {
                     setPendingResetRow(row);
@@ -514,7 +579,7 @@ export default function StudentsPage() {
                     showResetPassword.onFalse();
                   }}
                   onDelete={(row) => {
-                    setPendingDeleteRow(row);
+                    setPendingDeleteRows([row]);
                     setConfirmOpen(true);
                   }}
                   busyId={busyId}
@@ -592,16 +657,27 @@ export default function StudentsPage() {
         open={confirmOpen}
         onClose={() => {
           setConfirmOpen(false);
-          setPendingDeleteRow(null);
+          setPendingDeleteRows([]);
         }}
-        title="Delete student roster entry"
+        title={pendingDeleteRows.length > 1 ? 'Delete selected roster entries' : 'Delete student roster entry'}
         content={
-          <>
-            Remove roster entry for <strong>{pendingDeleteRow?.name ?? ''}</strong>?{' '}
-            {pendingDeleteRow?.isStudent === false
-              ? 'This only removes the roster link. The account email stays in use.'
-              : 'Their email can be used to register again.'}
-          </>
+          pendingDeleteRows.length > 1 ? (
+            <>
+              Remove <strong>{pendingDeleteRows.length}</strong> selected roster entries?{' '}
+              {pendingDeleteRows.every((row) => row.isStudent === false)
+                ? 'This only removes the roster links. The account emails stay in use.'
+                : pendingDeleteRows.some((row) => row.isStudent === false)
+                  ? 'Student emails can be used to register again. Admin and instructor emails stay in use.'
+                  : 'Their emails can be used to register again.'}
+            </>
+          ) : (
+            <>
+              Remove roster entry for <strong>{pendingDeleteRows[0]?.name ?? ''}</strong>?{' '}
+              {pendingDeleteRows[0]?.isStudent === false
+                ? 'This only removes the roster link. The account email stays in use.'
+                : 'Their email can be used to register again.'}
+            </>
+          )
         }
         action={
           <Button variant="contained" color="error" onClick={handleDelete} disabled={!!busyId}>
