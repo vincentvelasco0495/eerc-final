@@ -30,7 +30,7 @@ function CourseCardBanner({ course }) {
           component="img"
           src={courseBanner}
           alt=""
-          sx={{ width: 1, height: 1, objectFit: 'cover', display: 'block' }}
+          sx={{ width: 1, height: 'auto', display: 'block' }}
         />
       </Box>
     );
@@ -51,7 +51,7 @@ function CourseCardBanner({ course }) {
             component="img"
             src={bannerSrc}
             alt=""
-            sx={{ width: 1, height: 1, objectFit: 'cover', display: 'block' }}
+            sx={{ width: 1, height: 'auto', display: 'block' }}
           />
         </Box>
       );

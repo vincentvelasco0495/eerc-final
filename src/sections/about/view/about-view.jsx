@@ -12,8 +12,6 @@ import { useAboutContent } from 'src/features/about-us/hooks/use-about-content';
 import { ABOUT_US_DEFAULTS } from 'src/features/about-us/data/about-us-defaults';
 import { resolveCmsMediaUrl } from 'src/features/homepage-v2/utils/resolve-cms-media-url';
 
-import { Image } from 'src/components/image';
-
 import { useAuthContext } from 'src/auth/hooks';
 
 import { styles } from './about-view.styles';
@@ -75,21 +73,18 @@ export function AboutView() {
                         }}
                       />
                     ) : (
-                      <Image
+                      <Box
+                        component="img"
                         alt={logoAlt}
                         src={logoSrc}
                         sx={styles.logoImage}
-                        slotProps={{
-                          img: {
-                            onError: (event) => {
-                              const img = event.currentTarget;
-                              if (img.dataset.fallbackApplied === 'true') {
-                                return;
-                              }
-                              img.dataset.fallbackApplied = 'true';
-                              img.src = LOGO_FALLBACK;
-                            },
-                          },
+                        onError={(event) => {
+                          const img = event.currentTarget;
+                          if (img.dataset.fallbackApplied === 'true') {
+                            return;
+                          }
+                          img.dataset.fallbackApplied = 'true';
+                          img.src = LOGO_FALLBACK;
                         }}
                       />
                     )}

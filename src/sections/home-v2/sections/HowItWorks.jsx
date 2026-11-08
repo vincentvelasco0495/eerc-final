@@ -38,9 +38,9 @@ function StepBlock({ step }) {
   const imageColumn = (
     <ScrollReveal direction={step.imageFirst ? 'inLeft' : 'inRight'}>
       <CmsImage
+        natural
         media={step.image}
         label={step.image?.label ?? 'Step preview'}
-        aspectRatio="16 / 10"
         sx={{ borderRadius: 4 }}
       />
     </ScrollReveal>

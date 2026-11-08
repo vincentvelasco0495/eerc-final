@@ -110,9 +110,9 @@ export const styles = {
   },
   personImage: {
     width: 112,
-    height: 112,
+    height: 'auto',
     borderRadius: 0,
-    objectFit: 'cover',
+    objectFit: 'contain',
     border: '1px solid',
     borderColor: 'divider',
     boxShadow: (theme) => `0 14px 28px ${varAlpha(theme.vars.palette.common.blackChannel, 0.18)}`,

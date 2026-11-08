@@ -13,6 +13,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import CardContent from '@mui/material/CardContent';
 
+import { deleteSelectedRows, usePageRowSelection } from 'src/hooks/use-page-row-selection';
 import {
   useLmsUser,
   useLmsActions,
@@ -94,13 +95,14 @@ export default function ProgramsPage() {
   } = useLmsProgramsPaginated(page, perPage, debouncedSearch);
   const refreshProgramsCatalog = useRefreshLmsProgramsCatalog();
   const { runCommand } = useLmsActions();
+  const { selectedIds, setSelectedIds, toggleRow, toggleAll } = usePageRowSelection(programs);
   const { user } = useLmsUser();
   const [form, setForm] = useState(DEFAULT_FORM);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [busyId, setBusyId] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [pendingDeleteRow, setPendingDeleteRow] = useState(null);
+  const [pendingDeleteRows, setPendingDeleteRows] = useState([]);
 
   const currentPage = meta?.current_page ?? page;
   const lastPage = meta?.last_page ?? 1;
@@ -256,22 +258,31 @@ export default function ProgramsPage() {
   };
 
   const handleDelete = async () => {
-    const programId = pendingDeleteRow?.id;
-    if (!programId) {
+    const targets = pendingDeleteRows.filter((row) => row?.id);
+    if (!targets.length) {
       return;
     }
-    setBusyId(programId);
-    try {
-      await runCommand('program.delete', { publicId: programId });
-      toast.success('Program deleted.');
-      setConfirmOpen(false);
-      setPendingDeleteRow(null);
-      await refetchProgramLists();
-    } catch (err) {
-      toast.error(getLmsAxiosErrorMessage(err, 'Could not delete program.'));
-    } finally {
-      setBusyId(null);
+    setBusyId(targets.length === 1 ? targets[0].id : 'batch');
+    const { deleted, failed, deletedIds, lastError } = await deleteSelectedRows(targets, (row) =>
+      runCommand('program.delete', { publicId: row.id })
+    );
+    if (deleted > 0 && failed === 0) {
+      toast.success(targets.length === 1 ? 'Program deleted.' : `${deleted} programs deleted.`);
+    } else if (deleted > 0) {
+      toast.error(`Removed ${deleted}. ${failed} could not be removed.`);
+    } else {
+      toast.error(getLmsAxiosErrorMessage(lastError, 'Could not delete program.'));
     }
+    if (deleted > 0) {
+      setSelectedIds((current) => current.filter((id) => !deletedIds.includes(id)));
+      setConfirmOpen(false);
+      setPendingDeleteRows([]);
+      if (targets.some((row) => row.id === editingId)) {
+        resetForm();
+      }
+      await refetchProgramLists();
+    }
+    setBusyId(null);
   };
 
   return (
@@ -395,8 +406,8 @@ export default function ProgramsPage() {
                     sx={{
                       width: '100%',
                       maxWidth: 420,
-                      height: 180,
-                      objectFit: 'cover',
+                      height: 'auto',
+                      display: 'block',
                       borderRadius: 1.5,
                       border: (theme) => `1px solid ${theme.vars.palette.divider}`,
                     }}
@@ -425,6 +436,20 @@ export default function ProgramsPage() {
                     Program list
                   </Typography>
                   <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
+                    {selectedIds.length > 0 ? (
+                      <Button
+                        size="small"
+                        color="error"
+                        variant="outlined"
+                        disabled={listLoading || !!busyId}
+                        onClick={() => {
+                          setPendingDeleteRows(programs.filter((row) => selectedIds.includes(row.id)));
+                          setConfirmOpen(true);
+                        }}
+                      >
+                        Delete selected ({selectedIds.length})
+                      </Button>
+                    ) : null}
                     <ExportExcelButton
                       disabled={listLoading}
                       onExport={({ from, to }) =>
@@ -455,9 +480,13 @@ export default function ProgramsPage() {
                   programs={programs}
                   loading={listLoading}
                   resolveBannerSrc={resolveBannerSrc}
+                  selectable
+                  selectedIds={selectedIds}
+                  onToggleRow={toggleRow}
+                  onToggleAll={toggleAll}
                   onEdit={handleEdit}
                   onDelete={(row) => {
-                    setPendingDeleteRow(row);
+                    setPendingDeleteRows([row]);
                     setConfirmOpen(true);
                   }}
                   busyId={busyId}
@@ -483,14 +512,21 @@ export default function ProgramsPage() {
         open={confirmOpen}
         onClose={() => {
           setConfirmOpen(false);
-          setPendingDeleteRow(null);
+          setPendingDeleteRows([]);
         }}
-        title="Delete program"
+        title={pendingDeleteRows.length > 1 ? 'Delete selected programs' : 'Delete program'}
         content={
-          <>
-            Delete program <strong>{pendingDeleteRow?.title ?? ''}</strong>? This action performs a
-            soft delete only.
-          </>
+          pendingDeleteRows.length > 1 ? (
+            <>
+              Delete <strong>{pendingDeleteRows.length}</strong> selected programs? This action performs
+              a soft delete only.
+            </>
+          ) : (
+            <>
+              Delete program <strong>{pendingDeleteRows[0]?.title ?? ''}</strong>? This action performs
+              a soft delete only.
+            </>
+          )
         }
         action={
           <Button variant="contained" color="error" onClick={handleDelete} disabled={!!busyId}>

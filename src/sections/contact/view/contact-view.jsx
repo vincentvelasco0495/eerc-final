@@ -16,7 +16,6 @@ import {
   telHrefFromPhilippineMobile,
 } from 'src/features/contact-page/data/contact-page-defaults';
 
-import { Image } from 'src/components/image';
 import { Iconify } from 'src/components/iconify';
 
 import { useAuthContext } from 'src/auth/hooks';
@@ -165,13 +164,12 @@ export function ContactView({ pageComponent = 'main' } = {}) {
                   <Box sx={styles.contactList}>
                     <Box key={representative.email} sx={styles.personCard}>
                       {avatarUrl ? (
-                        <Box sx={{ ...styles.personImage, overflow: 'hidden', borderRadius: 0 }}>
-                          <Image
-                            alt={avatarAlt}
-                            src={avatarUrl}
-                            sx={{ width: 1, height: 1, objectFit: 'cover' }}
-                          />
-                        </Box>
+                        <Box
+                          component="img"
+                          alt={avatarAlt}
+                          src={avatarUrl}
+                          sx={styles.personImage}
+                        />
                       ) : (
                         <Avatar
                           alt={representative.name}

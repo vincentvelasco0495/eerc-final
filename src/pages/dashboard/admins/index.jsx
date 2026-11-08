@@ -24,6 +24,7 @@ import InputAdornment from '@mui/material/InputAdornment';
 import TableContainer from '@mui/material/TableContainer';
 
 import { useLmsUser } from 'src/hooks/use-lms';
+import { deleteSelectedRows, usePageRowSelection } from 'src/hooks/use-page-row-selection';
 
 import { CONFIG } from 'src/global-config';
 import { getLmsAxiosErrorMessage } from 'src/lib/lms-instructor-api';
@@ -39,6 +40,7 @@ import {
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 import { ConfirmDialog } from 'src/components/custom-dialog';
+import { RowSelectCell, SelectAllCell, rowSelectionState } from 'src/components/table-row-selection';
 
 const DEFAULT_FORM = {
   name: '',
@@ -59,7 +61,7 @@ export default function AdminsPage() {
   const [editingId, setEditingId] = useState(null);
   const [busyId, setBusyId] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [pendingDeleteRow, setPendingDeleteRow] = useState(null);
+  const [pendingDeleteRows, setPendingDeleteRows] = useState([]);
   const [pendingResetRow, setPendingResetRow] = useState(null);
   const [resetPassword, setResetPassword] = useState('');
   const [resetPasswordConfirm, setResetPasswordConfirm] = useState('');
@@ -67,6 +69,12 @@ export default function AdminsPage() {
   const showResetPassword = useBoolean();
 
   const currentUserId = user?.id ?? '';
+  const { selectedIds, setSelectedIds, toggleRow } = usePageRowSelection(rows);
+  const selectableRows = rows.filter((row) => row.id !== currentUserId);
+  const { selectedIdSet, someSelected, allSelected } = rowSelectionState(selectableRows, selectedIds);
+  const toggleAllAdmins = (checked) => {
+    setSelectedIds(checked ? selectableRows.map((row) => row.id) : []);
+  };
 
   const loadAdmins = useCallback(async () => {
     setListLoading(true);
@@ -170,25 +178,35 @@ export default function AdminsPage() {
   };
 
   const handleDelete = async () => {
-    const adminId = pendingDeleteRow?.id;
-    if (!adminId) {
+    const targets = pendingDeleteRows.filter((row) => row?.id && row.id !== currentUserId);
+    if (!targets.length) {
       return;
     }
-    setBusyId(adminId);
-    try {
-      await deleteLmsAdmin(adminId);
-      toast.success('Admin account deleted. That email can be registered again.');
+    setBusyId(targets.length === 1 ? targets[0].id : 'batch');
+    const { deleted, failed, deletedIds, lastError } = await deleteSelectedRows(targets, (row) =>
+      deleteLmsAdmin(row.id)
+    );
+    if (deleted > 0 && failed === 0) {
+      toast.success(
+        targets.length === 1
+          ? 'Admin account deleted. That email can be registered again.'
+          : `${deleted} admin accounts deleted. Those emails can be registered again.`
+      );
+    } else if (deleted > 0) {
+      toast.error(`Removed ${deleted}. ${failed} could not be removed.`);
+    } else {
+      toast.error(getLmsAxiosErrorMessage(lastError, 'Could not delete admin account.'));
+    }
+    if (deleted > 0) {
+      setSelectedIds((current) => current.filter((id) => !deletedIds.includes(id)));
       setConfirmOpen(false);
-      setPendingDeleteRow(null);
-      if (editingId === adminId) {
+      setPendingDeleteRows([]);
+      if (targets.some((row) => row.id === editingId)) {
         resetForm();
       }
       await loadAdmins();
-    } catch (error) {
-      toast.error(getLmsAxiosErrorMessage(error, 'Could not delete admin account.'));
-    } finally {
-      setBusyId(null);
     }
+    setBusyId(null);
   };
 
   const handleResetPassword = async () => {
@@ -337,19 +355,41 @@ export default function AdminsPage() {
                   rowGap={1}
                 >
                   <Typography variant="h6">Admin list</Typography>
-                  <TextField
+                  <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
+                    {selectedIds.length > 0 ? (
+                      <Button
+                        size="small"
+                        color="error"
+                        variant="outlined"
+                        disabled={listLoading || !!busyId}
+                        onClick={() => {
+                          setPendingDeleteRows(rows.filter((row) => selectedIds.includes(row.id)));
+                          setConfirmOpen(true);
+                        }}
+                      >
+                        Delete selected ({selectedIds.length})
+                      </Button>
+                    ) : null}
+                    <TextField
                     size="small"
                     label="Search"
                     placeholder="Name or email…"
                     value={searchDraft}
                     onChange={(event) => setSearchDraft(event.target.value)}
                     sx={{ maxWidth: { xs: '100%', sm: 280 } }}
-                  />
+                    />
+                  </Stack>
                 </Stack>
                 <TableContainer>
                   <Table size="small">
                     <TableHead>
                       <TableRow>
+                        <SelectAllCell
+                          checked={allSelected}
+                          indeterminate={someSelected && !allSelected}
+                          disabled={listLoading || selectableRows.length === 0 || Boolean(busyId)}
+                          onChange={toggleAllAdmins}
+                        />
                         <TableCell>Name</TableCell>
                         <TableCell>Email</TableCell>
                         <TableCell>Status</TableCell>
@@ -359,16 +399,26 @@ export default function AdminsPage() {
                     <TableBody>
                       {listLoading ? (
                         <TableRow>
-                          <TableCell colSpan={4}>Loading…</TableCell>
+                          <TableCell colSpan={5}>Loading…</TableCell>
                         </TableRow>
                       ) : null}
                       {!listLoading && rows.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={4}>No admin accounts found.</TableCell>
+                          <TableCell colSpan={5}>No admin accounts found.</TableCell>
                         </TableRow>
                       ) : null}
                       {rows.map((row) => (
-                        <TableRow key={row.id} hover>
+                        <TableRow key={row.id} hover selected={selectedIdSet.has(row.id)}>
+                          <RowSelectCell
+                            checked={selectedIdSet.has(row.id)}
+                            disabled={Boolean(busyId) || row.id === currentUserId}
+                            label={row.name}
+                            onChange={() => {
+                              if (row.id !== currentUserId) {
+                                toggleRow(row.id);
+                              }
+                            }}
+                          />
                           <TableCell>{row.name}</TableCell>
                           <TableCell>{row.email}</TableCell>
                           <TableCell>{row.status}</TableCell>
@@ -392,9 +442,9 @@ export default function AdminsPage() {
                               <Button
                                 size="small"
                                 color="error"
-                                disabled={busyId === row.id || row.id === currentUserId}
+                                disabled={busyId === row.id || busyId === 'batch' || row.id === currentUserId}
                                 onClick={() => {
-                                  setPendingDeleteRow(row);
+                                  setPendingDeleteRows([row]);
                                   setConfirmOpen(true);
                                 }}
                               >
@@ -417,10 +467,14 @@ export default function AdminsPage() {
         open={confirmOpen}
         onClose={() => {
           setConfirmOpen(false);
-          setPendingDeleteRow(null);
+          setPendingDeleteRows([]);
         }}
-        title="Delete admin"
-        content={`Delete ${pendingDeleteRow?.name ?? 'this admin'}? They will no longer be able to sign in, and their email can be used to register again.`}
+        title={pendingDeleteRows.length > 1 ? 'Delete selected admins' : 'Delete admin'}
+        content={
+          pendingDeleteRows.length > 1
+            ? `Delete ${pendingDeleteRows.length} selected admins? They will no longer be able to sign in, and their emails can be used to register again.`
+            : `Delete ${pendingDeleteRows[0]?.name ?? 'this admin'}? They will no longer be able to sign in, and their email can be used to register again.`
+        }
         action={
           <Button color="error" variant="contained" onClick={handleDelete} disabled={Boolean(busyId)}>
             Delete

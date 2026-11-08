@@ -9,6 +9,7 @@ import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
 import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
 import Skeleton from '@mui/material/Skeleton';
 import TableRow from '@mui/material/TableRow';
 import TableBody from '@mui/material/TableBody';
@@ -62,8 +63,15 @@ function PaymentMethodsTable({
   onDelete,
   busyId = null,
   emptyMessage = 'No entries found',
+  selectedIds = [],
+  onToggleRow,
+  onToggleAll,
 }) {
   const showSkeleton = loading && (!Array.isArray(rows) || rows.length === 0);
+  const selectedIdSet = new Set(selectedIds);
+  const someSelected = rows.some((row) => selectedIdSet.has(row.id));
+  const allSelected = rows.length > 0 && rows.every((row) => selectedIdSet.has(row.id));
+  const colSpan = columns.length + 2;
 
   return (
     <Box sx={{ position: 'relative' }}>
@@ -88,6 +96,16 @@ function PaymentMethodsTable({
       >
         <TableHead>
           <TableRow>
+            <TableCell padding="checkbox">
+              <Checkbox
+                size="small"
+                checked={allSelected}
+                indeterminate={someSelected && !allSelected}
+                disabled={loading || rows.length === 0 || Boolean(busyId)}
+                onChange={(event) => onToggleAll?.(event.target.checked)}
+                slotProps={{ input: { 'aria-label': 'Select all' } }}
+              />
+            </TableCell>
             {columns.map((c) => (
               <TableCell key={c.key}>{c.label}</TableCell>
             ))}
@@ -98,7 +116,7 @@ function PaymentMethodsTable({
           {showSkeleton
             ? Array.from({ length: SKELETON_ROWS }).map((_, i) => (
                 <TableRow key={`sk-${i}`}>
-                  <TableCell colSpan={columns.length + 1} sx={{ py: 1.5 }}>
+                  <TableCell colSpan={colSpan} sx={{ py: 1.5 }}>
                     <Skeleton variant="rounded" height={40} animation="wave" />
                   </TableCell>
                 </TableRow>
@@ -107,7 +125,7 @@ function PaymentMethodsTable({
 
           {!showSkeleton && !loading && rows.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={columns.length + 1} align="center" sx={{ py: 6 }}>
+              <TableCell colSpan={colSpan} align="center" sx={{ py: 6 }}>
                 <Typography variant="body2" color="text.secondary">
                   {emptyMessage}
                 </Typography>
@@ -117,20 +135,29 @@ function PaymentMethodsTable({
 
           {!showSkeleton && rows.length > 0
             ? rows.map((row) => (
-                <TableRow key={row.id} hover>
+                <TableRow key={row.id} hover selected={selectedIdSet.has(row.id)}>
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      size="small"
+                      checked={selectedIdSet.has(row.id)}
+                      disabled={Boolean(busyId)}
+                      onChange={() => onToggleRow?.(row.id)}
+                      slotProps={{ input: { 'aria-label': `Select ${row.accountName || row.bankName || row.mobileNumber || 'method'}` } }}
+                    />
+                  </TableCell>
                   {columns.map((c) => (
                     <TableCell key={c.key}>{row[c.key] ?? '—'}</TableCell>
                   ))}
                   <TableCell>
                     <Stack direction="row" spacing={1}>
-                      <Button size="small" variant="text" onClick={() => onEdit(row)}>
+                      <Button size="small" variant="text" onClick={() => onEdit(row)} disabled={busyId === 'batch'}>
                         Edit
                       </Button>
                       <Button
                         size="small"
                         color="error"
                         variant="text"
-                        disabled={busyId === row.id}
+                        disabled={busyId === row.id || busyId === 'batch'}
                         onClick={() => onDelete(row)}
                       >
                         Delete
@@ -166,7 +193,8 @@ export default function PaymentMethodsPage() {
   const [saving, setSaving] = useState(false);
 
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [pendingDeleteRow, setPendingDeleteRow] = useState(null);
+  const [pendingDeleteRows, setPendingDeleteRows] = useState([]);
+  const [selectedIds, setSelectedIds] = useState([]);
   const [busyId, setBusyId] = useState(null);
 
   const loadAll = useCallback(async () => {
@@ -202,10 +230,39 @@ export default function PaymentMethodsPage() {
     setEditingId(null);
   }, []);
 
+  const activeRows = tab === 0 ? banks : ewallets;
+
+  useEffect(() => {
+    const visibleIds = new Set(activeRows.map((row) => row.id));
+    setSelectedIds((current) => {
+      const next = current.filter((id) => visibleIds.has(id));
+      return next.length === current.length ? current : next;
+    });
+  }, [activeRows]);
+
+  const toggleMethodSelection = useCallback((methodId) => {
+    setSelectedIds((current) =>
+      current.includes(methodId) ? current.filter((id) => id !== methodId) : [...current, methodId]
+    );
+  }, []);
+
+  const toggleAllMethodSelection = useCallback(
+    (checked) => {
+      setSelectedIds(checked ? activeRows.map((row) => row.id) : []);
+    },
+    [activeRows]
+  );
+
   const handleTabChange = (_, v) => {
     setTab(v);
+    setSelectedIds([]);
     resetForm();
   };
+
+  const methodKind = tab === 0 ? 'bank' : 'ewallet';
+
+  const methodLabel = (row) =>
+    tab === 0 ? row.bankName || row.accountName || 'bank method' : row.accountName || row.mobileNumber || 'e-wallet method';
 
   const canSubmitBank =
     apiEnabled &&
@@ -294,30 +351,49 @@ export default function PaymentMethodsPage() {
   };
 
   const handleDelete = async () => {
-    const row = pendingDeleteRow;
-    if (!row?.id || !row?.kind) {
+    const rows = pendingDeleteRows.filter((row) => row?.id && row?.kind);
+    if (!rows.length) {
       return;
     }
-    setBusyId(row.id);
-    try {
-      if (row.kind === 'bank') {
-        await deleteBankPaymentMethod(row.id);
-        toast.success('Bank method removed.');
-      } else {
-        await deleteEwalletPaymentMethod(row.id);
-        toast.success('E-wallet method removed.');
+    setBusyId(rows.length === 1 ? rows[0].id : 'batch');
+    let deleted = 0;
+    const deletedIds = [];
+    let lastError = null;
+    for (const row of rows) {
+      try {
+        if (row.kind === 'bank') {
+          await deleteBankPaymentMethod(row.id);
+        } else {
+          await deleteEwalletPaymentMethod(row.id);
+        }
+        deleted += 1;
+        deletedIds.push(row.id);
+      } catch (err) {
+        lastError = err;
       }
-      setConfirmOpen(false);
-      setPendingDeleteRow(null);
-      if (editingId === row.id) {
-        resetForm();
-      }
-      await loadAll();
-    } catch (err) {
-      toast.error(getLmsAxiosErrorMessage(err, 'Could not delete payment method.'));
-    } finally {
-      setBusyId(null);
     }
+    const failed = rows.length - deleted;
+    if (deleted > 0 && failed === 0) {
+      if (rows.length === 1) {
+        toast.success(rows[0].kind === 'bank' ? 'Bank method removed.' : 'E-wallet method removed.');
+      } else {
+        toast.success(`${deleted} payment methods removed.`);
+      }
+    } else if (deleted > 0) {
+      toast.error(`Removed ${deleted}. ${failed} could not be removed.`);
+    } else {
+      toast.error(getLmsAxiosErrorMessage(lastError, 'Could not delete payment method.'));
+    }
+    setConfirmOpen(false);
+    setPendingDeleteRows([]);
+    if (deletedIds.includes(editingId)) {
+      resetForm();
+    }
+    if (deletedIds.length) {
+      setSelectedIds((current) => current.filter((id) => !deletedIds.includes(id)));
+      await loadAll();
+    }
+    setBusyId(null);
   };
 
   const formTitle =
@@ -448,7 +524,26 @@ export default function PaymentMethodsPage() {
                   <Typography variant="h6" sx={{ minWidth: 0 }}>
                     {listTitle}
                   </Typography>
-                  <ExportExcelButton
+                  <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
+                    {selectedIds.length > 0 ? (
+                      <Button
+                        size="small"
+                        color="error"
+                        variant="outlined"
+                        disabled={loading || !!busyId}
+                        onClick={() => {
+                          setPendingDeleteRows(
+                            activeRows
+                              .filter((row) => selectedIds.includes(row.id))
+                              .map((row) => ({ kind: methodKind, id: row.id, label: methodLabel(row) }))
+                          );
+                          setConfirmOpen(true);
+                        }}
+                      >
+                        Delete selected ({selectedIds.length})
+                      </Button>
+                    ) : null}
+                    <ExportExcelButton
                     disabled={loading}
                     onExport={({ from, to }) =>
                       downloadLmsExcelExport(
@@ -461,6 +556,7 @@ export default function PaymentMethodsPage() {
                     }
                     successMessage="Payment methods exported to Excel."
                   />
+                  </Stack>
                 </Stack>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                   Row id is the method&apos;s public id (used for update/delete in the API).
@@ -482,9 +578,14 @@ export default function PaymentMethodsPage() {
                     ]}
                     onEdit={handleEditBank}
                     onDelete={(row) => {
-                      setPendingDeleteRow({ kind: 'bank', id: row.id, label: row.bankName || row.accountName });
+                      setPendingDeleteRows([
+                        { kind: 'bank', id: row.id, label: row.bankName || row.accountName },
+                      ]);
                       setConfirmOpen(true);
                     }}
+                    selectedIds={selectedIds}
+                    onToggleRow={toggleMethodSelection}
+                    onToggleAll={toggleAllMethodSelection}
                     busyId={busyId}
                     emptyMessage={apiEnabled ? 'No bank transfer methods yet.' : 'Connect the API to manage bank methods.'}
                   />
@@ -498,13 +599,18 @@ export default function PaymentMethodsPage() {
                     ]}
                     onEdit={handleEditWallet}
                     onDelete={(row) => {
-                      setPendingDeleteRow({
-                        kind: 'ewallet',
-                        id: row.id,
-                        label: row.accountName || row.mobileNumber,
-                      });
+                      setPendingDeleteRows([
+                        {
+                          kind: 'ewallet',
+                          id: row.id,
+                          label: row.accountName || row.mobileNumber,
+                        },
+                      ]);
                       setConfirmOpen(true);
                     }}
+                    selectedIds={selectedIds}
+                    onToggleRow={toggleMethodSelection}
+                    onToggleAll={toggleAllMethodSelection}
                     busyId={busyId}
                     emptyMessage={apiEnabled ? 'No e-wallet methods yet.' : 'Connect the API to manage e-wallet methods.'}
                   />
@@ -519,14 +625,21 @@ export default function PaymentMethodsPage() {
         open={confirmOpen}
         onClose={() => {
           setConfirmOpen(false);
-          setPendingDeleteRow(null);
+          setPendingDeleteRows([]);
         }}
-        title="Delete payment method"
+        title={pendingDeleteRows.length > 1 ? 'Delete selected payment methods' : 'Delete payment method'}
         content={
-          <>
-            Remove <strong>{pendingDeleteRow?.label ?? ''}</strong>? Learners will no longer see this option (defaults
-            may still apply if nothing is configured).
-          </>
+          pendingDeleteRows.length > 1 ? (
+            <>
+              Remove <strong>{pendingDeleteRows.length}</strong> selected payment methods? Learners will no longer see
+              these options.
+            </>
+          ) : (
+            <>
+              Remove <strong>{pendingDeleteRows[0]?.label ?? ''}</strong>? Learners will no longer see this option
+              (defaults may still apply if nothing is configured).
+            </>
+          )
         }
         action={
           <Button variant="contained" color="error" onClick={handleDelete} disabled={!!busyId}>

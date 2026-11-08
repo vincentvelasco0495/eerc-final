@@ -14,6 +14,7 @@ import Typography from '@mui/material/Typography';
 import CardContent from '@mui/material/CardContent';
 
 import { useLmsActions, useLmsLearningModesPaginated } from 'src/hooks/use-lms';
+import { deleteSelectedRows, usePageRowSelection } from 'src/hooks/use-page-row-selection';
 
 import { CONFIG } from 'src/global-config';
 import { downloadLmsExcelExport } from 'src/lib/lms-excel-export';
@@ -71,12 +72,13 @@ export default function LearningModesPage() {
     mutate: mutateLearningModesPage,
   } = useLmsLearningModesPaginated(page, perPage, debouncedSearch);
   const { runCommand } = useLmsActions();
+  const { selectedIds, setSelectedIds, toggleRow, toggleAll } = usePageRowSelection(learningModes);
   const [form, setForm] = useState(DEFAULT_FORM);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [busyId, setBusyId] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [pendingDeleteRow, setPendingDeleteRow] = useState(null);
+  const [pendingDeleteRows, setPendingDeleteRows] = useState([]);
 
   const currentPage = meta?.current_page ?? page;
   const lastPage = meta?.last_page ?? 1;
@@ -199,23 +201,32 @@ export default function LearningModesPage() {
   };
 
   const handleDelete = async () => {
-    const modeId = pendingDeleteRow?.id;
-    if (!modeId) {
+    const targets = pendingDeleteRows.filter((row) => row?.id);
+    if (!targets.length) {
       return;
     }
 
-    setBusyId(modeId);
-    try {
-      await runCommand('learningMode.delete', { publicId: modeId });
-      toast.success('Learning mode deleted.');
-      setConfirmOpen(false);
-      setPendingDeleteRow(null);
-      await mutateLearningModesPage();
-    } catch (err) {
-      toast.error(getLmsAxiosErrorMessage(err, 'Could not delete learning mode.'));
-    } finally {
-      setBusyId(null);
+    setBusyId(targets.length === 1 ? targets[0].id : 'batch');
+    const { deleted, failed, deletedIds, lastError } = await deleteSelectedRows(targets, (row) =>
+      runCommand('learningMode.delete', { publicId: row.id })
+    );
+    if (deleted > 0 && failed === 0) {
+      toast.success(targets.length === 1 ? 'Learning mode deleted.' : `${deleted} learning modes deleted.`);
+    } else if (deleted > 0) {
+      toast.error(`Removed ${deleted}. ${failed} could not be removed.`);
+    } else {
+      toast.error(getLmsAxiosErrorMessage(lastError, 'Could not delete learning mode.'));
     }
+    if (deleted > 0) {
+      setSelectedIds((current) => current.filter((id) => !deletedIds.includes(id)));
+      setConfirmOpen(false);
+      setPendingDeleteRows([]);
+      if (targets.some((row) => row.id === editingId)) {
+        resetForm();
+      }
+      await mutateLearningModesPage();
+    }
+    setBusyId(null);
   };
 
   return (
@@ -304,6 +315,20 @@ export default function LearningModesPage() {
                     Learning mode list
                   </Typography>
                   <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
+                    {selectedIds.length > 0 ? (
+                      <Button
+                        size="small"
+                        color="error"
+                        variant="outlined"
+                        disabled={listLoading || !!busyId}
+                        onClick={() => {
+                          setPendingDeleteRows(learningModes.filter((row) => selectedIds.includes(row.id)));
+                          setConfirmOpen(true);
+                        }}
+                      >
+                        Delete selected ({selectedIds.length})
+                      </Button>
+                    ) : null}
                     <ExportExcelButton
                       disabled={listLoading}
                       onExport={({ from, to }) =>
@@ -333,9 +358,13 @@ export default function LearningModesPage() {
                 <LearningModeTable
                   rows={learningModes}
                   loading={listLoading}
+                  selectable
+                  selectedIds={selectedIds}
+                  onToggleRow={toggleRow}
+                  onToggleAll={toggleAll}
                   onEdit={handleEdit}
                   onDelete={(row) => {
-                    setPendingDeleteRow(row);
+                    setPendingDeleteRows([row]);
                     setConfirmOpen(true);
                   }}
                   busyId={busyId}
@@ -361,13 +390,20 @@ export default function LearningModesPage() {
         open={confirmOpen}
         onClose={() => {
           setConfirmOpen(false);
-          setPendingDeleteRow(null);
+          setPendingDeleteRows([]);
         }}
-        title="Delete learning mode"
+        title={pendingDeleteRows.length > 1 ? 'Delete selected learning modes' : 'Delete learning mode'}
         content={
-          <>
-            Delete mode <strong>{pendingDeleteRow?.name ?? ''}</strong>? This action cannot be undone.
-          </>
+          pendingDeleteRows.length > 1 ? (
+            <>
+              Delete <strong>{pendingDeleteRows.length}</strong> selected learning modes? This action
+              cannot be undone.
+            </>
+          ) : (
+            <>
+              Delete mode <strong>{pendingDeleteRows[0]?.name ?? ''}</strong>? This action cannot be undone.
+            </>
+          )
         }
         action={
           <Button variant="contained" color="error" onClick={handleDelete} disabled={!!busyId}>

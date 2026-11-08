@@ -28,7 +28,6 @@ const HERO_MEDIA_LAYOUTS = [
       zIndex: 1,
       transform: 'rotate(-7deg)',
     },
-    aspectRatio: '16 / 10',
   },
   {
     sx: {
@@ -38,7 +37,6 @@ const HERO_MEDIA_LAYOUTS = [
       zIndex: 3,
       transform: 'rotate(2deg)',
     },
-    aspectRatio: '4 / 3',
   },
   {
     sx: {
@@ -48,7 +46,6 @@ const HERO_MEDIA_LAYOUTS = [
       zIndex: 2,
       transform: 'rotate(6deg)',
     },
-    aspectRatio: '3 / 4',
   },
   {
     sx: {
@@ -58,7 +55,6 @@ const HERO_MEDIA_LAYOUTS = [
       zIndex: 4,
       transform: 'rotate(-5deg)',
     },
-    aspectRatio: '16 / 10',
   },
   {
     sx: {
@@ -68,7 +64,6 @@ const HERO_MEDIA_LAYOUTS = [
       zIndex: 5,
       transform: 'rotate(8deg)',
     },
-    aspectRatio: '4 / 3',
   },
   {
     sx: {
@@ -78,7 +73,6 @@ const HERO_MEDIA_LAYOUTS = [
       zIndex: 6,
       transform: 'rotate(-9deg)',
     },
-    aspectRatio: '3 / 4',
   },
 ];
 
@@ -107,7 +101,7 @@ function HeroPreviewSlider({ images }) {
               boxShadow: (theme) => theme.customShadows?.z16 ?? theme.shadows[16],
             }}
           >
-            <CmsImage media={image} label={image.label ?? 'Preview'} aspectRatio="4 / 3" />
+            <CmsImage natural media={image} label={image.label ?? 'Preview'} />
           </Box>
         ))}
       </Carousel>
@@ -215,7 +209,7 @@ export function HeroSection() {
                   <CmsImage
                     media={content.banner}
                     label={content.banner?.label || 'Banner image'}
-                    aspectRatio="4 / 3"
+                    natural
                   />
                 </Box>
               ) : (
@@ -247,11 +241,7 @@ export function HeroSection() {
                             ...layout.sx,
                           }}
                         >
-                          <CmsImage
-                            media={image}
-                            label={image.label ?? 'Preview'}
-                            aspectRatio={layout.aspectRatio}
-                          />
+                          <CmsImage natural media={image} label={image.label ?? 'Preview'} />
                         </Box>
                       );
                     })}

@@ -14,6 +14,7 @@ export function CmsImage({
   sx,
   imgSx,
   fill = false,
+  natural = false,
   onLoad,
   imgRef,
 }) {
@@ -37,18 +38,28 @@ export function CmsImage({
     height: 1,
   };
 
+  const frameSx = natural
+    ? {
+        position: 'relative',
+        width: 1,
+        lineHeight: 0,
+        overflow: 'hidden',
+        borderRadius: 3,
+      }
+    : fill
+      ? fillSx
+      : {
+          position: 'relative',
+          width: 1,
+          aspectRatio,
+          overflow: 'hidden',
+          borderRadius: 3,
+        };
+
   return (
     <Box
       sx={[
-        fill
-          ? fillSx
-          : {
-              position: 'relative',
-              width: 1,
-              aspectRatio,
-              overflow: 'hidden',
-              borderRadius: 3,
-            },
+        frameSx,
         ...(Array.isArray(sx) ? sx : [sx]),
       ]}
     >
@@ -77,8 +88,12 @@ export function CmsImage({
           onError={() => setFailed(true)}
           sx={[
             {
-              ...(fill ? fillSx : { width: 1, height: 1, aspectRatio }),
-              objectFit: 'cover',
+              ...(natural
+                ? { width: 1, height: 'auto' }
+                : fill
+                  ? fillSx
+                  : { width: 1, height: 1, aspectRatio }),
+              objectFit: natural ? 'contain' : 'cover',
               display: 'block',
               opacity: loaded ? 1 : 0,
             },
@@ -90,7 +105,7 @@ export function CmsImage({
       {showPlaceholder ? (
         <ImagePlaceholder
           label={label}
-          aspectRatio={aspectRatio}
+          aspectRatio={natural ? '4 / 3' : aspectRatio}
           sx={
             fill
               ? {

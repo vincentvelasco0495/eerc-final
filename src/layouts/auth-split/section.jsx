@@ -62,7 +62,7 @@ export function AuthSplitSection({
         component="img"
         alt="Dashboard illustration"
         src={imgUrl}
-        sx={{ width: 1, aspectRatio: '4/3', objectFit: 'cover' }}
+        sx={{ width: 1, height: 'auto', display: 'block' }}
       />
     </Box>
   );

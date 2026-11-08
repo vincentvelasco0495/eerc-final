@@ -73,7 +73,7 @@ function LibraryFileThumb({ file }) {
         component="img"
         src={src}
         alt=""
-        sx={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 1 }}
+        sx={{ width: 72, height: 'auto', display: 'block', borderRadius: 1 }}
       />
     );
   }

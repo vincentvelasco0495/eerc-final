@@ -13,6 +13,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import CardContent from '@mui/material/CardContent';
 
+import { deleteSelectedRows, usePageRowSelection } from 'src/hooks/use-page-row-selection';
 import { useLmsActions, useLmsBranchEnrolls, useLmsReviewSchedulesPaginated } from 'src/hooks/use-lms';
 
 import { CONFIG } from 'src/global-config';
@@ -77,12 +78,13 @@ export default function ReviewSchedulesPage() {
   } = useLmsReviewSchedulesPaginated(page, perPage, debouncedSearch);
   const { branchEnrolls } = useLmsBranchEnrolls();
   const { runCommand } = useLmsActions();
+  const { selectedIds, setSelectedIds, toggleRow, toggleAll } = usePageRowSelection(reviewSchedules);
   const [form, setForm] = useState(DEFAULT_FORM);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [busyId, setBusyId] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [pendingDeleteRow, setPendingDeleteRow] = useState(null);
+  const [pendingDeleteRows, setPendingDeleteRows] = useState([]);
 
   const currentPage = meta?.current_page ?? page;
   const lastPage = meta?.last_page ?? 1;
@@ -212,23 +214,34 @@ export default function ReviewSchedulesPage() {
   };
 
   const handleDelete = async () => {
-    const scheduleId = pendingDeleteRow?.id;
-    if (!scheduleId) {
+    const targets = pendingDeleteRows.filter((row) => row?.id);
+    if (!targets.length) {
       return;
     }
 
-    setBusyId(scheduleId);
-    try {
-      await runCommand('reviewSchedule.delete', { publicId: scheduleId });
-      toast.success('Review schedule deleted.');
-      setConfirmOpen(false);
-      setPendingDeleteRow(null);
-      await mutateReviewSchedulesPage();
-    } catch (err) {
-      toast.error(getLmsAxiosErrorMessage(err, 'Could not delete review schedule.'));
-    } finally {
-      setBusyId(null);
+    setBusyId(targets.length === 1 ? targets[0].id : 'batch');
+    const { deleted, failed, deletedIds, lastError } = await deleteSelectedRows(targets, (row) =>
+      runCommand('reviewSchedule.delete', { publicId: row.id })
+    );
+    if (deleted > 0 && failed === 0) {
+      toast.success(
+        targets.length === 1 ? 'Review schedule deleted.' : `${deleted} review schedules deleted.`
+      );
+    } else if (deleted > 0) {
+      toast.error(`Removed ${deleted}. ${failed} could not be removed.`);
+    } else {
+      toast.error(getLmsAxiosErrorMessage(lastError, 'Could not delete review schedule.'));
     }
+    if (deleted > 0) {
+      setSelectedIds((current) => current.filter((id) => !deletedIds.includes(id)));
+      setConfirmOpen(false);
+      setPendingDeleteRows([]);
+      if (targets.some((row) => row.id === editingId)) {
+        resetForm();
+      }
+      await mutateReviewSchedulesPage();
+    }
+    setBusyId(null);
   };
 
   return (
@@ -346,6 +359,20 @@ export default function ReviewSchedulesPage() {
                     Review schedule list
                   </Typography>
                   <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
+                    {selectedIds.length > 0 ? (
+                      <Button
+                        size="small"
+                        color="error"
+                        variant="outlined"
+                        disabled={listLoading || !!busyId}
+                        onClick={() => {
+                          setPendingDeleteRows(reviewSchedules.filter((row) => selectedIds.includes(row.id)));
+                          setConfirmOpen(true);
+                        }}
+                      >
+                        Delete selected ({selectedIds.length})
+                      </Button>
+                    ) : null}
                     <ExportExcelButton
                       disabled={listLoading}
                       onExport={({ from, to }) =>
@@ -375,9 +402,13 @@ export default function ReviewSchedulesPage() {
                 <ReviewScheduleTable
                   rows={reviewSchedules}
                   loading={listLoading}
+                  selectable
+                  selectedIds={selectedIds}
+                  onToggleRow={toggleRow}
+                  onToggleAll={toggleAll}
                   onEdit={handleEdit}
                   onDelete={(row) => {
-                    setPendingDeleteRow(row);
+                    setPendingDeleteRows([row]);
                     setConfirmOpen(true);
                   }}
                   busyId={busyId}
@@ -405,14 +436,21 @@ export default function ReviewSchedulesPage() {
         open={confirmOpen}
         onClose={() => {
           setConfirmOpen(false);
-          setPendingDeleteRow(null);
+          setPendingDeleteRows([]);
         }}
-        title="Delete review schedule"
+        title={pendingDeleteRows.length > 1 ? 'Delete selected review schedules' : 'Delete review schedule'}
         content={
-          <>
-            Delete schedule <strong>{pendingDeleteRow?.name ?? ''}</strong>? This action cannot be
-            undone.
-          </>
+          pendingDeleteRows.length > 1 ? (
+            <>
+              Delete <strong>{pendingDeleteRows.length}</strong> selected review schedules? This action
+              cannot be undone.
+            </>
+          ) : (
+            <>
+              Delete schedule <strong>{pendingDeleteRows[0]?.name ?? ''}</strong>? This action cannot be
+              undone.
+            </>
+          )
         }
         action={
           <Button variant="contained" color="error" onClick={handleDelete} disabled={!!busyId}>

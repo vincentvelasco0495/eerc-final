@@ -40,9 +40,8 @@ const heroBannerFrameStyle = {
 const HeroImg = styled.img`
   display: block;
   width: 100%;
+  height: auto;
   border-radius: ${radii.card};
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
   box-shadow: ${shadow.card};
   background: ${colors.bg};
 `;

@@ -8,15 +8,15 @@ import { colors, shadow } from './course-detail-tokens';
 
 const Media = styled.div`
   position: relative;
-  aspect-ratio: 16 / 9;
   background: ${colors.bg};
   overflow: hidden;
+  line-height: 0;
 `;
 
 const MediaImg = styled.img`
+  display: block;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
 `;
 
 const Lower = styled.div`

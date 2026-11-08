@@ -15,6 +15,8 @@ import { RouterLink } from 'src/routes/components';
 
 import { formatPesoAmount } from 'src/config/enrollment-payment';
 
+import { RowSelectCell, SelectAllCell, rowSelectionState } from 'src/components/table-row-selection';
+
 const SKELETON_ROWS = 5;
 
 export function ProgramTable({
@@ -25,8 +27,14 @@ export function ProgramTable({
   onDelete,
   busyId = null,
   emptyMessage = 'No programs found',
+  selectable = false,
+  selectedIds = [],
+  onToggleRow,
+  onToggleAll,
 }) {
   const showSkeleton = loading && (!Array.isArray(programs) || programs.length === 0);
+  const { selectedIdSet, someSelected, allSelected } = rowSelectionState(programs, selectedIds);
+  const colSpan = 7 + (selectable ? 1 : 0);
 
   return (
     <Box sx={{ position: 'relative' }}>
@@ -51,6 +59,14 @@ export function ProgramTable({
       >
         <TableHead>
           <TableRow>
+            {selectable ? (
+              <SelectAllCell
+                checked={allSelected}
+                indeterminate={someSelected && !allSelected}
+                disabled={loading || programs.length === 0 || Boolean(busyId)}
+                onChange={onToggleAll}
+              />
+            ) : null}
             <TableCell>Code</TableCell>
             <TableCell>Slug</TableCell>
             <TableCell>Title</TableCell>
@@ -64,7 +80,7 @@ export function ProgramTable({
           {showSkeleton
             ? Array.from({ length: SKELETON_ROWS }).map((_, i) => (
                 <TableRow key={`sk-${i}`}>
-                  <TableCell colSpan={7} sx={{ py: 1.5 }}>
+                  <TableCell colSpan={colSpan} sx={{ py: 1.5 }}>
                     <Skeleton variant="rounded" height={40} animation="wave" />
                   </TableCell>
                 </TableRow>
@@ -73,7 +89,7 @@ export function ProgramTable({
 
           {!showSkeleton && !loading && programs.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
+              <TableCell colSpan={colSpan} align="center" sx={{ py: 6 }}>
                 <Typography variant="body2" color="text.secondary">
                   {emptyMessage}
                 </Typography>
@@ -85,7 +101,15 @@ export function ProgramTable({
             ? programs.map((row) => {
                 const feeValue = row.enrollmentFee ?? row.enrollment_fee;
                 return (
-                  <TableRow key={row.id} hover>
+                  <TableRow key={row.id} hover selected={selectable && selectedIdSet.has(row.id)}>
+                    {selectable ? (
+                      <RowSelectCell
+                        checked={selectedIdSet.has(row.id)}
+                        disabled={Boolean(busyId)}
+                        label={row.title}
+                        onChange={() => onToggleRow?.(row.id)}
+                      />
+                    ) : null}
                     <TableCell>{row.code}</TableCell>
                     <TableCell>{row.slug ?? '—'}</TableCell>
                     <TableCell>{row.title}</TableCell>
@@ -101,7 +125,7 @@ export function ProgramTable({
                           component="img"
                           src={resolveBannerSrc(row.bannerUrl || row.bannerPath)}
                           alt={`${row.title} banner`}
-                          sx={{ width: 120, height: 56, objectFit: 'cover', borderRadius: 1 }}
+                          sx={{ width: 120, height: 'auto', display: 'block', borderRadius: 1 }}
                         />
                       ) : (
                         '—'
@@ -117,14 +141,19 @@ export function ProgramTable({
                         >
                           View Applicants
                         </Button>
-                        <Button size="small" variant="text" onClick={() => onEdit(row)}>
+                        <Button
+                          size="small"
+                          variant="text"
+                          disabled={busyId === 'batch'}
+                          onClick={() => onEdit(row)}
+                        >
                           Edit
                         </Button>
                         <Button
                           size="small"
                           color="error"
                           variant="text"
-                          disabled={busyId === row.id}
+                          disabled={busyId === row.id || busyId === 'batch'}
                           onClick={() => onDelete(row)}
                         >
                           Delete

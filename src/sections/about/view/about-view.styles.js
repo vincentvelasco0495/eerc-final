@@ -42,18 +42,12 @@ export const styles = {
   photoFrame: {
     borderRadius: 2.5,
     overflow: 'hidden',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: { xs: 280, md: 340 },
     bgcolor: 'background.neutral',
+    lineHeight: 0,
   },
   logoImage: {
     width: 1,
-    height: 1,
-    maxWidth: '100%',
-    maxHeight: { xs: 320, md: 380 },
-    objectFit: 'contain',
-    p: { xs: 2, md: 3 },
+    height: 'auto',
+    display: 'block',
   },
 };

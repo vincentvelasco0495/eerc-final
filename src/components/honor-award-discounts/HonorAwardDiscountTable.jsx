@@ -15,6 +15,8 @@ import { RouterLink } from 'src/routes/components';
 
 import { htmlToPlainText } from 'src/utils/html-content';
 
+import { RowSelectCell, SelectAllCell, rowSelectionState } from 'src/components/table-row-selection';
+
 const SKELETON_ROWS = 5;
 
 function truncateDescription(value, max = 72) {
@@ -35,8 +37,14 @@ export function HonorAwardDiscountTable({
   onDelete,
   busyId = null,
   emptyMessage = 'No honors / awards / discounts found',
+  selectable = false,
+  selectedIds = [],
+  onToggleRow,
+  onToggleAll,
 }) {
   const showSkeleton = loading && (!Array.isArray(rows) || rows.length === 0);
+  const { selectedIdSet, someSelected, allSelected } = rowSelectionState(rows, selectedIds);
+  const colSpan = 6 + (selectable ? 1 : 0);
 
   return (
     <Box sx={{ position: 'relative' }}>
@@ -61,6 +69,14 @@ export function HonorAwardDiscountTable({
       >
         <TableHead>
           <TableRow>
+            {selectable ? (
+              <SelectAllCell
+                checked={allSelected}
+                indeterminate={someSelected && !allSelected}
+                disabled={loading || rows.length === 0 || Boolean(busyId)}
+                onChange={onToggleAll}
+              />
+            ) : null}
             <TableCell>Name</TableCell>
             <TableCell>Status</TableCell>
             <TableCell>Sort order</TableCell>
@@ -73,7 +89,7 @@ export function HonorAwardDiscountTable({
           {showSkeleton
             ? Array.from({ length: SKELETON_ROWS }).map((_, i) => (
                 <TableRow key={`sk-${i}`}>
-                  <TableCell colSpan={6} sx={{ py: 1.5 }}>
+                  <TableCell colSpan={colSpan} sx={{ py: 1.5 }}>
                     <Skeleton variant="rounded" height={40} animation="wave" />
                   </TableCell>
                 </TableRow>
@@ -82,7 +98,7 @@ export function HonorAwardDiscountTable({
 
           {!showSkeleton && !loading && rows.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
+              <TableCell colSpan={colSpan} align="center" sx={{ py: 6 }}>
                 <Typography variant="body2" color="text.secondary">
                   {emptyMessage}
                 </Typography>
@@ -92,7 +108,15 @@ export function HonorAwardDiscountTable({
 
           {!showSkeleton && rows.length > 0
             ? rows.map((row) => (
-                <TableRow key={row.id} hover>
+                <TableRow key={row.id} hover selected={selectable && selectedIdSet.has(row.id)}>
+                  {selectable ? (
+                    <RowSelectCell
+                      checked={selectedIdSet.has(row.id)}
+                      disabled={Boolean(busyId)}
+                      label={row.name}
+                      onChange={() => onToggleRow?.(row.id)}
+                    />
+                  ) : null}
                   <TableCell
                     sx={{
                       maxWidth: { xs: 220, md: 480 },
@@ -116,14 +140,19 @@ export function HonorAwardDiscountTable({
                       >
                         View Applicants
                       </Button>
-                      <Button size="small" variant="text" onClick={() => onEdit(row)}>
+                      <Button
+                        size="small"
+                        variant="text"
+                        disabled={busyId === 'batch'}
+                        onClick={() => onEdit(row)}
+                      >
                         Edit
                       </Button>
                       <Button
                         size="small"
                         color="error"
                         variant="text"
-                        disabled={busyId === row.id}
+                        disabled={busyId === row.id || busyId === 'batch'}
                         onClick={() => onDelete(row)}
                       >
                         Delete

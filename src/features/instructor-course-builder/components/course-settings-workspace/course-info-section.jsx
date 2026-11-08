@@ -154,7 +154,7 @@ export function CourseInfoSection({
               component="img"
               alt=""
               src={coverSrcResolved}
-              sx={{ width: 1, maxHeight: 320, objectFit: 'cover' }}
+              sx={{ width: 1, height: 'auto', display: 'block' }}
             />
           ) : null}
         </Box>

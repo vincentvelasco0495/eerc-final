@@ -53,9 +53,9 @@ export function SuccessStories() {
             }}
           >
             <CmsImage
+              natural
               media={groupImage}
               label={groupImage.label ?? 'Top Achievers Group Photo'}
-              aspectRatio={{ xs: '4 / 3', md: '16 / 9' }}
               sx={{ borderRadius: 4 }}
             />
 

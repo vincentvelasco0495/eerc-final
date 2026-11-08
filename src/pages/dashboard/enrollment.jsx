@@ -5,6 +5,7 @@ import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Stack from '@mui/material/Stack';
 import Alert from '@mui/material/Alert';
+import Button from '@mui/material/Button';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
@@ -20,9 +21,11 @@ import { getLmsAxiosErrorMessage } from 'src/lib/lms-instructor-api';
 import { lmsApi, fetchEnrollmentExcelExport } from 'src/redux/api/lmsApi';
 import { downloadBlob } from 'src/features/enrollment/utils/enrollment-excel';
 import { normalizeProgramsPage, normalizeProgramsPerPage } from 'src/services/programService';
+import { enrollmentSelectionId, enrollmentIdsForSelection } from 'src/features/enrollment/utils/enrollment-rows';
 import { InstructorWorkspaceShell } from 'src/features/instructor-profile/components/instructor-workspace-shell';
 
 import { toast } from 'src/components/snackbar';
+import { ConfirmDialog } from 'src/components/custom-dialog';
 import { ExportExcelButton } from 'src/components/export-excel-button';
 import { EnrollmentTable } from 'src/components/enrollments/EnrollmentTable';
 import { ServerListPagination, ServerListPerPageControl } from 'src/components/server-pagination';
@@ -69,6 +72,9 @@ export default function EnrollmentPage() {
   const { user: authUser } = useAuthContext();
   const { programs } = useLmsPrograms();
   const [busyId, setBusyId] = useState(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingDeleteRows, setPendingDeleteRows] = useState([]);
+  const [selectedIds, setSelectedIds] = useState([]);
   const [exportProgramId, setExportProgramId] = useState('');
 
   const normalizeRole = (account) =>
@@ -84,6 +90,29 @@ export default function EnrollmentPage() {
 
   const listErrorMessage =
     typeof listError === 'string' ? listError : listError?.message ?? null;
+
+  useEffect(() => {
+    const visibleIds = new Set(enrollments.map((row) => enrollmentSelectionId(row)).filter(Boolean));
+    setSelectedIds((current) => {
+      const next = current.filter((id) => visibleIds.has(id));
+      return next.length === current.length ? current : next;
+    });
+  }, [enrollments]);
+
+  const toggleEnrollmentSelection = useCallback((enrollmentId) => {
+    setSelectedIds((current) =>
+      current.includes(enrollmentId)
+        ? current.filter((id) => id !== enrollmentId)
+        : [...current, enrollmentId]
+    );
+  }, []);
+
+  const toggleAllEnrollmentSelection = useCallback(
+    (checked) => {
+      setSelectedIds(checked ? enrollments.map((row) => enrollmentSelectionId(row)).filter(Boolean) : []);
+    },
+    [enrollments]
+  );
 
   const isInstructorLike = effectiveRole === 'instructor' || effectiveRole === 'admin';
 
@@ -206,6 +235,47 @@ export default function EnrollmentPage() {
     downloadBlob(blob, fileName);
   }, [debouncedSearch, exportProgramId]);
 
+  const handleDelete = useCallback(async () => {
+    const rows = pendingDeleteRows.filter((row) => enrollmentIdsForSelection(row).length > 0);
+    const ids = [...new Set(rows.flatMap((row) => enrollmentIdsForSelection(row)))];
+    if (!ids.length) {
+      setConfirmOpen(false);
+      setPendingDeleteRows([]);
+      return;
+    }
+    setBusyId(ids.length === 1 ? ids[0] : 'batch');
+    try {
+      if (ids.length === 1) {
+        await lmsApi.deleteEnrollment(ids[0]);
+      } else {
+        const result = await lmsApi.deleteEnrollments(ids);
+        const deletedCount = Number(result?.deletedCount ?? ids.length);
+        if (deletedCount < ids.length) {
+          toast.error(`Removed ${deletedCount}. ${ids.length - deletedCount} could not be removed.`);
+          await mutateEnrollmentsPage();
+          setConfirmOpen(false);
+          setPendingDeleteRows([]);
+          return;
+        }
+      }
+      const removedSelectionIds = new Set(rows.map((row) => enrollmentSelectionId(row)));
+      setSelectedIds((current) => current.filter((id) => !removedSelectionIds.has(id)));
+      toast.success(ids.length === 1 ? 'Enrollment removed.' : `${ids.length} enrollments removed.`);
+      setConfirmOpen(false);
+      setPendingDeleteRows([]);
+      await mutateEnrollmentsPage();
+    } catch (error) {
+      toast.error(getLmsAxiosErrorMessage(error, 'Could not delete enrollment.'));
+    } finally {
+      setBusyId(null);
+    }
+  }, [mutateEnrollmentsPage, pendingDeleteRows]);
+
+  const pendingApplicationCount = pendingDeleteRows.reduce(
+    (sum, row) => sum + enrollmentIdsForSelection(row).length,
+    0
+  );
+
   return (
     <>
       <title>{`Enrollment | Dashboard - ${CONFIG.appName}`}</title>
@@ -237,6 +307,22 @@ export default function EnrollmentPage() {
                     {isInstructorLike ? 'Enrollment list' : 'My enrollments'}
                   </Typography>
                   <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
+                    {isInstructorLike && selectedIds.length > 0 ? (
+                      <Button
+                        size="small"
+                        color="error"
+                        variant="outlined"
+                        disabled={listLoading || !!busyId}
+                        onClick={() => {
+                          setPendingDeleteRows(
+                            enrollments.filter((row) => selectedIds.includes(enrollmentSelectionId(row)))
+                          );
+                          setConfirmOpen(true);
+                        }}
+                      >
+                        Delete selected ({selectedIds.length})
+                      </Button>
+                    ) : null}
                     {isInstructorLike ? (
                       <ExportExcelButton
                         disabled={listLoading}
@@ -288,6 +374,10 @@ export default function EnrollmentPage() {
                   loading={listLoading}
                   showActionsColumn
                   canManage={isInstructorLike}
+                  selectable={isInstructorLike}
+                  selectedIds={selectedIds}
+                  onToggleRow={toggleEnrollmentSelection}
+                  onToggleAll={toggleAllEnrollmentSelection}
                   onStatusChange={handleStatusChange}
                   onLearningModeChange={handleLearningModeChange}
                   busyId={busyId}
@@ -310,6 +400,41 @@ export default function EnrollmentPage() {
           </Card>
         </Stack>
       </InstructorWorkspaceShell>
+      <ConfirmDialog
+        open={confirmOpen}
+        onClose={() => {
+          if (busyId) {
+            return;
+          }
+          setConfirmOpen(false);
+          setPendingDeleteRows([]);
+        }}
+        title={pendingDeleteRows.length > 1 ? 'Delete selected enrollments' : 'Delete enrollment'}
+        content={
+          pendingDeleteRows.length > 1 ? (
+            <>
+              Remove <strong>{pendingDeleteRows.length}</strong> selected enrollments? Every
+              application in those rows will be removed.
+            </>
+          ) : pendingApplicationCount > 1 ? (
+            <>
+              Remove <strong>{pendingApplicationCount}</strong> applications for{' '}
+              <strong>{pendingDeleteRows[0]?.userName || 'this learner'}</strong>?
+            </>
+          ) : (
+            <>
+              Remove the enrollment for{' '}
+              <strong>{pendingDeleteRows[0]?.userName || 'this learner'}</strong>? This application
+              will be removed.
+            </>
+          )
+        }
+        action={
+          <Button variant="contained" color="error" onClick={handleDelete} disabled={!!busyId}>
+            Delete
+          </Button>
+        }
+      />
     </>
   );
 }

@@ -1931,9 +1931,6 @@ export async function deleteEnrollment(enrollmentId) {
   if (index < 0) {
     throw new Error('Enrollment not found.');
   }
-  if (!enrollments[index].courseId) {
-    throw new Error('Program enrollments cannot be deleted from a course roster.');
-  }
   enrollments.splice(index, 1);
   return { enrollmentId, deleted: true };
 }
@@ -1944,7 +1941,7 @@ export async function deleteEnrollments(ids = []) {
   let deletedCount = 0;
   for (let i = enrollments.length - 1; i >= 0; i -= 1) {
     const row = enrollments[i];
-    if (idSet.has(String(row.id)) && row.courseId) {
+    if (idSet.has(String(row.id))) {
       enrollments.splice(i, 1);
       deletedCount += 1;
     }

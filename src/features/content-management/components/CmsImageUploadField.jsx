@@ -89,7 +89,7 @@ export function CmsImageUploadField({ label, value, onChange, disabled, inputId 
             component="img"
             src={url}
             alt={value?.alt ?? label}
-            sx={{ width: 1, maxHeight: 200, objectFit: 'cover', borderRadius: 1.5 }}
+            sx={{ width: 1, height: 'auto', display: 'block', borderRadius: 1.5 }}
           />
         ) : (
           <Stack alignItems="center" spacing={1} py={3}>

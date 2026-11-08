@@ -59,7 +59,6 @@ export function InstructorPortrait({ image, index = 0 }) {
         borderRadius: 2.5,
         outline: 'none',
         width: 1,
-        aspectRatio: '3 / 4',
         cursor: showHoverPanel ? 'pointer' : 'default',
         '&:hover .instructor-hover-panel, &:focus-within .instructor-hover-panel': {
           opacity: 1,
@@ -70,11 +69,10 @@ export function InstructorPortrait({ image, index = 0 }) {
       }}
     >
       <CmsImage
-        fill
+        natural
         media={image}
         label={photoLabel}
-        aspectRatio="3 / 4"
-        imgSx={{ borderRadius: 0, objectPosition: 'center 18%' }}
+        imgSx={{ borderRadius: 0 }}
         sx={{ borderRadius: 0 }}
       />
 

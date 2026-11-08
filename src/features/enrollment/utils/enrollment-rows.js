@@ -1,3 +1,21 @@
+export function enrollmentSelectionId(row) {
+  if (row?.isLearnerGroup && Array.isArray(row.enrollments) && row.enrollments.length > 1) {
+    return row.id ?? null;
+  }
+  if (row?.isLearnerGroup && Array.isArray(row.enrollments) && row.enrollments.length === 1) {
+    return row.enrollments[0]?.id ?? row.id ?? null;
+  }
+  return row?.id ?? null;
+}
+
+export function enrollmentIdsForSelection(row) {
+  if (row?.isLearnerGroup && Array.isArray(row.enrollments) && row.enrollments.length > 1) {
+    return row.enrollments.map((item) => item?.id).filter(Boolean);
+  }
+  const id = enrollmentSelectionId(row);
+  return id ? [id] : [];
+}
+
 export function flattenEnrollmentRows(rows = []) {
   const out = [];
 

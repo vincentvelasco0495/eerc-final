@@ -94,14 +94,9 @@ function FeaturedAnnouncementCard({ item, isCenter, absOffset, offset, xStep, on
           }}
         >
           <CmsImage
+            natural
             media={item.thumbnail}
             label={photoLabel}
-            aspectRatio="16 / 10"
-            imgSx={{
-              objectFit: 'cover',
-              transform: 'scale(1.32)',
-              transformOrigin: 'center bottom',
-            }}
             sx={{
               borderRadius: 4,
               overflow: 'hidden',

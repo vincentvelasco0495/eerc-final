@@ -13,6 +13,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import CardContent from '@mui/material/CardContent';
 
+import { deleteSelectedRows, usePageRowSelection } from 'src/hooks/use-page-row-selection';
 import {
   useLmsUser,
   useLmsActions,
@@ -84,13 +85,14 @@ export default function BatchEnrollsPage() {
   } = useLmsBatchEnrollsPaginated(page, perPage, debouncedSearch);
   const { programs } = useLmsPrograms();
   const { runCommand } = useLmsActions();
+  const { selectedIds, setSelectedIds, toggleRow, toggleAll } = usePageRowSelection(batchEnrolls);
   const { user } = useLmsUser();
   const [form, setForm] = useState(DEFAULT_FORM);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [busyId, setBusyId] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [pendingDeleteRow, setPendingDeleteRow] = useState(null);
+  const [pendingDeleteRows, setPendingDeleteRows] = useState([]);
 
   const programTitleById = useMemo(
     () => new Map((programs ?? []).map((program) => [program.id, program.title])),
@@ -230,23 +232,34 @@ export default function BatchEnrollsPage() {
   };
 
   const handleDelete = async () => {
-    const batchId = pendingDeleteRow?.id;
-    if (!batchId) {
+    const targets = pendingDeleteRows.filter((row) => row?.id);
+    if (!targets.length) {
       return;
     }
 
-    setBusyId(batchId);
-    try {
-      await runCommand('batchEnroll.delete', { publicId: batchId });
-      toast.success('Batch enroll deleted.');
-      setConfirmOpen(false);
-      setPendingDeleteRow(null);
-      await mutateBatchEnrollsPage();
-    } catch (err) {
-      toast.error(getLmsAxiosErrorMessage(err, 'Could not delete batch enroll entry.'));
-    } finally {
-      setBusyId(null);
+    setBusyId(targets.length === 1 ? targets[0].id : 'batch');
+    const { deleted, failed, deletedIds, lastError } = await deleteSelectedRows(targets, (row) =>
+      runCommand('batchEnroll.delete', { publicId: row.id })
+    );
+    if (deleted > 0 && failed === 0) {
+      toast.success(
+        targets.length === 1 ? 'Batch enroll deleted.' : `${deleted} batch enroll entries deleted.`
+      );
+    } else if (deleted > 0) {
+      toast.error(`Removed ${deleted}. ${failed} could not be removed.`);
+    } else {
+      toast.error(getLmsAxiosErrorMessage(lastError, 'Could not delete batch enroll entry.'));
     }
+    if (deleted > 0) {
+      setSelectedIds((current) => current.filter((id) => !deletedIds.includes(id)));
+      setConfirmOpen(false);
+      setPendingDeleteRows([]);
+      if (targets.some((row) => row.id === editingId)) {
+        resetForm();
+      }
+      await mutateBatchEnrollsPage();
+    }
+    setBusyId(null);
   };
 
   return (
@@ -377,6 +390,20 @@ export default function BatchEnrollsPage() {
                     Batch enroll list
                   </Typography>
                   <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
+                    {selectedIds.length > 0 ? (
+                      <Button
+                        size="small"
+                        color="error"
+                        variant="outlined"
+                        disabled={listLoading || !!busyId}
+                        onClick={() => {
+                          setPendingDeleteRows(batchEnrolls.filter((row) => selectedIds.includes(row.id)));
+                          setConfirmOpen(true);
+                        }}
+                      >
+                        Delete selected ({selectedIds.length})
+                      </Button>
+                    ) : null}
                     <ExportExcelButton
                       disabled={listLoading}
                       onExport={({ from, to }) =>
@@ -407,9 +434,13 @@ export default function BatchEnrollsPage() {
                   rows={batchEnrolls}
                   loading={listLoading}
                   resolveProgramTitle={resolveProgramTitle}
+                  selectable
+                  selectedIds={selectedIds}
+                  onToggleRow={toggleRow}
+                  onToggleAll={toggleAll}
                   onEdit={handleEdit}
                   onDelete={(row) => {
-                    setPendingDeleteRow(row);
+                    setPendingDeleteRows([row]);
                     setConfirmOpen(true);
                   }}
                   busyId={busyId}
@@ -435,13 +466,21 @@ export default function BatchEnrollsPage() {
         open={confirmOpen}
         onClose={() => {
           setConfirmOpen(false);
-          setPendingDeleteRow(null);
+          setPendingDeleteRows([]);
         }}
-        title="Delete batch enroll"
+        title={pendingDeleteRows.length > 1 ? 'Delete selected batch enroll entries' : 'Delete batch enroll'}
         content={
-          <>
-            Delete batch <strong>{pendingDeleteRow?.name ?? ''}</strong>? This action cannot be undone.
-          </>
+          pendingDeleteRows.length > 1 ? (
+            <>
+              Delete <strong>{pendingDeleteRows.length}</strong> selected batch enroll entries? This
+              action cannot be undone.
+            </>
+          ) : (
+            <>
+              Delete batch <strong>{pendingDeleteRows[0]?.name ?? ''}</strong>? This action cannot be
+              undone.
+            </>
+          )
         }
         action={
           <Button variant="contained" color="error" onClick={handleDelete} disabled={!!busyId}>

@@ -15,6 +15,7 @@ import Typography from '@mui/material/Typography';
 import FormControl from '@mui/material/FormControl';
 import CardContent from '@mui/material/CardContent';
 
+import { deleteSelectedRows, usePageRowSelection } from 'src/hooks/use-page-row-selection';
 import {
   useLmsUser,
   useLmsActions,
@@ -86,13 +87,14 @@ export default function InstructorsPage() {
   } = useLmsInstructorsPaginated(page, perPage, debouncedSearch);
   const refreshInstructorsCatalog = useRefreshInstructorsCatalog();
   const { runCommand } = useLmsActions();
+  const { selectedIds, setSelectedIds, toggleRow, toggleAll } = usePageRowSelection(instructors);
   const { user } = useLmsUser();
   const [form, setForm] = useState(DEFAULT_FORM);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [busyId, setBusyId] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [pendingDeleteRow, setPendingDeleteRow] = useState(null);
+  const [pendingDeleteRows, setPendingDeleteRows] = useState([]);
 
   const currentPage = meta?.current_page ?? page;
   const lastPage = meta?.last_page ?? 1;
@@ -230,22 +232,31 @@ export default function InstructorsPage() {
   };
 
   const handleDelete = async () => {
-    const instructorId = pendingDeleteRow?.id;
-    if (!instructorId) {
+    const targets = pendingDeleteRows.filter((row) => row?.id);
+    if (!targets.length) {
       return;
     }
-    setBusyId(instructorId);
-    try {
-      await runCommand('instructor.delete', { publicId: instructorId });
-      toast.success('Instructor deleted.');
-      setConfirmOpen(false);
-      setPendingDeleteRow(null);
-      await refetchInstructorLists();
-    } catch (err) {
-      toast.error(getLmsAxiosErrorMessage(err, 'Could not delete instructor.'));
-    } finally {
-      setBusyId(null);
+    setBusyId(targets.length === 1 ? targets[0].id : 'batch');
+    const { deleted, failed, deletedIds, lastError } = await deleteSelectedRows(targets, (row) =>
+      runCommand('instructor.delete', { publicId: row.id })
+    );
+    if (deleted > 0 && failed === 0) {
+      toast.success(targets.length === 1 ? 'Instructor deleted.' : `${deleted} instructors deleted.`);
+    } else if (deleted > 0) {
+      toast.error(`Removed ${deleted}. ${failed} could not be removed.`);
+    } else {
+      toast.error(getLmsAxiosErrorMessage(lastError, 'Could not delete instructor.'));
     }
+    if (deleted > 0) {
+      setSelectedIds((current) => current.filter((id) => !deletedIds.includes(id)));
+      setConfirmOpen(false);
+      setPendingDeleteRows([]);
+      if (targets.some((row) => row.id === editingId)) {
+        resetForm();
+      }
+      await refetchInstructorLists();
+    }
+    setBusyId(null);
   };
 
   return (
@@ -405,6 +416,20 @@ export default function InstructorsPage() {
                     Instructor list
                   </Typography>
                   <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
+                    {selectedIds.length > 0 ? (
+                      <Button
+                        size="small"
+                        color="error"
+                        variant="outlined"
+                        disabled={listLoading || !!busyId}
+                        onClick={() => {
+                          setPendingDeleteRows(instructors.filter((row) => selectedIds.includes(row.id)));
+                          setConfirmOpen(true);
+                        }}
+                      >
+                        Delete selected ({selectedIds.length})
+                      </Button>
+                    ) : null}
                     <ExportExcelButton
                       disabled={listLoading}
                       onExport={({ from, to }) =>
@@ -441,9 +466,13 @@ export default function InstructorsPage() {
                   rows={instructors}
                   loading={listLoading}
                   resolveProfileSrc={resolveProfileSrc}
+                  selectable
+                  selectedIds={selectedIds}
+                  onToggleRow={toggleRow}
+                  onToggleAll={toggleAll}
                   onEdit={handleEdit}
                   onDelete={(row) => {
-                    setPendingDeleteRow(row);
+                    setPendingDeleteRows([row]);
                     setConfirmOpen(true);
                   }}
                   busyId={busyId}
@@ -469,14 +498,21 @@ export default function InstructorsPage() {
         open={confirmOpen}
         onClose={() => {
           setConfirmOpen(false);
-          setPendingDeleteRow(null);
+          setPendingDeleteRows([]);
         }}
-        title="Delete instructor"
+        title={pendingDeleteRows.length > 1 ? 'Delete selected instructors' : 'Delete instructor'}
         content={
-          <>
-            Delete instructor <strong>{pendingDeleteRow?.name ?? ''}</strong>? This action performs a soft
-            delete only.
-          </>
+          pendingDeleteRows.length > 1 ? (
+            <>
+              Delete <strong>{pendingDeleteRows.length}</strong> selected instructors? This action
+              performs a soft delete only.
+            </>
+          ) : (
+            <>
+              Delete instructor <strong>{pendingDeleteRows[0]?.name ?? ''}</strong>? This action performs
+              a soft delete only.
+            </>
+          )
         }
         action={
           <Button variant="contained" color="error" onClick={handleDelete} disabled={!!busyId}>

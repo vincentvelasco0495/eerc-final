@@ -96,8 +96,6 @@ export const css = {
       display: 'block',
       width: '100%',
       height: 'auto',
-      maxHeight: 320,
-      objectFit: 'cover',
     },
   },
 

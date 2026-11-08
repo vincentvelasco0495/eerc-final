@@ -49,11 +49,11 @@ export function cardArtSx(variant) {
 
 export const cardBannerFrameSx = {
   position: 'relative',
-  minHeight: 180,
-  height: 180,
+  width: 1,
   borderRadius: 2,
   overflow: 'hidden',
   bgcolor: 'background.neutral',
+  lineHeight: 0,
 };
 
 export const styles = {

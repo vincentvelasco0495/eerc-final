@@ -57,16 +57,16 @@ const Thumb = styled.div`
   position: relative;
   flex-shrink: 0;
   width: 72px;
-  height: 52px;
   border-radius: 8px;
   overflow: hidden;
   background: ${colors.bg};
+  line-height: 0;
 `;
 
 const ThumbImg = styled.img`
+  display: block;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
 `;
 
 const Body = styled.div`

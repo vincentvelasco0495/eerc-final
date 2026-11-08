@@ -244,9 +244,8 @@ const HeroFigure = styled.figure`
 const HeroImg = styled.img`
   display: block;
   width: 100%;
+  height: auto;
   border-radius: 12px;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
   box-shadow: ${shadow.card};
   background: ${colors.bg};
 `;

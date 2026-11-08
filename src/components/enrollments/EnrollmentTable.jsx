@@ -5,6 +5,7 @@ import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
 import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
 import TableRow from '@mui/material/TableRow';
 import Skeleton from '@mui/material/Skeleton';
 import { useTheme } from '@mui/material/styles';
@@ -16,9 +17,10 @@ import IconButton from '@mui/material/IconButton';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import TableContainer from '@mui/material/TableContainer';
 import LinearProgress from '@mui/material/LinearProgress';
+import FormControlLabel from '@mui/material/FormControlLabel';
 
 import { formatPesoAmount } from 'src/config/enrollment-payment';
-import { learnerDetailsFromRow } from 'src/features/enrollment/utils/enrollment-rows';
+import { enrollmentSelectionId, learnerDetailsFromRow } from 'src/features/enrollment/utils/enrollment-rows';
 import {
   programAmountTargets,
   enrollmentHasUnreviewedPayments,
@@ -187,8 +189,11 @@ function EnrollmentMobileCard({
   onSwitchLearningMode,
   onSetAmount,
   isChild = false,
+  selectable = false,
+  selected = false,
+  onToggleRow,
 }) {
-  const isBusy = busyId === row.id;
+  const isBusy = busyId === row.id || busyId === 'batch';
 
   return (
     <Box
@@ -199,6 +204,16 @@ function EnrollmentMobileCard({
       }}
     >
       <Stack spacing={1}>
+        {selectable && !isChild ? (
+          <Checkbox
+            size="small"
+            checked={selected}
+            disabled={Boolean(busyId)}
+            onChange={() => onToggleRow?.(row.id)}
+            slotProps={{ input: { 'aria-label': `Select ${row.userName || 'enrollment'}` } }}
+            sx={{ p: 0.5, alignSelf: 'flex-start' }}
+          />
+        ) : null}
         {isChild ? (
           <Typography variant="caption" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>
             {enrollmentChildKindLabel(row)}
@@ -266,8 +281,11 @@ function EnrollmentDataRow({
   onSetAmount,
   isChild = false,
   compact = false,
+  selectable = false,
+  selected = false,
+  onToggleRow,
 }) {
-  const isBusy = busyId === row.id;
+  const isBusy = busyId === row.id || busyId === 'batch';
 
   if (compact) {
     return (
@@ -284,6 +302,9 @@ function EnrollmentDataRow({
         onSwitchLearningMode={onSwitchLearningMode}
         onSetAmount={onSetAmount}
         isChild={isChild}
+        selectable={selectable}
+        selected={selected}
+        onToggleRow={onToggleRow}
       />
     );
   }
@@ -297,6 +318,7 @@ function EnrollmentDataRow({
           ...rowHighlightSx(row),
         }}
       >
+        {selectable ? <TableCell padding="checkbox" /> : null}
         <TableCell sx={{ pl: 5 }}>
           <Typography variant="caption" color="text.secondary">
             {enrollmentChildKindLabel(row)}
@@ -340,7 +362,18 @@ function EnrollmentDataRow({
   }
 
   return (
-    <TableRow hover sx={rowHighlightSx(row)}>
+    <TableRow hover selected={selectable && selected} sx={rowHighlightSx(row)}>
+      {selectable ? (
+        <TableCell padding="checkbox">
+          <Checkbox
+            size="small"
+            checked={selected}
+            disabled={Boolean(busyId)}
+            onChange={() => onToggleRow?.(row.id)}
+            slotProps={{ input: { 'aria-label': `Select ${row.userName || 'enrollment'}` } }}
+          />
+        </TableCell>
+      ) : null}
       <TableCell>
         <LearnerNameButton name={row.userName} onClick={() => onLearnerView?.(row)} />
       </TableCell>
@@ -398,6 +431,9 @@ function LearnerGroupRow({
   onSwitchLearningMode,
   onSetAmount,
   compact = false,
+  selectable = false,
+  selected = false,
+  onToggleRow,
 }) {
   const childEnrollments = Array.isArray(row.enrollments) ? row.enrollments : [];
   const dueCaption = amountDueCaption(row);
@@ -416,6 +452,7 @@ function LearnerGroupRow({
           onSwitchLearningMode={onSwitchLearningMode}
           compact={compact}
           isChild
+          selectable={selectable}
         />
       ))
     : null;
@@ -425,6 +462,16 @@ function LearnerGroupRow({
       <Stack spacing={1}>
         <Box sx={{ ...mobileCardSx, ...rowHighlightSx(row) }}>
           <Stack direction="row" alignItems="flex-start" spacing={0.5}>
+            {selectable ? (
+              <Checkbox
+                size="small"
+                checked={selected}
+                disabled={Boolean(busyId)}
+                onChange={() => onToggleRow?.(row.id)}
+                slotProps={{ input: { 'aria-label': `Select ${row.userName || 'enrollment'}` } }}
+                sx={{ p: 0.5 }}
+              />
+            ) : null}
             <IconButton size="small" onClick={onToggle} aria-label="Toggle program applications">
               <Iconify
                 icon={expanded ? 'eva:arrow-ios-downward-fill' : 'eva:arrow-ios-forward-fill'}
@@ -489,7 +536,18 @@ function LearnerGroupRow({
 
   return (
     <>
-      <TableRow hover sx={rowHighlightSx(row)}>
+      <TableRow hover selected={selectable && selected} sx={rowHighlightSx(row)}>
+        {selectable ? (
+          <TableCell padding="checkbox">
+            <Checkbox
+              size="small"
+              checked={selected}
+              disabled={Boolean(busyId)}
+              onChange={() => onToggleRow?.(row.id)}
+              slotProps={{ input: { 'aria-label': `Select ${row.userName || 'enrollment'}` } }}
+            />
+          </TableCell>
+        ) : null}
         <TableCell>
           <Stack direction="row" alignItems="center" spacing={0.5}>
             <IconButton size="small" onClick={onToggle} aria-label="Toggle program applications">
@@ -559,6 +617,10 @@ export function EnrollmentTable({
   busyId = null,
   emptyMessage = 'No enrollments found',
   onPaymentVerified,
+  selectable = false,
+  selectedIds = [],
+  onToggleRow,
+  onToggleAll,
 }) {
   const theme = useTheme();
   const isCompact = useMediaQuery(theme.breakpoints.down('md'));
@@ -629,7 +691,11 @@ export function EnrollmentTable({
 
   const showSkeleton = loading && (!Array.isArray(rows) || rows.length === 0);
   const showActions = showActionsColumn || canManage;
-  const colSpan = showActions ? 7 : 6;
+  const colSpan = (showActions ? 7 : 6) + (selectable ? 1 : 0);
+  const selectedIdSet = new Set(selectedIds);
+  const selectionIds = rows.map((row) => enrollmentSelectionId(row)).filter(Boolean);
+  const someSelected = selectionIds.some((id) => selectedIdSet.has(id));
+  const allSelected = selectionIds.length > 0 && selectionIds.every((id) => selectedIdSet.has(id));
 
   const renderedRows =
     !showSkeleton && rows.length > 0
@@ -652,6 +718,9 @@ export function EnrollmentTable({
                 onSwitchLearningMode={handleSwitchLearningMode}
                 onSetAmount={handleSetAmount}
                 compact={isCompact}
+                selectable={selectable}
+                selected={selectedIdSet.has(row.id)}
+                onToggleRow={onToggleRow}
               />
             );
           }
@@ -676,6 +745,9 @@ export function EnrollmentTable({
               onSwitchLearningMode={handleSwitchLearningMode}
               onSetAmount={handleSetAmount}
               compact={isCompact}
+              selectable={selectable}
+              selected={selectedIdSet.has(flatRow.id)}
+              onToggleRow={onToggleRow}
             />
           );
         })
@@ -714,6 +786,22 @@ export function EnrollmentTable({
               {emptyMessage}
             </Typography>
           ) : null}
+          {selectable && !showSkeleton && rows.length > 0 ? (
+            <FormControlLabel
+              label="Select all"
+              sx={{ ml: 0, width: 'fit-content', userSelect: 'none' }}
+              control={
+                <Checkbox
+                  size="small"
+                  checked={allSelected}
+                  indeterminate={someSelected && !allSelected}
+                  disabled={Boolean(busyId)}
+                  onChange={(event) => onToggleAll?.(event.target.checked)}
+                  slotProps={{ input: { 'aria-label': 'Select all' } }}
+                />
+              }
+            />
+          ) : null}
           {renderedRows}
         </Stack>
       ) : (
@@ -722,7 +810,7 @@ export function EnrollmentTable({
             size="small"
             sx={{
               tableLayout: 'fixed',
-              minWidth: showActions ? 1180 : 860,
+              minWidth: (showActions ? 1180 : 860) + (selectable ? 52 : 0),
               opacity: loading && rows.length > 0 ? 0.72 : 1,
               transition: (t) => t.transitions.create('opacity', { duration: 160 }),
               '& th, & td': { verticalAlign: 'middle' },
@@ -731,6 +819,18 @@ export function EnrollmentTable({
           >
             <TableHead>
               <TableRow>
+                {selectable ? (
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      size="small"
+                      checked={allSelected}
+                      indeterminate={someSelected && !allSelected}
+                      disabled={loading || rows.length === 0 || Boolean(busyId)}
+                      onChange={(event) => onToggleAll?.(event.target.checked)}
+                      slotProps={{ input: { 'aria-label': 'Select all' } }}
+                    />
+                  </TableCell>
+                ) : null}
                 <TableCell sx={{ width: 220 }}>Learner</TableCell>
                 <TableCell sx={{ width: 180 }}>Email</TableCell>
                 <TableCell sx={{ width: 180 }}>Program</TableCell>

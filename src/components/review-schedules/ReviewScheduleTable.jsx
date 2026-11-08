@@ -15,6 +15,8 @@ import { RouterLink } from 'src/routes/components';
 
 import { htmlToPlainText } from 'src/utils/html-content';
 
+import { RowSelectCell, SelectAllCell, rowSelectionState } from 'src/components/table-row-selection';
+
 const SKELETON_ROWS = 5;
 
 function truncateDescription(value, max = 72) {
@@ -35,8 +37,14 @@ export function ReviewScheduleTable({
   onDelete,
   busyId = null,
   emptyMessage = 'No review schedules found',
+  selectable = false,
+  selectedIds = [],
+  onToggleRow,
+  onToggleAll,
 }) {
   const showSkeleton = loading && (!Array.isArray(rows) || rows.length === 0);
+  const { selectedIdSet, someSelected, allSelected } = rowSelectionState(rows, selectedIds);
+  const colSpan = 8 + (selectable ? 1 : 0);
 
   return (
     <Box sx={{ position: 'relative' }}>
@@ -61,6 +69,14 @@ export function ReviewScheduleTable({
       >
         <TableHead>
           <TableRow>
+            {selectable ? (
+              <SelectAllCell
+                checked={allSelected}
+                indeterminate={someSelected && !allSelected}
+                disabled={loading || rows.length === 0 || Boolean(busyId)}
+                onChange={onToggleAll}
+              />
+            ) : null}
             <TableCell>Branch</TableCell>
             <TableCell>Schedule</TableCell>
             <TableCell>Capacity</TableCell>
@@ -75,7 +91,7 @@ export function ReviewScheduleTable({
           {showSkeleton
             ? Array.from({ length: SKELETON_ROWS }).map((_, i) => (
                 <TableRow key={`sk-${i}`}>
-                  <TableCell colSpan={8} sx={{ py: 1.5 }}>
+                  <TableCell colSpan={colSpan} sx={{ py: 1.5 }}>
                     <Skeleton variant="rounded" height={40} animation="wave" />
                   </TableCell>
                 </TableRow>
@@ -84,7 +100,7 @@ export function ReviewScheduleTable({
 
           {!showSkeleton && !loading && rows.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={8} align="center" sx={{ py: 6 }}>
+              <TableCell colSpan={colSpan} align="center" sx={{ py: 6 }}>
                 <Typography variant="body2" color="text.secondary">
                   {emptyMessage}
                 </Typography>
@@ -94,7 +110,15 @@ export function ReviewScheduleTable({
 
           {!showSkeleton && rows.length > 0
             ? rows.map((row) => (
-                <TableRow key={row.id} hover>
+                <TableRow key={row.id} hover selected={selectable && selectedIdSet.has(row.id)}>
+                  {selectable ? (
+                    <RowSelectCell
+                      checked={selectedIdSet.has(row.id)}
+                      disabled={Boolean(busyId)}
+                      label={row.name}
+                      onChange={() => onToggleRow?.(row.id)}
+                    />
+                  ) : null}
                   <TableCell>{row.branchName ?? '—'}</TableCell>
                   <TableCell sx={{ maxWidth: 360 }}>{row.name}</TableCell>
                   <TableCell>{row.studentCapacity ?? '—'}</TableCell>
@@ -112,14 +136,19 @@ export function ReviewScheduleTable({
                       >
                         View Applicants
                       </Button>
-                      <Button size="small" variant="text" onClick={() => onEdit(row)}>
+                      <Button
+                        size="small"
+                        variant="text"
+                        disabled={busyId === 'batch'}
+                        onClick={() => onEdit(row)}
+                      >
                         Edit
                       </Button>
                       <Button
                         size="small"
                         color="error"
                         variant="text"
-                        disabled={busyId === row.id}
+                        disabled={busyId === row.id || busyId === 'batch'}
                         onClick={() => onDelete(row)}
                       >
                         Delete

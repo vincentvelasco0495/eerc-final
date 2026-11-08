@@ -193,12 +193,11 @@ export function InstructorProgramCard({
             <Stack spacing={1.6}>
               <Box
                 sx={{
-                  position: 'relative',
                   width: 1,
-                  aspectRatio: '16 / 9',
                   overflow: 'hidden',
                   borderRadius: 3,
                   bgcolor: 'background.neutral',
+                  lineHeight: 0,
                 }}
               >
                 {bannerSrc ? (
@@ -206,26 +205,14 @@ export function InstructorProgramCard({
                     component="img"
                     src={bannerSrc}
                     alt=""
-                    sx={{
-                      position: 'absolute',
-                      inset: 0,
-                      width: 1,
-                      height: 1,
-                      objectFit: 'cover',
-                    }}
+                    sx={{ width: 1, height: 'auto', display: 'block' }}
                   />
                 ) : (
                   <Skeleton
                     variant="rectangular"
                     animation="wave"
                     aria-hidden
-                    sx={{
-                      position: 'absolute',
-                      inset: 0,
-                      width: 1,
-                      height: 1,
-                      transform: 'none',
-                    }}
+                    sx={{ width: 1, height: 180, transform: 'none' }}
                   />
                 )}
               </Box>
