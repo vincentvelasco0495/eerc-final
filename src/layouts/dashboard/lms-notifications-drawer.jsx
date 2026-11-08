@@ -10,6 +10,17 @@ import { normalizeUserRole } from 'src/auth/utils/role';
 
 import NotificationsDrawer from '../components/notifications-drawer';
 
+const NOTIFICATION_WINDOW_MS = 12 * 60 * 60 * 1000;
+
+function isWithinLast12Hours(item) {
+  const createdAt = Date.parse(item?.createdAt ?? '');
+  if (!Number.isFinite(createdAt)) {
+    return false;
+  }
+
+  return Date.now() - createdAt <= NOTIFICATION_WINDOW_MS;
+}
+
 const STUDENT_NOTIFICATION_KINDS = new Set([
   'announcement',
   'enrollment_approved',
@@ -30,10 +41,11 @@ function rowsFromResponse(res) {
 }
 
 function filterRowsForRole(rows, role) {
+  const recent = rows.filter(isWithinLast12Hours);
   if (normalizeUserRole(role) !== 'student') {
-    return rows;
+    return recent;
   }
-  return rows.filter(isStudentFacingNotification);
+  return recent.filter(isStudentFacingNotification);
 }
 
 /**

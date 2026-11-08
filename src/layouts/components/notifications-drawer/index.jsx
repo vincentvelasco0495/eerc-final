@@ -60,9 +60,12 @@ export function NotificationsDrawer({
         alignItems: 'center',
       }}
     >
-      <Typography variant="h6" sx={{ flexGrow: 1 }}>
-        Notifications
-      </Typography>
+      <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+        <Typography variant="h6">Notifications</Typography>
+        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+          Last 12 hours
+        </Typography>
+      </Box>
 
       {!!totalUnRead && (
         <Tooltip title="Mark all as read">
@@ -98,7 +101,7 @@ export function NotificationsDrawer({
           />
           <Typography variant="subtitle1">No notifications</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Enrollment and course updates will appear here.
+            Enrollment and course updates from the last 12 hours will appear here.
           </Typography>
         </Box>
       );
