@@ -2,10 +2,16 @@ import { useRouteError, isRouteErrorResponse } from 'react-router';
 
 import GlobalStyles from '@mui/material/GlobalStyles';
 
+import { isStaleChunkError, reloadOnceForStaleChunk } from 'src/utils/reload-stale-chunk';
+
 // ----------------------------------------------------------------------
 
 export function ErrorBoundary() {
   const error = useRouteError();
+
+  if (isStaleChunkError(error) && reloadOnceForStaleChunk()) {
+    return null;
+  }
 
   return (
     <>
