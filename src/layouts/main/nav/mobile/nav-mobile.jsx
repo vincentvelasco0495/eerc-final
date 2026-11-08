@@ -3,13 +3,16 @@ import { useEffect } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Drawer from '@mui/material/Drawer';
+import Typography from '@mui/material/Typography';
+import IconButton from '@mui/material/IconButton';
 
 import { usePathname } from 'src/routes/hooks';
 import { RouterLink } from 'src/routes/components';
 
-import { goldAlpha, brandPalette } from 'src/theme/brand-tokens';
+import { navyAlpha, whiteAlpha, brandPalette } from 'src/theme/brand-tokens';
 
 import { Logo } from 'src/components/logo';
+import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
 
 import { useAuthContext } from 'src/auth/hooks';
@@ -43,16 +46,17 @@ export function NavMobile({ data, open, onClose, slots, sx }) {
       open={open}
       onClose={onClose}
       slotProps={{
+        backdrop: { sx: { backgroundColor: navyAlpha(0.62) } },
         paper: {
           sx: [
             {
               display: 'flex',
               flexDirection: 'column',
-              width: 'var(--layout-nav-mobile-width)',
+              width: { xs: '100%', sm: 400 },
+              maxWidth: '100%',
               bgcolor: NAVY,
               color: brandPalette.white,
               backgroundImage: 'none',
-              borderRight: `1px solid ${goldAlpha(0.22)}`,
             },
             ...(Array.isArray(sx) ? sx : [sx]),
           ],
@@ -62,30 +66,43 @@ export function NavMobile({ data, open, onClose, slots, sx }) {
       {slots?.topArea ?? (
         <Box
           sx={{
-            pt: 3,
-            pb: 2,
-            pl: 2.5,
-            pr: 2,
+            px: 2,
+            py: 1.75,
             display: 'flex',
             alignItems: 'center',
-            gap: 1.25,
-            borderBottom: `1px solid ${goldAlpha(0.18)}`,
+            justifyContent: 'space-between',
+            gap: 1.5,
+            borderBottom: `1px solid ${whiteAlpha(0.08)}`,
           }}
         >
-          <Logo />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+            <Logo />
+            <Box sx={{ minWidth: 0 }}>
+              <Typography noWrap sx={{ fontWeight: 700, fontSize: 16, lineHeight: 1.2 }}>
+                EERC LMS
+              </Typography>
+              <Typography noWrap sx={{ color: whiteAlpha(0.55), fontSize: 12, lineHeight: 1.4 }}>
+                Learning Center
+              </Typography>
+            </Box>
+          </Box>
+
+          <IconButton aria-label="Close menu" onClick={onClose} sx={{ color: brandPalette.white }}>
+            <Iconify icon="mingcute:close-line" width={22} />
+          </IconButton>
         </Box>
       )}
 
       <Scrollbar fillContent>
         <Nav
           sx={{
-            pb: 3,
+            pb: 2,
             display: 'flex',
             flex: '1 1 auto',
             flexDirection: 'column',
           }}
         >
-          <NavUl>
+          <NavUl sx={{ gap: 0.5, px: 1.5, pt: 1.5 }}>
             {data.map((list) => (
               <NavList key={list.title} data={list} />
             ))}
@@ -96,11 +113,10 @@ export function NavMobile({ data, open, onClose, slots, sx }) {
       {slots?.bottomArea ?? (
         <Box
           sx={{
-            py: 3,
-            px: 2.5,
-            gap: 1.5,
-            display: 'flex',
-            borderTop: `1px solid ${goldAlpha(0.18)}`,
+            px: 2,
+            pt: 2,
+            pb: 'calc(16px + env(safe-area-inset-bottom))',
+            borderTop: `1px solid ${whiteAlpha(0.08)}`,
           }}
         >
           {authenticated ? (
@@ -114,8 +130,7 @@ export function NavMobile({ data, open, onClose, slots, sx }) {
               sx={{
                 py: 1.25,
                 fontWeight: 700,
-                letterSpacing: '0.04em',
-                borderRadius: 999,
+                borderRadius: 1.5,
                 bgcolor: brandPalette.gold,
                 color: NAVY,
                 boxShadow: 'none',
@@ -135,8 +150,7 @@ export function NavMobile({ data, open, onClose, slots, sx }) {
               sx={{
                 py: 1.25,
                 fontWeight: 700,
-                letterSpacing: '0.04em',
-                borderRadius: 999,
+                borderRadius: 1.5,
                 bgcolor: brandPalette.gold,
                 color: NAVY,
                 boxShadow: 'none',

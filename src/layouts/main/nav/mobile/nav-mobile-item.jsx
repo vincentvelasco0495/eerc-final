@@ -43,7 +43,7 @@ export function NavItem({
       })}
       {...other}
     >
-      <ItemIcon {...ownerState}> {navItem.renderIcon}</ItemIcon>
+      <ItemIcon {...ownerState}>{navItem.renderIcon}</ItemIcon>
 
       <ItemTitle {...ownerState}>{title}</ItemTitle>
 
@@ -61,42 +61,67 @@ export function NavItem({
 
 const shouldForwardProp = (prop) => !['open', 'active', 'sx'].includes(prop);
 
+const highlighted = {
+  color: brandPalette.gold,
+  backgroundColor: goldAlpha(0.12),
+  '&::before': { backgroundColor: brandPalette.gold },
+};
+
 /**
  * @slot root
  */
-const ItemRoot = styled(ButtonBase, { shouldForwardProp })(({ theme }) => {
-  const openStyles = {
-    color: brandPalette.gold,
-    backgroundColor: goldAlpha(0.12),
-  };
-
-  const activeStyles = {
-    color: brandPalette.gold,
-    backgroundColor: goldAlpha(0.14),
-    '&:hover': { backgroundColor: goldAlpha(0.2) },
-  };
-
-  return {
-    gap: 16,
-    height: 48,
-    width: '100%',
-    paddingLeft: theme.spacing(2.5),
-    paddingRight: theme.spacing(1.5),
-    color: whiteAlpha(0.78),
-    borderRadius: theme.spacing(1),
-    variants: [
-      { props: { open: true }, style: openStyles },
-      { props: { active: true }, style: activeStyles },
-    ],
-  };
-});
+const ItemRoot = styled(ButtonBase, { shouldForwardProp })(({ theme }) => ({
+  gap: 12,
+  height: 48,
+  width: '100%',
+  position: 'relative',
+  paddingLeft: theme.spacing(1.25),
+  paddingRight: theme.spacing(1.5),
+  color: whiteAlpha(0.92),
+  borderRadius: 12,
+  justifyContent: 'flex-start',
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    left: 6,
+    top: 12,
+    bottom: 12,
+    width: 3,
+    borderRadius: 99,
+    backgroundColor: 'transparent',
+  },
+  '&:hover': { backgroundColor: whiteAlpha(0.06) },
+  variants: [
+    {
+      props: { active: true },
+      style: { ...highlighted, '&:hover': { backgroundColor: goldAlpha(0.18) } },
+    },
+  ],
+}));
 
 /**
  * @slot icon
  */
 const ItemIcon = styled('span', { shouldForwardProp })(() => ({
   ...navItemStyles.icon,
-  color: 'inherit',
+  width: 36,
+  height: 36,
+  borderRadius: 10,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  color: brandPalette.white,
+  backgroundColor: whiteAlpha(0.1),
+  '& > :first-of-type:not(style):not(:first-of-type ~ *), & > style + *': {
+    width: 20,
+    height: 20,
+  },
+  variants: [
+    {
+      props: { active: true },
+      style: { color: brandPalette.gold, backgroundColor: goldAlpha(0.16) },
+    },
+  ],
 }));
 
 /**
@@ -104,11 +129,10 @@ const ItemIcon = styled('span', { shouldForwardProp })(() => ({
  */
 const ItemTitle = styled('span', { shouldForwardProp })(({ theme }) => ({
   ...navItemStyles.title(theme),
-  ...theme.typography.body2,
-  fontWeight: theme.typography.fontWeightMedium,
-  variants: [
-    { props: { active: true }, style: { fontWeight: theme.typography.fontWeightSemiBold } },
-  ],
+  fontSize: 15,
+  fontWeight: 600,
+  letterSpacing: 0.1,
+  variants: [{ props: { active: true }, style: { fontWeight: 700 } }],
 }));
 
 /**
@@ -116,5 +140,6 @@ const ItemTitle = styled('span', { shouldForwardProp })(({ theme }) => ({
  */
 const ItemArrow = styled(Iconify, { shouldForwardProp })(({ theme }) => ({
   ...navItemStyles.arrow(theme),
+  marginLeft: 'auto',
   color: 'inherit',
 }));

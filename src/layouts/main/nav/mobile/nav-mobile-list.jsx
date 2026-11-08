@@ -1,24 +1,50 @@
 import { useRef, useCallback } from 'react';
+import { useSearchParams } from 'react-router';
 import { useBoolean } from 'minimal-shared/hooks';
-import { varAlpha, isActiveLink, isExternalLink } from 'minimal-shared/utils';
+import { isActiveLink, isExternalLink } from 'minimal-shared/utils';
 
+import Box from '@mui/material/Box';
 import Collapse from '@mui/material/Collapse';
 
 import { paths } from 'src/routes/paths';
 import { usePathname } from 'src/routes/hooks';
+import { RouterLink } from 'src/routes/components';
 
-import { CONFIG } from 'src/global-config';
-import { whiteAlpha, brandPalette } from 'src/theme/brand-tokens';
-
-import { navSectionClasses, NavSectionVertical } from 'src/components/nav-section';
+import { goldAlpha, whiteAlpha, brandPalette } from 'src/theme/brand-tokens';
 
 import { NavLi } from '../components';
 import { NavItem } from './nav-mobile-item';
 
 // ----------------------------------------------------------------------
 
+function isChildItemActive(pathname, searchParams, itemPath) {
+  if (!itemPath) {
+    return false;
+  }
+
+  let itemUrl;
+  try {
+    itemUrl = new URL(itemPath, window.location.origin);
+  } catch {
+    return false;
+  }
+
+  if (pathname !== itemUrl.pathname) {
+    return false;
+  }
+
+  for (const [key, value] of itemUrl.searchParams.entries()) {
+    if (searchParams.get(key) !== value) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 export function NavList({ data, sx, ...other }) {
   const pathname = usePathname();
+  const [searchParams] = useSearchParams();
   const navItemRef = useRef(null);
   const childGroups = data.children
     ? data.children.some((child) => Array.isArray(child.items))
@@ -44,63 +70,82 @@ export function NavList({ data, sx, ...other }) {
   const renderNavItem = () => (
     <NavItem
       ref={navItemRef}
-      // slots
       path={data.path}
       icon={data.icon}
       title={data.title}
-      // state
       open={open}
       active={isActive}
-      // options
       hasChild={!!childItems.length}
       externalLink={isExternalLink(data.path)}
-      // actions
       onClick={handleToggleMenu}
     />
   );
 
   const renderCollapse = () =>
     !!childItems.length && (
-      <Collapse in={open}>
-        <NavSectionVertical
-          data={childGroups}
+      <Collapse in={open} timeout="auto" unmountOnExit>
+        <Box
+          component="ul"
           sx={{
-            px: 1.5,
-            '--nav-item-color': whiteAlpha(0.78),
-            '--nav-item-root-active-color': brandPalette.gold,
-            '--nav-item-root-open-color': brandPalette.gold,
-            '--nav-item-sub-active-color': brandPalette.gold,
-            '--nav-item-sub-open-color': brandPalette.gold,
-            '--nav-subheader-color': whiteAlpha(0.45),
-            '--nav-subheader-hover-color': brandPalette.gold,
+            m: 0,
+            mt: 0.75,
+            mb: 0.5,
+            py: 0.75,
+            px: 0.75,
+            gap: 0.25,
+            display: 'flex',
+            listStyle: 'none',
+            flexDirection: 'column',
+            borderRadius: 1.5,
+            bgcolor: whiteAlpha(0.04),
           }}
-          slotProps={{
-            rootItem: {
-              sx: [
-                (theme) => ({
-                  minHeight: 36,
-                  '&[aria-label="Dashboard"]': {
-                    [`& .${navSectionClasses.item.title}`]: {
-                      display: 'none',
+        >
+          {childItems.map((item) => {
+            const active = isChildItemActive(pathname, searchParams, item.path);
+
+            return (
+              <Box component="li" key={item.path || item.title}>
+                <Box
+                  component={RouterLink}
+                  href={item.path}
+                  sx={{
+                    gap: 1.25,
+                    px: 1.5,
+                    py: 1.05,
+                    display: 'flex',
+                    alignItems: 'center',
+                    borderRadius: 1,
+                    textDecoration: 'none',
+                    fontSize: 14,
+                    fontWeight: active ? 700 : 500,
+                    color: active ? brandPalette.gold : whiteAlpha(0.82),
+                    bgcolor: active ? goldAlpha(0.12) : 'transparent',
+                    '&:hover': {
+                      color: brandPalette.gold,
+                      bgcolor: goldAlpha(0.1),
                     },
-                    height: 180,
-                    borderRadius: 1.5,
-                    backgroundSize: 'auto 88%',
-                    backgroundPosition: 'center',
-                    backgroundRepeat: 'no-repeat',
-                    backgroundImage: `url(${CONFIG.assetsDir}/assets/illustrations/illustration-dashboard.webp)`,
-                    border: `solid 1px ${varAlpha(theme.vars.palette.grey['500Channel'], 0.12)}`,
-                  },
-                }),
-              ],
-            },
-          }}
-        />
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 6,
+                      height: 6,
+                      flexShrink: 0,
+                      borderRadius: '50%',
+                      bgcolor: active ? brandPalette.gold : whiteAlpha(0.4),
+                    }}
+                  />
+                  {item.title}
+                </Box>
+              </Box>
+            );
+          })}
+        </Box>
       </Collapse>
     );
 
   return (
-    <NavLi sx={sx} {...other}>
+    <NavLi sx={[{ display: 'flex', flexDirection: 'column', width: '100%' }, sx]} {...other}>
       {renderNavItem()}
       {renderCollapse()}
     </NavLi>
