@@ -108,6 +108,11 @@ export const styles = {
     gridTemplateColumns: '112px minmax(0, 1fr)',
     alignItems: 'start',
   },
+  personIcon: {
+    color: (theme) => theme.vars.palette.brand.accentText,
+    mt: 0.25,
+    flexShrink: 0,
+  },
   personImage: {
     width: 112,
     height: 'auto',

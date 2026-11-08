@@ -4,7 +4,6 @@ import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
-import Avatar from '@mui/material/Avatar';
 import Divider from '@mui/material/Divider';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
@@ -162,7 +161,13 @@ export function ContactView({ pageComponent = 'main' } = {}) {
                   </Typography>
 
                   <Box sx={styles.contactList}>
-                    <Box key={representative.email} sx={styles.personCard}>
+                    <Box
+                      key={representative.email}
+                      sx={[
+                        styles.personCard,
+                        !avatarUrl && { gridTemplateColumns: 'auto minmax(0, 1fr)' },
+                      ]}
+                    >
                       {avatarUrl ? (
                         <Box
                           component="img"
@@ -171,14 +176,11 @@ export function ContactView({ pageComponent = 'main' } = {}) {
                           sx={styles.personImage}
                         />
                       ) : (
-                        <Avatar
-                          alt={representative.name}
-                          src={undefined}
-                          variant="rounded"
-                          sx={styles.personImage}
-                        >
-                          {representative.name?.charAt(0)}
-                        </Avatar>
+                        <Iconify
+                          icon="solar:user-rounded-bold"
+                          width={36}
+                          sx={styles.personIcon}
+                        />
                       )}
 
                       <Box sx={styles.personMeta}>
