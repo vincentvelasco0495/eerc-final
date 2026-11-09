@@ -15,6 +15,8 @@ import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hooks';
 import { RouterLink } from 'src/routes/components';
 
+import { isValidPhoneNumber } from 'src/features/student-settings/student-profile-validation';
+
 import { Iconify } from 'src/components/iconify';
 import { Form, Field, schemaUtils } from 'src/components/hook-form';
 
@@ -31,6 +33,16 @@ export const SignUpSchema = z
     firstName: z.string().min(1, { error: 'First name is required!' }),
     lastName: z.string().min(1, { error: 'Last name is required!' }),
     email: schemaUtils.email(),
+    phoneNumber: z
+      .string()
+      .trim()
+      .min(1, { error: 'Phone number is required!' })
+      .refine((value) => isValidPhoneNumber(value), {
+        error: 'Enter a valid phone number (10–15 digits).',
+      }),
+    schoolHeld: z.string().trim().min(1, { error: 'School held is required!' }).max(255, {
+      error: 'School held must be 255 characters or less.',
+    }),
     password: z.string().min(1, { error: 'Password is required!' }),
     confirmPassword: z.string().min(1, { error: 'Confirm your password!' }),
   })
@@ -54,6 +66,8 @@ export function JwtSignUpView() {
     firstName: '',
     lastName: '',
     email: '',
+    phoneNumber: '',
+    schoolHeld: '',
     password: '',
     confirmPassword: '',
   };
@@ -76,6 +90,8 @@ export function JwtSignUpView() {
         firstName: data.firstName,
         lastName: data.lastName,
         confirmPassword: data.confirmPassword,
+        phoneNumber: data.phoneNumber,
+        schoolHeld: data.schoolHeld,
       });
       const sessionUser = await checkUserSession?.();
       const role = sessionUser?.role ?? 'admin';
@@ -105,6 +121,20 @@ export function JwtSignUpView() {
       </Box>
 
       <Field.Text name="email" label="Email address" slotProps={{ inputLabel: { shrink: true } }} />
+
+      <Field.Text
+        name="phoneNumber"
+        label="Phone number"
+        placeholder="09xxxxxxxxx"
+        helperText="10–15 digits; spaces and + - ( ) allowed."
+        slotProps={{ inputLabel: { shrink: true } }}
+      />
+
+      <Field.Text
+        name="schoolHeld"
+        label="School held"
+        slotProps={{ inputLabel: { shrink: true } }}
+      />
 
       <Field.Text
         name="password"

@@ -55,7 +55,15 @@ export const signInWithPassword = async ({ email, password }) => {
 /** **************************************
  * Sign up
  *************************************** */
-export const signUp = async ({ email, password, firstName, lastName, confirmPassword }) => {
+export const signUp = async ({
+  email,
+  password,
+  firstName,
+  lastName,
+  confirmPassword,
+  phoneNumber,
+  schoolHeld,
+}) => {
   try {
     if (isLaravelLmsApiEnabled()) {
       const name = `${firstName} ${lastName}`.trim();
@@ -64,6 +72,8 @@ export const signUp = async ({ email, password, firstName, lastName, confirmPass
         email,
         password,
         password_confirmation: confirmPassword ?? password,
+        phoneNumber,
+        schoolHeld,
       });
 
       const { token } = res.data;
