@@ -23,6 +23,7 @@ import {
 import { fDate } from 'src/utils/format-time';
 
 import { downloadLmsExcelExport } from 'src/lib/lms-excel-export';
+import { sortAttemptsNewestFirst } from 'src/features/quizzes/utils/sort-attempts';
 import { StudentWorkspaceShell } from 'src/features/student-profile/components/student-workspace-shell';
 
 import { Iconify } from 'src/components/iconify';
@@ -104,11 +105,9 @@ export function QuizHistoryView() {
   }, [mutate, quizId]);
 
   const scopedResults = useMemo(() => {
-    if (!quizId) {
-      return results;
-    }
-    return results.filter((result) => result.quizId === quizId);
-  }, [results, quizId]);
+    const filtered = quizId ? results.filter((result) => result.quizId === quizId) : results;
+    return sortAttemptsNewestFirst(filtered);
+  }, [quizId, results]);
 
   const attemptNumberById = useMemo(() => {
     const counts = new Map();

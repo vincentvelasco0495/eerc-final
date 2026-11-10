@@ -19,6 +19,8 @@ import { useLmsQuizResults, useLmsAssignmentResults } from 'src/hooks/use-lms';
 
 import { fDate } from 'src/utils/format-time';
 
+import { sortAttemptsNewestFirst } from 'src/features/quizzes/utils/sort-attempts';
+
 import { Iconify } from 'src/components/iconify';
 
 import { styles } from './styles';
@@ -75,7 +77,7 @@ export function QuizAttemptHistoryDialog({
     if (!itemId) {
       return [];
     }
-    return results.filter((result) => result[resultKey] === itemId);
+    return sortAttemptsNewestFirst(results.filter((result) => result[resultKey] === itemId));
   }, [itemId, resultKey, results]);
 
   const bestScore = attempts.length ? Math.max(...attempts.map((result) => Number(result.score) || 0)) : null;
