@@ -1,3 +1,12 @@
+# Hostinger serves .mjs as text/plain. Browsers then refuse the PDF.js worker
+# (quiz PDF upload: "Failed to fetch dynamically imported module").
+<IfModule mod_mime.c>
+  AddType application/javascript .mjs
+</IfModule>
+<FilesMatch "\.mjs$">
+  ForceType application/javascript
+</FilesMatch>
+
 RewriteEngine On
 
 # Missing scripts must not fall through to index.html. A 200 HTML body is cached
