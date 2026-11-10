@@ -1,17 +1,8 @@
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url'; // eslint-disable-line import/no-unresolved
+import { getDocument } from 'pdfjs-dist';
+
+import { ensurePdfWorker } from 'src/lib/pdfjs-worker';
 
 import { QUIZ_PDF_MAX_PAGES, QUIZ_PDF_MAX_FILE_BYTES } from './quiz-pdf-constants';
-
-let pdfWorkerConfigured = false;
-
-function ensurePdfWorker() {
-  if (pdfWorkerConfigured) {
-    return;
-  }
-  GlobalWorkerOptions.workerSrc = pdfjsWorker;
-  pdfWorkerConfigured = true;
-}
 
 export async function peekQuizPdfPageCount(file) {
   if (!(file instanceof File) || file.size <= 0) {

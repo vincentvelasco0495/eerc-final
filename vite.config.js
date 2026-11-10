@@ -48,4 +48,19 @@ export default defineConfig({
     },
   },
   preview: { port: PORT, host: true },
+  build: {
+    rollupOptions: {
+      output: {
+        assetFileNames: (assetInfo) => {
+          const sourceName = assetInfo.names?.[0] || assetInfo.name || '';
+          // Hostinger serves .mjs as plain text unless .htaccess is present.
+          // A .js name is also a new URL, so browsers drop the cached worker.
+          if (sourceName.includes('pdf.worker')) {
+            return 'assets/pdf.worker-[hash].js';
+          }
+          return 'assets/[name]-[hash][extname]';
+        },
+      },
+    },
+  },
 });

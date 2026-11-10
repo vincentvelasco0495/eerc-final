@@ -1,6 +1,5 @@
+import { getDocument } from 'pdfjs-dist';
 import { useRef, useState, useEffect } from 'react';
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url'; // eslint-disable-line import/no-unresolved
 
 import Box from '@mui/material/Box';
 import Dialog from '@mui/material/Dialog';
@@ -11,6 +10,7 @@ import DialogContent from '@mui/material/DialogContent';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import CircularProgress from '@mui/material/CircularProgress';
 
+import { ensurePdfWorker } from 'src/lib/pdfjs-worker';
 import { fetchLessonMaterialBlob } from 'src/lib/lms-instructor-api';
 import { QUIZ_PDF_MAX_PAGES } from 'src/features/instructor-course-builder/utils/quiz-pdf-constants';
 
@@ -18,11 +18,40 @@ import { Iconify } from 'src/components/iconify';
 
 const pdfBytesCache = new Map();
 const MAX_CANVAS_EDGE = 4096;
-const PDF_CACHE_NAME = 'eerc-quiz-pdf-v1';
+const PDF_CACHE_NAME = 'eerc-quiz-pdf-v2';
 const PDF_CACHE_MAX_BYTES = 15 * 1024 * 1024;
 
-function ensurePdfWorker() {
-  GlobalWorkerOptions.workerSrc = pdfjsWorker;
+function isPdfBytes(bytes) {
+  return (
+    bytes?.byteLength >= 5 &&
+    bytes[0] === 0x25 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x44 &&
+    bytes[3] === 0x46
+  );
+}
+
+let stalePdfCachesDropped;
+
+function dropStalePdfCaches() {
+  if (!stalePdfCachesDropped) {
+    stalePdfCachesDropped = (async () => {
+      if (typeof caches === 'undefined') {
+        return;
+      }
+      try {
+        const keys = await caches.keys();
+        await Promise.all(
+          keys
+            .filter((key) => key.startsWith('eerc-quiz-pdf-') && key !== PDF_CACHE_NAME)
+            .map((key) => caches.delete(key))
+        );
+      } catch {
+        // Private mode or storage disabled.
+      }
+    })();
+  }
+  return stalePdfCachesDropped;
 }
 
 function trimId(value) {
@@ -49,7 +78,12 @@ async function readPersistentPdf(key) {
     if (!hit) {
       return null;
     }
-    return new Uint8Array(await hit.arrayBuffer());
+    const bytes = new Uint8Array(await hit.arrayBuffer());
+    if (!isPdfBytes(bytes)) {
+      await store.delete(pdfCacheRequest(key));
+      return null;
+    }
+    return bytes;
   } catch {
     return null;
   }
@@ -80,13 +114,17 @@ async function loadPdfBytes(materialPublicId, src) {
     pdfBytesCache.set(
       key,
       (async () => {
+        await dropStalePdfCaches();
         const persisted = await readPersistentPdf(key);
-        if (persisted?.byteLength) {
+        if (isPdfBytes(persisted)) {
           return persisted;
         }
         if (id) {
           const blob = await fetchLessonMaterialBlob(id, { inline: 1 });
           const bytes = new Uint8Array(await blob.arrayBuffer());
+          if (!isPdfBytes(bytes)) {
+            throw new Error('Could not load the PDF.');
+          }
           await writePersistentPdf(key, bytes);
           return bytes;
         }
@@ -95,6 +133,9 @@ async function loadPdfBytes(materialPublicId, src) {
           throw new Error('Could not load the PDF.');
         }
         const bytes = new Uint8Array(await response.arrayBuffer());
+        if (!isPdfBytes(bytes)) {
+          throw new Error('Could not load the PDF.');
+        }
         await writePersistentPdf(key, bytes);
         return bytes;
       })().catch((err) => {
