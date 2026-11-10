@@ -51,6 +51,8 @@ export function InstructorCourseCard({
   enrollNowLabel = 'Enroll now',
   /** Student course-access CTA rendered outside the preview click target. */
   studentAction = null,
+  /** Admin-only move controls. `onMove(-1)` earlier, `onMove(1)` later. */
+  reorder = null,
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -369,6 +371,37 @@ export function InstructorCourseCard({
                       {course.updatedAt}
                     </Typography>
                   </Stack>
+
+                  {reorder ? (
+                    <Stack direction="row" spacing={0.25}>
+                      <IconButton
+                        size="small"
+                        color="inherit"
+                        aria-label={`Move ${course.title} earlier`}
+                        disabled={reorder.disabled || reorder.index <= 0}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          reorder.onMove(-1);
+                        }}
+                        sx={styles.menuTrigger}
+                      >
+                        <Iconify icon="solar:alt-arrow-up-linear" width={18} />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        color="inherit"
+                        aria-label={`Move ${course.title} later`}
+                        disabled={reorder.disabled || reorder.index >= reorder.total - 1}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          reorder.onMove(1);
+                        }}
+                        sx={styles.menuTrigger}
+                      >
+                        <Iconify icon="solar:alt-arrow-down-linear" width={18} />
+                      </IconButton>
+                    </Stack>
+                  ) : null}
 
                   <IconButton
                     color="inherit"

@@ -25,6 +25,7 @@ import { resolveProgramBannerSrc } from 'src/utils/program-banner';
 import { htmlToPlainText, normalizeHtmlForDisplay } from 'src/utils/html-content';
 
 import { brandVars } from 'src/theme';
+import { getLmsAxiosErrorMessage, reorderLmsProgramCourses } from 'src/lib/lms-instructor-api';
 import { InstructorCourseCard } from 'src/features/instructor-profile/components/instructor-course-card';
 import { InstructorProfileTabs } from 'src/features/instructor-profile/components/instructor-profile-tabs';
 import { getProgramEnrollmentKind, isPublishedCatalogCourse } from 'src/features/student-profile/student-profile-data';
@@ -371,8 +372,11 @@ export default function ProgramCourseDetail() {
   }, [user?.role]);
 
   const isStaffViewer = staffCurriculumBypass;
+  const isAdminViewer = normalizeUserRole(user?.role) === 'admin';
 
   const [localCourseCardPatches, setLocalCourseCardPatches] = useState({});
+  const [reorderBusy, setReorderBusy] = useState(false);
+  const [courseOrder, setCourseOrder] = useState(null);
 
   useEffect(() => {
     setLocalCourseCardPatches((prev) => (Object.keys(prev).length ? {} : prev));
@@ -400,7 +404,10 @@ export default function ProgramCourseDetail() {
   );
 
   const programCourseCards = useMemo(() => {
-    const mapped = catalogCourses.map((course) => mapLmsCatalogCourseToInstructorCard(course));
+    const sortedCatalog = [...catalogCourses].sort(
+      (a, b) => (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0)
+    );
+    const mapped = sortedCatalog.map((course) => mapLmsCatalogCourseToInstructorCard(course));
     if (Object.keys(localCourseCardPatches).length === 0) {
       return mapped;
     }
@@ -411,6 +418,16 @@ export default function ProgramCourseDetail() {
       })
       .filter((card) => !card.deleted);
   }, [catalogCourses, localCourseCardPatches]);
+
+  const orderedProgramCourseCards = useMemo(() => {
+    if (!courseOrder?.length) {
+      return programCourseCards;
+    }
+    const byId = new Map(programCourseCards.map((card) => [card.id, card]));
+    const ordered = courseOrder.map((id) => byId.get(id)).filter(Boolean);
+    const seen = new Set(ordered.map((card) => card.id));
+    return [...ordered, ...programCourseCards.filter((card) => !seen.has(card.id))];
+  }, [courseOrder, programCourseCards]);
 
   const catalogSidebarStats = useMemo(() => {
     const publishedCourses = programCourseCards.filter((course) => course.status === 'published');
@@ -428,16 +445,62 @@ export default function ProgramCourseDetail() {
 
   const visibleProgramCourseCards = useMemo(() => {
     if (selectedFilter === 'all') {
-      return programCourseCards;
+      return orderedProgramCourseCards;
     }
     if (selectedFilter === 'published') {
-      return programCourseCards.filter((course) => course.status === 'published');
+      return orderedProgramCourseCards.filter((course) => course.status === 'published');
     }
     if (selectedFilter === 'draft') {
-      return programCourseCards.filter((course) => course.status === 'draft');
+      return orderedProgramCourseCards.filter((course) => course.status === 'draft');
     }
-    return programCourseCards;
-  }, [programCourseCards, selectedFilter]);
+    return orderedProgramCourseCards;
+  }, [orderedProgramCourseCards, selectedFilter]);
+
+  const moveCourse = useCallback(
+    async (courseId, direction) => {
+      if (!isAdminViewer || !selectedProgram?.id || reorderBusy) {
+        return;
+      }
+
+      const fullIds = orderedProgramCourseCards.map((card) => card.id);
+      const visibleIds = visibleProgramCourseCards.map((card) => card.id);
+      const visibleIndex = visibleIds.indexOf(courseId);
+      const neighborId = visibleIds[visibleIndex + direction];
+      if (visibleIndex < 0 || !neighborId) {
+        return;
+      }
+
+      const from = fullIds.indexOf(courseId);
+      const to = fullIds.indexOf(neighborId);
+      if (from < 0 || to < 0) {
+        return;
+      }
+
+      const next = [...fullIds];
+      next[from] = neighborId;
+      next[to] = courseId;
+      setCourseOrder(next);
+      setReorderBusy(true);
+      try {
+        await reorderLmsProgramCourses(selectedProgram.id, next);
+        await mutateCourses();
+        setCourseOrder(null);
+      } catch (error) {
+        setCourseOrder(null);
+        toast.error(getLmsAxiosErrorMessage(error, 'Could not save the course order.'));
+      } finally {
+        setReorderBusy(false);
+      }
+    },
+    [
+      isAdminViewer,
+      mutateCourses,
+      orderedProgramCourseCards,
+      reorderBusy,
+      selectedProgram?.id,
+      visibleProgramCourseCards,
+    ]
+  );
 
   const selectedCourse = catalogCourses[0] ?? null;
   const { modules } = useLmsModulesByCourse(selectedCourse?.id ?? null);
@@ -714,10 +777,20 @@ export default function ProgramCourseDetail() {
                   </DescRow>
                 ) : null}
                 <Grid container spacing={{ xs: 2, sm: 2, md: 2.5 }} sx={{ mt: isStaffViewer ? 0.25 : 0 }}>
-                  {visibleProgramCourseCards.map((card) => (
+                  {visibleProgramCourseCards.map((card, index) => (
                     <Grid key={card.id} size={{ xs: 12, sm: 6, lg: 6, xl: 6 }}>
                       <InstructorCourseCard
                         course={card}
+                        reorder={
+                          isAdminViewer
+                            ? {
+                                index,
+                                total: visibleProgramCourseCards.length,
+                                disabled: reorderBusy,
+                                onMove: (direction) => moveCourse(card.id, direction),
+                              }
+                            : null
+                        }
                         onCourseUpdate={handleCourseUpdate}
                         onRemoteCoursesInvalidate={async () => {
                           await Promise.all([

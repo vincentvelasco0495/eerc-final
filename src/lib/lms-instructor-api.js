@@ -20,6 +20,7 @@ export {
   reorderLmsModuleLessons,
   postLmsStandaloneLesson,
   fetchLessonMaterialBlob,
+  reorderLmsProgramCourses,
   postLmsAssignmentAttempt,
   patchLmsStandaloneLesson,
   getLmsAssignmentQuestions,

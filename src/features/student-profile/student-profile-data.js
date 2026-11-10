@@ -31,6 +31,7 @@ export function getStudentWorkspaceNavGroups(pathname) {
           path: paths.dashboard.quizzes.root,
           active:
             pathname === paths.dashboard.quizzes.root ||
+            pathname === paths.dashboard.quizzes.history ||
             /^\/quizzes\/[^/]+\/leaderboard\/?$/.test(pathname ?? ''),
         },
       ],

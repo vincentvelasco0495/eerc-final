@@ -428,6 +428,13 @@ export async function postLmsModuleForCourse(coursePublicId, payload) {
   );
   return data;
 }
+export async function reorderLmsProgramCourses(programPublicId, courseIds = []) {
+  const { data } = await axios.patch(
+    `/api/programs/${encodeURIComponent(programPublicId)}/courses/reorder`,
+    { courseIds: Array.isArray(courseIds) ? courseIds : [] }
+  );
+  return data;
+}
 export async function reorderLmsModulesForCourse(coursePublicId, moduleIds = []) {
   const { data } = await axios.patch(
     `/api/courses/${encodeURIComponent(coursePublicId)}/modules/reorder`,
