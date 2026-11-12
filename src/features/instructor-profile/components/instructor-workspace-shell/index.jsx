@@ -20,6 +20,7 @@ import { Iconify } from 'src/components/iconify';
 import { lmsPageShellStyles } from 'src/components/layout/lms-page-shell.styles';
 
 import { useAuthContext } from 'src/auth/hooks';
+import { normalizeUserRole } from 'src/auth/utils/role';
 
 import { workspaceContentSx } from './styles';
 import { InstructorProfileSidebar } from '../instructor-profile-sidebar';
@@ -31,6 +32,8 @@ export function InstructorWorkspaceShell({ children }) {
   const theme = useTheme();
   const pathname = usePathname();
   const { user } = useAuthContext();
+  const isAdmin = normalizeUserRole(user?.role) === 'admin';
+  const menuLabel = isAdmin ? 'Admin Menu' : 'Instructor menu';
   const profile = buildInstructorProfileIdentity(user);
   const apiEnabled = Boolean(CONFIG.serverUrl?.trim());
   const { summaries } = useLmsAssignmentSummaries(apiEnabled);
@@ -63,14 +66,14 @@ export function InstructorWorkspaceShell({ children }) {
               color="inherit"
               size="large"
               edge="start"
-              aria-label="Open instructor menu"
+              aria-label={`Open ${menuLabel.toLowerCase()}`}
               onClick={() => setMobileNavOpen(true)}
               sx={{ flexShrink: 0 }}
             >
               <Iconify icon="eva:menu-fill" width={22} />
             </IconButton>
             <Typography variant="subtitle2" noWrap sx={{ color: 'text.secondary' }}>
-              Instructor menu
+              {menuLabel}
             </Typography>
           </Stack>
         ) : null}
