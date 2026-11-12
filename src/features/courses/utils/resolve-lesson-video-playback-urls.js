@@ -5,8 +5,8 @@ export function resolveLessonVideoPlaybackUrls(materialId, playbackUrl = '') {
     .trim()
     .replace(/\/$/, '');
   const id = typeof materialId === 'string' ? materialId.trim() : '';
-  const urls = [];
   const extra = typeof playbackUrl === 'string' ? playbackUrl.trim() : '';
+  const urls = [];
   if (extra) {
     urls.push(extra);
   }

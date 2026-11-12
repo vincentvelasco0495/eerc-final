@@ -623,7 +623,7 @@ async function withVideoUploadRetry(fn, { attempts = 5, signal } = {}) {
   throw lastError;
 }
 
-/** Resumable 1 MiB chunked video upload; survives refresh via sessionStorage. */
+/** Resumable video upload. The file is stored on this server in chunks. */
 export async function uploadLessonVideoInChunks({ file, target, onProgress, signal } = {}) {
   if (!file) {
     throw new Error('Choose a video file first.');

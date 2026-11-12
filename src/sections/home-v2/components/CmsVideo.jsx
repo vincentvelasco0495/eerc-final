@@ -5,7 +5,7 @@ import {
   resolveCmsVideoPlaybackUrls,
 } from 'src/features/homepage-v2/utils/resolve-cms-media-url';
 
-import { PremiumPlayableVideo } from 'src/components/common/premium-playable-video';
+import { NativeHtmlVideo } from 'src/components/common/native-html-video';
 
 import { ImagePlaceholder } from './ImagePlaceholder';
 
@@ -28,7 +28,7 @@ export function CmsVideo({
           ...(Array.isArray(sx) ? sx : [sx]),
         ]}
       >
-        <PremiumPlayableVideo
+        <NativeHtmlVideo
           src={sources[0]}
           sources={sources}
           poster={posterUrl}

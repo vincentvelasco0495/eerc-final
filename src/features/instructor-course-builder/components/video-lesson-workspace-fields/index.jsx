@@ -1,5 +1,5 @@
 import { useDropzone } from 'react-dropzone';
-import { useState, useEffect, useCallback } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
@@ -14,17 +14,22 @@ import LinearProgress from '@mui/material/LinearProgress';
 import CircularProgress from '@mui/material/CircularProgress';
 
 import { Iconify } from 'src/components/iconify';
-import { PremiumPlayableVideo } from 'src/components/common/premium-playable-video';
 
 import { styles } from './styles';
 import {
+  TEAMS_LINK_VIDEO_SOURCE,
+  normalizeExternalVideoUrl,
   VIDEO_WATERMARK_MAX_LENGTH,
   normalizeVideoWatermarkColor,
   DEFAULT_VIDEO_WATERMARK_COLOR,
+  EXTERNAL_VIDEO_URL_MAX_LENGTH,
   DEFAULT_VIDEO_WATERMARK_OPACITY,
 } from '../../utils/lesson-authoring-helpers';
 
-const SOURCE_OPTIONS = [{ value: 'html-mp4', label: 'HTML (MP4)' }];
+const SOURCE_OPTIONS = [
+  { value: 'html-mp4', label: 'HTML (MP4)' },
+  { value: TEAMS_LINK_VIDEO_SOURCE, label: 'Teams recording' },
+];
 
 function WatermarkAppearanceFields({ color, opacity, onColorChange, onOpacityChange }) {
   const normalizedColor = normalizeVideoWatermarkColor(color);
@@ -101,6 +106,45 @@ function WatermarkAppearanceFields({ color, opacity, onColorChange, onOpacityCha
   );
 }
 
+function LessonVideoPreview({ src, sources }) {
+  const playlist = useMemo(() => {
+    const list = Array.isArray(sources) ? sources.filter(Boolean) : [];
+    if (src) {
+      list.unshift(src);
+    }
+    return [...new Set(list)];
+  }, [src, sources]);
+  const sourceKey = playlist.join('\n');
+  const [sourceIndex, setSourceIndex] = useState(0);
+  const activeSrc = playlist[Math.min(sourceIndex, Math.max(playlist.length - 1, 0))] || '';
+
+  useEffect(() => {
+    setSourceIndex(0);
+  }, [sourceKey]);
+
+  if (!activeSrc) {
+    return null;
+  }
+
+  return (
+    <Box
+      component="video"
+      key={activeSrc}
+      src={activeSrc}
+      controls
+      playsInline
+      preload="metadata"
+      title="Lesson video"
+      onClick={(event) => event.stopPropagation()}
+      onMouseDown={(event) => event.stopPropagation()}
+      onError={() => {
+        setSourceIndex((current) => (current + 1 < playlist.length ? current + 1 : current));
+      }}
+      sx={styles.videoPreview}
+    />
+  );
+}
+
 function MediaDropzone({
   accept,
   hint,
@@ -116,9 +160,6 @@ function MediaDropzone({
   uploading = false,
   uploadPercent = null,
   previewLoading = false,
-  watermarkText = '',
-  watermarkColor = DEFAULT_VIDEO_WATERMARK_COLOR,
-  watermarkOpacity = DEFAULT_VIDEO_WATERMARK_OPACITY,
 }) {
   const onDrop = useCallback(
     (acceptedFiles) => {
@@ -151,16 +192,7 @@ function MediaDropzone({
         {showPreview ? (
           <Box sx={{ position: 'relative', width: 1 }}>
             {isVideo ? (
-              <PremiumPlayableVideo
-                key={previewUrl}
-                src={previewUrl}
-                sources={previewSources}
-                title="Lesson video"
-                aspectRatio="16 / 9"
-                watermarkText={watermarkText}
-                watermarkColor={watermarkColor}
-                watermarkOpacity={watermarkOpacity}
-              />
+              <LessonVideoPreview src={previewUrl} sources={previewSources} />
             ) : (
               <Box component="img" src={previewUrl} alt="" sx={styles.posterPreview} loading="lazy" />
             )}
@@ -265,6 +297,8 @@ function MediaDropzone({
 export function VideoLessonWorkspaceFields({
   sourceType,
   onSourceTypeChange,
+  externalVideoUrl = '',
+  onExternalVideoUrlChange,
   duration,
   onDurationChange,
   onVideoFiles,
@@ -283,6 +317,9 @@ export function VideoLessonWorkspaceFields({
   watermarkOpacity = DEFAULT_VIDEO_WATERMARK_OPACITY,
   onWatermarkOpacityChange,
 }) {
+  const teamsRecording = sourceType === TEAMS_LINK_VIDEO_SOURCE;
+  const validExternalUrl = normalizeExternalVideoUrl(externalVideoUrl);
+
   return (
     <Stack sx={styles.root}>
       <Box>
@@ -302,6 +339,34 @@ export function VideoLessonWorkspaceFields({
         </FormControl>
       </Box>
 
+      {teamsRecording ? (
+        <Box>
+          <Typography sx={styles.fieldLabel}>Recording link</Typography>
+          <TextField
+            fullWidth
+            multiline
+            minRows={3}
+            size="small"
+            value={externalVideoUrl}
+            onChange={(e) => onExternalVideoUrlChange?.(e.target.value)}
+            placeholder="https://….sharepoint.com/…/stream.aspx?…"
+            helperText="Paste the Teams or SharePoint recording link. Students open it in a new tab and sign in to Microsoft if asked."
+            slotProps={{ htmlInput: { maxLength: EXTERNAL_VIDEO_URL_MAX_LENGTH } }}
+          />
+          {validExternalUrl ? (
+            <Button
+              component="a"
+              href={validExternalUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              size="small"
+              sx={{ mt: 1 }}
+            >
+              Open recording
+            </Button>
+          ) : null}
+        </Box>
+      ) : (
       <Box>
         <Typography sx={styles.fieldLabel}>Lesson video</Typography>
         <MediaDropzone
@@ -319,9 +384,6 @@ export function VideoLessonWorkspaceFields({
           uploading={videoUploading}
           uploadPercent={videoUploadPercent}
           previewLoading={videoPreviewLoading}
-          watermarkText={watermarkText}
-          watermarkColor={watermarkColor}
-          watermarkOpacity={watermarkOpacity}
         />
         {videoSecondaryHint ? (
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75 }}>
@@ -341,7 +403,9 @@ export function VideoLessonWorkspaceFields({
           </Button>
         ) : null}
       </Box>
+      )}
 
+      {teamsRecording ? null : (
       <Box>
         <Typography sx={styles.fieldLabel}>Video watermark</Typography>
         <TextField
@@ -350,7 +414,7 @@ export function VideoLessonWorkspaceFields({
           value={watermarkText}
           onChange={(e) => onWatermarkTextChange?.(e.target.value)}
           placeholder="Text tiled over this video"
-          helperText="Shown on this video only. Leave blank for no watermark. Color and opacity update the preview now. Click Save lesson to keep them."
+          helperText="Shown on this video only when students watch the lesson. Leave blank for no watermark. Click Save lesson to keep it."
           slotProps={{ htmlInput: { maxLength: VIDEO_WATERMARK_MAX_LENGTH } }}
         />
         <WatermarkAppearanceFields
@@ -360,6 +424,7 @@ export function VideoLessonWorkspaceFields({
           onOpacityChange={onWatermarkOpacityChange}
         />
       </Box>
+      )}
 
       <Box>
         <Typography sx={styles.fieldLabel}>Lesson duration</Typography>

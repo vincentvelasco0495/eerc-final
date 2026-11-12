@@ -3,6 +3,8 @@ import {
   coreLessonListTitle,
 } from 'src/features/instructor-course-builder/utils/map-lms-modules-to-curriculum-builder';
 import {
+  TEAMS_LINK_VIDEO_SOURCE,
+  normalizeExternalVideoUrl,
   normalizeVideoWatermarkColor,
   normalizeVideoWatermarkOpacity,
 } from 'src/features/instructor-course-builder/utils/lesson-authoring-helpers';
@@ -66,6 +68,16 @@ function bodyFromModule(mod) {
   return '';
 }
 
+function externalVideoFromMeta(lessonMeta) {
+  const meta = lessonMeta && typeof lessonMeta === 'object' ? lessonMeta : {};
+  const source = typeof meta.videoSourceType === 'string' ? meta.videoSourceType.trim() : '';
+  const url = normalizeExternalVideoUrl(meta.videoExternalUrl ?? meta.video_external_url);
+  if (source !== TEAMS_LINK_VIDEO_SOURCE || !url) {
+    return '';
+  }
+  return url;
+}
+
 function lessonWatermark(lessonMeta) {
   const meta = lessonMeta && typeof lessonMeta === 'object' ? lessonMeta : {};
   const raw = meta.watermarkText ?? meta.watermark_text;
@@ -124,6 +136,7 @@ export function resolveVideoLessonFromModules(lessonKey, modules) {
       bodyHtml: body,
       lessonMaterials,
       primaryVideoMaterial: pickPrimaryVideoMaterial(lessonMaterials),
+      externalVideoUrl: externalVideoFromMeta(mod.lessonMeta),
       ...lessonWatermark(mod.lessonMeta),
     };
   }
@@ -142,6 +155,7 @@ export function resolveVideoLessonFromModules(lessonKey, modules) {
         bodyHtml: bodyFromStandaloneRow(row),
         lessonMaterials,
         primaryVideoMaterial: pickPrimaryVideoMaterial(lessonMaterials),
+        externalVideoUrl: externalVideoFromMeta(row.lessonMeta),
         ...lessonWatermark(row.lessonMeta),
       };
     }

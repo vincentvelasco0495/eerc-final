@@ -18,7 +18,7 @@ import {
 
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
-import { PremiumPlayableVideo } from 'src/components/common/premium-playable-video';
+import { NativeHtmlVideo } from 'src/components/common/native-html-video';
 
 function slugifyLabel(label) {
   return String(label ?? 'video')
@@ -187,13 +187,12 @@ export function CmsVideoUploadField({
         >
           <Box sx={{ position: 'relative' }}>
             {blobPreviewUrl || hasStoredVideo ? (
-              <PremiumPlayableVideo
+              <NativeHtmlVideo
                 key={playerKey}
                 src={previewUrl}
                 sources={playerSources}
                 poster={posterUrl}
                 title={value?.alt || label}
-                aspectRatio="16 / 9"
                 watermarkText={watermarkText}
               />
             ) : null}

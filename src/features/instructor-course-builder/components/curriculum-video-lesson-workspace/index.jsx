@@ -29,6 +29,8 @@ import {
   normalizeUploadedLessonMaterial,
 } from '../../utils/lesson-materials-cache';
 import {
+  TEAMS_LINK_VIDEO_SOURCE,
+  normalizeExternalVideoUrl,
   normalizeVideoWorkspaceMeta,
   normalizeVideoWatermarkText,
   normalizeVideoWatermarkColor,
@@ -77,6 +79,7 @@ export function CurriculumVideoLessonWorkspace({
   );
 
   const [sourceType, setSourceType] = useState('html-mp4');
+  const [externalVideoUrl, setExternalVideoUrl] = useState('');
   const [duration, setDuration] = useState('');
   const [watermarkText, setWatermarkText] = useState('');
   const [watermarkColor, setWatermarkColor] = useState(DEFAULT_VIDEO_WATERMARK_COLOR);
@@ -179,6 +182,7 @@ export function CurriculumVideoLessonWorkspace({
     if (!saveLiveRichLesson || !liveLessonAuthoring) {
       hydratedAuthoringKeyRef.current = '';
       setSourceType('html-mp4');
+      setExternalVideoUrl('');
       setDuration('');
       setWatermarkText('');
       setWatermarkColor(DEFAULT_VIDEO_WATERMARK_COLOR);
@@ -203,6 +207,13 @@ export function CurriculumVideoLessonWorkspace({
 
     const vst = lm.videoSourceType != null ? String(lm.videoSourceType).trim() : '';
     setSourceType(vst || 'html-mp4');
+    setExternalVideoUrl(
+      typeof lm.videoExternalUrl === 'string'
+        ? lm.videoExternalUrl
+        : typeof lm.video_external_url === 'string'
+          ? lm.video_external_url
+          : ''
+    );
 
     setVideoLessonMaterialPublicId(
       lm.videoLessonMaterialPublicId != null &&
@@ -300,6 +311,7 @@ export function CurriculumVideoLessonWorkspace({
           lessonPreview,
           durationLabel: duration.trim(),
           videoSourceType: sourceType,
+          videoExternalUrl: externalVideoUrl,
           videoLessonMaterialPublicId,
           watermarkText,
           watermarkColor,
@@ -310,6 +322,7 @@ export function CurriculumVideoLessonWorkspace({
       ),
     [
       duration,
+      externalVideoUrl,
       lessonPreview,
       sourceType,
       videoLessonMaterialPublicId,
@@ -320,6 +333,10 @@ export function CurriculumVideoLessonWorkspace({
   );
 
   const persistLesson = useCallback(async () => {
+    if (sourceType === TEAMS_LINK_VIDEO_SOURCE && !normalizeExternalVideoUrl(externalVideoUrl)) {
+      toast.error('Paste a Teams or SharePoint recording link that starts with https.');
+      return;
+    }
     if (saveLiveRichLesson) {
       try {
         await saveLiveRichLesson({
@@ -340,12 +357,14 @@ export function CurriculumVideoLessonWorkspace({
   }, [
     buildLessonMetaForSave,
     duration,
+    externalVideoUrl,
     lesson.id,
     lesson.title,
     lessonContentHtml,
     onLessonSave,
     saveLiveRichLesson,
     shortDescriptionHtml,
+    sourceType,
   ]);
 
   const materialUploadTarget = useMemo(() => {
@@ -574,6 +593,8 @@ export function CurriculumVideoLessonWorkspace({
           <VideoLessonWorkspaceFields
             sourceType={sourceType}
             onSourceTypeChange={setSourceType}
+            externalVideoUrl={externalVideoUrl}
+            onExternalVideoUrlChange={setExternalVideoUrl}
             duration={duration}
             onDurationChange={setDuration}
             onVideoFiles={handleVideoFiles}

@@ -80,9 +80,10 @@ export const styles = {
   videoPreview: {
     display: 'block',
     width: '100%',
-    maxHeight: 280,
+    maxHeight: 480,
     objectFit: 'contain',
     bgcolor: 'common.black',
+    borderRadius: 1,
   },
   uploadingOverlay: (theme) => ({
     position: 'absolute',

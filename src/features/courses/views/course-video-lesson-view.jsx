@@ -212,7 +212,9 @@ export function CourseVideoLessonView() {
     [lessonPayload?.bodyHtml]
   );
 
-  const fileMaterialId = lessonPayload?.primaryVideoMaterial?.id ?? null;
+  const externalVideoUrl =
+    typeof lessonPayload?.externalVideoUrl === 'string' ? lessonPayload.externalVideoUrl.trim() : '';
+  const fileMaterialId = externalVideoUrl ? null : lessonPayload?.primaryVideoMaterial?.id ?? null;
 
   const [fileVideoObjectUrl, setFileVideoObjectUrl] = useState(null);
   const [fileVideoSources, setFileVideoSources] = useState([]);
@@ -551,7 +553,33 @@ export function CourseVideoLessonView() {
               <Divider />
 
               <CardContent sx={{ p: { xs: 2.5, md: 3.5 }, pt: { xs: 2.5, md: 3 } }}>
-                {fileVideoObjectUrl ? (
+                {externalVideoUrl ? (
+                  <Paper
+                    variant="outlined"
+                    sx={{
+                      p: 3,
+                      mb: 3,
+                      borderRadius: 1.5,
+                    }}
+                  >
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+                      Teams recording
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      Open the recording in a new tab. Sign in with your Microsoft Teams account if
+                      the page asks you to.
+                    </Typography>
+                    <Button
+                      component="a"
+                      href={externalVideoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      variant="contained"
+                    >
+                      Open recording
+                    </Button>
+                  </Paper>
+                ) : fileVideoObjectUrl ? (
                   <SecureLessonVideo
                     src={fileVideoObjectUrl}
                     sources={fileVideoSources}
@@ -647,7 +675,7 @@ export function CourseVideoLessonView() {
                   >
                     <Iconify icon="solar:videocamera-record-linear" width={40} sx={{ color: 'text.disabled', mb: 1.5 }} />
                     <Typography variant="body2" color="text.secondary">
-                      Upload a video file to lesson materials, or add a YouTube link in lesson content.
+                      Upload a video file, add a Teams recording link, or add a YouTube link in lesson content.
                     </Typography>
                   </Paper>
                 )}

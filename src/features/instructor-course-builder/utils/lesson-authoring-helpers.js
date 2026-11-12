@@ -23,6 +23,9 @@ export function normalizeLessonMetaForApi(meta, extras = {}) {
 }
 
 export const VIDEO_WATERMARK_MAX_LENGTH = 120;
+export const HTML_MP4_VIDEO_SOURCE = 'html-mp4';
+export const TEAMS_LINK_VIDEO_SOURCE = 'teams-link';
+export const EXTERNAL_VIDEO_URL_MAX_LENGTH = 4000;
 export const DEFAULT_VIDEO_WATERMARK_COLOR = '#FFFFFF';
 /** Percent, matching the previous fixed tile opacity of 0.42. */
 export const DEFAULT_VIDEO_WATERMARK_OPACITY = 42;
@@ -58,6 +61,38 @@ export function normalizeVideoWatermarkOpacity(value) {
   return Math.max(0, Math.min(100, Math.round(percent)));
 }
 
+function externalVideoHostAllowed(hostname) {
+  const host = String(hostname || '').toLowerCase();
+  return (
+    host === 'sharepoint.com' ||
+    host.endsWith('.sharepoint.com') ||
+    host === 'sharepoint.us' ||
+    host.endsWith('.sharepoint.us') ||
+    host === 'teams.microsoft.com' ||
+    host.endsWith('.teams.microsoft.com')
+  );
+}
+
+/** Teams or SharePoint https link. Anything else is dropped. */
+export function normalizeExternalVideoUrl(value) {
+  const raw = String(value ?? '').trim();
+  if (!raw || raw.length > EXTERNAL_VIDEO_URL_MAX_LENGTH) {
+    return '';
+  }
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol !== 'https:' || parsed.username || parsed.password) {
+      return '';
+    }
+    if (!externalVideoHostAllowed(parsed.hostname)) {
+      return '';
+    }
+    return raw;
+  } catch {
+    return '';
+  }
+}
+
 /**
  * Video lesson workspace: schedule / toggles + source + optional linked lesson-material public ids.
  */
@@ -67,6 +102,7 @@ export function normalizeVideoWorkspaceMeta(bundle, extras = {}) {
     durationLabel,
     videoSourceType,
     videoLessonMaterialPublicId,
+    videoExternalUrl,
     watermarkText,
     watermarkColor,
     watermarkOpacity,
@@ -78,11 +114,14 @@ export function normalizeVideoWorkspaceMeta(bundle, extras = {}) {
   );
 
   const out = { ...base };
-  const vst =
+  const requested =
     typeof videoSourceType === 'string' && videoSourceType.trim()
       ? videoSourceType.trim()
-      : 'html-mp4';
+      : HTML_MP4_VIDEO_SOURCE;
+  const vst = requested === TEAMS_LINK_VIDEO_SOURCE ? TEAMS_LINK_VIDEO_SOURCE : HTML_MP4_VIDEO_SOURCE;
   out.videoSourceType = vst;
+  const externalUrl = vst === TEAMS_LINK_VIDEO_SOURCE ? normalizeExternalVideoUrl(videoExternalUrl) : '';
+  out.videoExternalUrl = externalUrl || null;
 
   if (videoLessonMaterialPublicId != null && String(videoLessonMaterialPublicId).trim() !== '') {
     out.videoLessonMaterialPublicId = String(videoLessonMaterialPublicId).trim();
