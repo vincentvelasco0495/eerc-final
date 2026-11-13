@@ -181,8 +181,10 @@ export function SecureLessonVideo({
           poster={poster || undefined}
           title={title}
           controls
+          controlsList="nodownload"
           playsInline
           preload="metadata"
+          onContextMenu={(event) => event.preventDefault()}
           onError={tryNextSource}
           onPause={handleTimeUpdate}
           onTimeUpdate={handleTimeUpdate}

@@ -54,8 +54,10 @@ export function NativeHtmlVideo({
         poster={poster || undefined}
         title={title}
         controls
+        controlsList="nodownload"
         playsInline
         preload="metadata"
+        onContextMenu={(event) => event.preventDefault()}
         onClick={(event) => event.stopPropagation()}
         onMouseDown={(event) => event.stopPropagation()}
         onError={tryNextSource}

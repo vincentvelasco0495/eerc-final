@@ -50,6 +50,7 @@ function unwrapUploadedCmsVideo(raw) {
   return {
     id,
     url: payload.url ?? payload.fileUrl ?? payload.inlineFileUrl ?? null,
+    provider: payload.provider ?? null,
     filename: payload.filename ?? payload.originalName ?? payload.name ?? null,
     mime: payload.mime ?? null,
     size: payload.size ?? payload.sizeBytes ?? null,
@@ -126,6 +127,7 @@ export function CmsVideoUploadField({
           ...value,
           url: media.url,
           mediaId: media.id,
+          provider: media.provider,
           filename: media.filename,
           alt: media.alt ?? value?.alt ?? label,
           size: media.size,

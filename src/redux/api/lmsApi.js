@@ -623,7 +623,90 @@ async function withVideoUploadRetry(fn, { attempts = 5, signal } = {}) {
   throw lastError;
 }
 
-/** Resumable video upload. The file is stored on this server in chunks. */
+async function beginR2VideoUpload({ file, target }) {
+  try {
+    const { data } = await axios.post('/api/video-uploads/r2', {
+      originalName: file.name,
+      sizeBytes: file.size,
+      mime: file.type || 'video/mp4',
+      targetKind: target.kind,
+      targetPublicId: target.id,
+      moduleResourcePublicId: target.moduleResourcePublicId || undefined,
+    });
+    const payload = unwrapVideoUploadPayload(data);
+    return payload?.provider === 'r2' ? payload : null;
+  } catch (error) {
+    const status = error?.status ?? error?.response?.status;
+    const message = getLmsAxiosErrorMessage(error, '');
+    if (status === 409 && /not configured/i.test(message)) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+async function presignR2UploadPart(uploadId, partNumber) {
+  const { data } = await axios.post(
+    `/api/video-uploads/${encodeURIComponent(uploadId)}/parts`,
+    { partNumber }
+  );
+  const payload = unwrapVideoUploadPayload(data);
+  const url = typeof payload.url === 'string' ? payload.url : '';
+  if (!url) {
+    throw new Error('Cloudflare upload link is missing.');
+  }
+  return url;
+}
+
+async function putR2Part(url, blob, signal) {
+  const response = await fetch(url, { method: 'PUT', body: blob, signal });
+  if (!response.ok) {
+    const error = new Error(`Cloudflare upload failed (${response.status}).`);
+    error.status = response.status;
+    throw error;
+  }
+}
+
+async function uploadFileToR2({ file, session, onProgress, signal }) {
+  const partSize = Number(session.partSize) || 16 * 1024 * 1024;
+  const partCount = Number(session.partCount) || Math.ceil(file.size / partSize);
+  const pending = [];
+  for (let partNumber = 1; partNumber <= partCount; partNumber += 1) {
+    pending.push(partNumber);
+  }
+
+  let uploadedBytes = 0;
+  let cursor = 0;
+  const report = () => {
+    onProgress?.({
+      percent: Math.min(99, Math.round((uploadedBytes / file.size) * 100)),
+      uploadedBytes,
+      totalBytes: file.size,
+    });
+  };
+  report();
+
+  async function worker() {
+    while (cursor < pending.length) {
+      const partNumber = pending[cursor];
+      cursor += 1;
+      if (signal?.aborted) {
+        throw new DOMException('Aborted', 'AbortError');
+      }
+      const start = (partNumber - 1) * partSize;
+      const blob = file.slice(start, Math.min(start + partSize, file.size));
+      const url = await presignR2UploadPart(session.id, partNumber);
+      await withVideoUploadRetry(() => putR2Part(url, blob, signal), { signal });
+      uploadedBytes += blob.size;
+      report();
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(3, pending.length) }, () => worker());
+  await Promise.all(workers);
+}
+
+/** Resumable video upload. Cloudflare R2 receives the file directly when it is configured. */
 export async function uploadLessonVideoInChunks({ file, target, onProgress, signal } = {}) {
   if (!file) {
     throw new Error('Choose a video file first.');
@@ -634,6 +717,29 @@ export async function uploadLessonVideoInChunks({ file, target, onProgress, sign
   }
   if (file.size < 1) {
     throw new Error('Video file is empty.');
+  }
+
+  const direct = await beginR2VideoUpload({ file, target });
+  if (direct?.provider === 'r2') {
+    try {
+      await uploadFileToR2({ file, session: direct, onProgress, signal });
+      onProgress?.({
+        percent: 99,
+        uploadedBytes: file.size,
+        totalBytes: file.size,
+        assembling: true,
+      });
+      const completed = await completeLessonVideoUpload(direct.id);
+      onProgress?.({ percent: 100, uploadedBytes: file.size, totalBytes: file.size });
+      return completed;
+    } catch (error) {
+      try {
+        await abortLessonVideoUpload(direct.id);
+      } catch {
+        /* the unfinished Cloudflare upload is removed when the session still exists */
+      }
+      throw error;
+    }
   }
 
   const chunkSize = VIDEO_UPLOAD_CHUNK_BYTES;

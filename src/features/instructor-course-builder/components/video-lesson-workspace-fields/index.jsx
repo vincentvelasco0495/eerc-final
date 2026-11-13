@@ -371,7 +371,7 @@ export function VideoLessonWorkspaceFields({
         <Typography sx={styles.fieldLabel}>Lesson video</Typography>
         <MediaDropzone
           accept={{ 'video/*': ['.mp4', '.webm', '.ogg'] }}
-          hint="Drag and drop a video here. Large files upload in chunks and can resume if the connection drops."
+          hint="Drag and drop a video here. With Cloudflare R2 configured, the file uploads there directly. Otherwise it uploads in chunks."
           hintWhenPreview="Drag and drop to replace the video file, or use Replace."
           uploadButtonLabel="Browse files"
           replaceButtonLabel="Replace video"

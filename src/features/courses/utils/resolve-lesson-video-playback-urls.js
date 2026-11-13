@@ -5,7 +5,21 @@ export function resolveLessonVideoPlaybackUrls(materialId, playbackUrl = '') {
     .trim()
     .replace(/\/$/, '');
   const id = typeof materialId === 'string' ? materialId.trim() : '';
-  const extra = typeof playbackUrl === 'string' ? playbackUrl.trim() : '';
+  let extra = typeof playbackUrl === 'string' ? playbackUrl.trim() : '';
+  if (extra && /[?&]play=/.test(extra)) {
+    return [extra];
+  }
+  if (/^https?:\/\//i.test(extra)) {
+    try {
+      const host = new URL(extra).hostname;
+      const apiHost = base ? new URL(base).hostname : '';
+      if (host && apiHost && host !== apiHost) {
+        extra = '';
+      }
+    } catch {
+      extra = '';
+    }
+  }
   const urls = [];
   if (extra) {
     urls.push(extra);

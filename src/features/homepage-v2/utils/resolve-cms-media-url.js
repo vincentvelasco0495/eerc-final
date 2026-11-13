@@ -44,8 +44,40 @@ function cmsStoragePathFromUrl(url) {
   return '';
 }
 
+function isR2Media(media) {
+  if (media?.provider === 'r2' || media?.disk === 'r2') {
+    return true;
+  }
+  return /\/api\/media\/[^/]+\/file(?:\?|$)/i.test(String(media?.url ?? ''));
+}
+
 export function resolveCmsVideoPlaybackUrls(media) {
   const base = (CONFIG.serverUrl ?? '').replace(/\/$/, '');
+  const direct = String(media?.url ?? '').trim();
+  if (/^https?:\/\//i.test(direct)) {
+    try {
+      const host = new URL(direct).hostname;
+      const apiHost = base ? new URL(base).hostname : '';
+      if (host && host !== apiHost) {
+        return [direct];
+      }
+    } catch {
+      /* keep the local file addresses */
+    }
+  }
+  if (isR2Media(media)) {
+    const fromUrl = direct.match(/\/api\/media\/([^/]+)\/file(?:\?|$)/i)?.[1] ?? '';
+    const id = cmsMediaPublicId(media) || fromUrl;
+    if (base && id) {
+      return [`${base}/api/media/${encodeURIComponent(id)}/file`];
+    }
+    if (direct.startsWith('/') && base) {
+      return [`${base}${direct}`];
+    }
+    if (direct) {
+      return [direct];
+    }
+  }
   const urls = [];
   const filename = cmsFilename(media);
 
